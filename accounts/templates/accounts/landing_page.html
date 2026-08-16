@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The official competition scoring and management platform of J.H. Cerilles State College.">
+    <title>JHCSC Competition Management System</title>
+    {% load static %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { ink: '#10263a', campus: '#087f78', aqua: '#1fb9ad', mist: '#eff8f6' },
+                    fontFamily: { sans: ['"Open Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'], display: ['Poppins', '"Open Sans"', 'sans-serif'] },
+                    boxShadow: { soft: '0 24px 70px -30px rgba(15, 60, 70, .28)' },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .page-grid {
+            background-image: linear-gradient(rgba(8, 127, 120, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 120, .055) 1px, transparent 1px);
+            background-size: 42px 42px;
+            -webkit-mask-image: linear-gradient(to bottom, black, transparent 76%);
+            mask-image: linear-gradient(to bottom, black, transparent 76%);
+        }
+        .score-card { animation: float-card 6s ease-in-out infinite; }
+        @keyframes float-card { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+        @media (prefers-reduced-motion: reduce) { .score-card { animation: none; } * { scroll-behavior: auto !important; } }
+    </style>
+</head>
+<body class="bg-[#f7faf9] font-sans text-slate-700 antialiased selection:bg-teal-200 selection:text-ink">
+    <div class="relative min-h-screen overflow-hidden">
+        <div class="page-grid pointer-events-none absolute inset-x-0 top-0 h-[780px]"></div>
+        <div class="pointer-events-none absolute -left-36 top-48 h-80 w-80 rounded-full bg-teal-200/45 blur-3xl"></div>
+        <div class="pointer-events-none absolute -right-40 top-20 h-96 w-96 rounded-full bg-cyan-200/35 blur-3xl"></div>
+
+        <header class="relative z-20 px-4 pt-4 sm:px-6 lg:px-8">
+            <nav class="mx-auto flex max-w-7xl items-center justify-between rounded-2xl border border-white/90 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl sm:px-5" aria-label="Main navigation">
+                <a href="{% url 'landing_page' %}" class="group flex min-w-0 items-center gap-3" aria-label="JHCSC Competition Hub home">
+                    <span class="flex shrink-0 items-center -space-x-2">
+                        <span class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm transition-transform group-hover:-rotate-2">
+                            <img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain">
+                        </span>
+                        <span class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm transition-transform group-hover:rotate-2">
+                            <img src="{% static 'images/it_logo.png' %}" alt="Information Technology Department logo" class="h-full w-full object-contain">
+                        </span>
+                    </span>
+                    <span class="hidden min-w-0 leading-tight sm:block">
+                        <span class="block truncate font-display text-sm font-bold text-ink sm:text-base">JHCSC Competition Hub</span>
+                        <span class="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-campus sm:block">Official scoring platform</span>
+                    </span>
+                </a>
+
+                <div class="hidden items-center gap-8 lg:flex">
+                    <a href="#platform" class="text-sm font-semibold text-slate-500 transition-colors hover:text-campus">Platform</a>
+                    <a href="#workflow" class="text-sm font-semibold text-slate-500 transition-colors hover:text-campus">How it works</a>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-2">
+                    <a href="{% url 'login' %}" class="hidden rounded-xl px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-slate-100 sm:inline-flex">Sign in</a>
+                    <a href="{% url 'register' %}" class="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-campus focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2 sm:px-5">
+                        <span class="hidden sm:inline">Judge registration</span>
+                        <span class="sm:hidden">Register</span>
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                    </a>
+                </div>
+            </nav>
+        </header>
+
+        <main class="relative z-10">
+            <section class="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-20 pt-16 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:pb-24 lg:pt-24">
+                <div class="lg:col-span-7">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/80 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-campus shadow-sm backdrop-blur">
+                        <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-aqua opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-campus"></span></span>
+                        Built for fair competition
+                    </div>
+                    <h1 class="mt-6 max-w-4xl font-display text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-ink sm:text-5xl lg:text-[4rem]">
+                        Every score counts.
+                        <span class="block text-campus">Every result is clear.</span>
+                    </h1>
+                    <p class="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
+
+                    <div class="mt-9 flex flex-col gap-3 sm:flex-row">
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-campus to-aqua px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-teal-600/25 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-teal-600/25 focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2">
+                            Enter competition hub
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                        </a>
+                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-bold text-ink shadow-sm backdrop-blur transition-all hover:border-teal-300 hover:bg-white hover:text-campus">
+                            Explore the platform
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-slate-500">
+                        <span class="inline-flex items-center gap-2"><svg class="h-5 w-5 text-campus" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l2.25 2.25L15 9.75m6-3.75a11.953 11.953 0 01-9-3.75A11.953 11.953 0 013 6c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622z"/></svg>Transparent scoring</span>
+                        <span class="inline-flex items-center gap-2"><svg class="h-5 w-5 text-campus" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Live standings</span>
+                        <span class="inline-flex items-center gap-2"><svg class="h-5 w-5 text-campus" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829a42.4 42.4 0 0110.56 0M6.34 18h11.32M6.75 7.034V3.375c0-.621.504-1.125 1.125-1.125h8.25c.621 0 1.125.504 1.125 1.125v3.659M6.34 18l-.229 2.523c-.06.659.458 1.227 1.12 1.227h9.538c.662 0 1.18-.568 1.12-1.227L17.66 18"/></svg>Print-ready reports</span>
+                    </div>
+                </div>
+
+                <div class="relative lg:col-span-5">
+                    <div class="score-card relative mx-auto max-w-lg">
+                        <div class="absolute -inset-5 rounded-[2.2rem] bg-gradient-to-br from-teal-200/70 via-cyan-100/20 to-amber-100/60 blur-2xl"></div>
+                        <div class="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-ink p-3 shadow-2xl shadow-slate-900/25">
+                            <div class="rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-[#173d4a] to-[#0d2b38] p-5 sm:p-6">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-teal-300"><span class="h-2 w-2 rounded-full bg-teal-300 shadow-[0_0_12px_rgba(94,234,212,.8)]"></span>Scoring in progress</div>
+                                        <h2 class="mt-2 font-display text-xl font-bold text-white">Campus Vocal Festival</h2>
+                                        <p class="mt-1 text-xs text-slate-400">Grand Finals &middot; Round 3</p>
+                                    </div>
+                                    <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center"><div class="font-display text-lg font-bold text-white">4/5</div><div class="text-[9px] uppercase tracking-wider text-slate-400">Judges</div></div>
+                                </div>
+
+                                <div class="mt-6 grid grid-cols-3 gap-2.5">
+                                    <div class="rounded-xl border border-white/10 bg-white/[.06] p-3"><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Entries</div><div class="mt-1 font-display text-2xl font-bold text-white">12</div></div>
+                                    <div class="rounded-xl border border-white/10 bg-white/[.06] p-3"><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Criteria</div><div class="mt-1 font-display text-2xl font-bold text-white">4</div></div>
+                                    <div class="rounded-xl border border-teal-300/20 bg-teal-300/10 p-3"><div class="text-[10px] font-semibold uppercase tracking-wider text-teal-200">Complete</div><div class="mt-1 font-display text-2xl font-bold text-teal-200">80%</div></div>
+                                </div>
+
+                                <div class="mt-5 rounded-2xl bg-white p-4 shadow-lg">
+                                    <div class="mb-3 flex items-center justify-between"><h3 class="font-display text-sm font-bold text-ink">Live standings</h3><span class="rounded-full bg-teal-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-campus">Auto-ranked</span></div>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-amber-950">1</span><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold text-ink">Maria Santos</div><div class="text-[10px] text-slate-400">Contestant 08</div></div><span class="font-display text-sm font-bold text-amber-600">94.25</span></div>
+                                        <div class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">2</span><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold text-ink">Rafael Reyes</div><div class="text-[10px] text-slate-400">Contestant 03</div></div><span class="font-display text-sm font-bold text-slate-600">92.80</span></div>
+                                        <div class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700">3</span><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold text-ink">Camila Fernandez</div><div class="text-[10px] text-slate-400">Contestant 11</div></div><span class="font-display text-sm font-bold text-slate-600">91.40</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="absolute -bottom-5 left-8 hidden items-center gap-2 rounded-xl border border-white bg-white/95 px-3 py-2.5 shadow-xl backdrop-blur sm:flex">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-100 text-campus"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l2.25 2.25L15 9.75m6-3.75a11.953 11.953 0 01-9-3.75A11.953 11.953 0 013 6c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622z"/></svg></span>
+                        <span><span class="block text-xs font-bold text-ink">Scores secured</span><span class="block text-[10px] text-slate-400">Saved automatically</span></span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="platform" class="border-y border-slate-200/80 bg-white/75 px-6 py-20 backdrop-blur lg:px-8">
+                <div class="mx-auto max-w-7xl">
+                    <div class="max-w-2xl">
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-campus">One connected platform</p>
+                        <h2 class="mt-3 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Designed for every role in the competition.</h2>
+                        <p class="mt-4 leading-7 text-slate-600">From setup to the final announcement, each step stays organized, accurate, and easy to follow.</p>
+                    </div>
+
+                    <div class="mt-10 grid gap-5 md:grid-cols-3">
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-white shadow-lg shadow-slate-900/15 transition-colors group-hover:bg-campus"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0L6 21m9.75-4.5L18 21M8.25 9l2.25 2.25L15.75 6"/></svg></div>
+                            <h3 class="mt-5 font-display text-lg font-bold text-ink">For administrators</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Create competitions, organize rounds, assign judges, and manage participants from one clear workspace.</p>
+                        </article>
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-campus text-white shadow-lg shadow-teal-700/20"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zM19.5 7.125L16.862 4.487M18 14.25v4.875A2.625 2.625 0 0115.375 21H4.875A2.625 2.625 0 012.25 18.375V7.875A2.625 2.625 0 014.875 5.25H9.75"/></svg></div>
+                            <h3 class="mt-5 font-display text-lg font-bold text-ink">For judges</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Score confidently with guided criteria, automatic totals, and a focused panel built for fast decisions.</p>
+                        </article>
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400 text-amber-950 shadow-lg shadow-amber-500/20"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497M5.25 4.236V2.721A48.46 48.46 0 0112 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.75 6.75 0 008.54 0"/></svg></div>
+                            <h3 class="mt-5 font-display text-lg font-bold text-ink">For results teams</h3>
+                            <p class="mt-2 text-sm leading-6 text-slate-500">Review live rankings, switch between rounds, and produce polished official reports ready to print.</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section id="workflow" class="px-6 py-20 lg:px-8">
+                <div class="mx-auto max-w-7xl rounded-[2rem] bg-ink px-6 py-10 text-white shadow-2xl shadow-slate-900/15 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:py-12">
+                    <div class="max-w-xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">Ready when you are</p><h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Run the next competition with confidence.</h2><p class="mt-4 leading-7 text-slate-300">Sign in to manage an event, or register for a judge account to start scoring.</p></div>
+                    <div class="mt-7 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-aqua px-6 py-3.5 text-sm font-bold text-ink transition-all hover:-translate-y-0.5 hover:bg-teal-300">Sign in to the hub</a>
+                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10">Register as judge</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="relative z-10 border-t border-slate-200 bg-white/70 px-6 py-7 lg:px-8">
+            <div class="mx-auto flex max-w-7xl flex-col gap-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+                <div class="flex items-center justify-center gap-3 sm:justify-start"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-mist p-1.5"><img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full object-contain"></div><div><div class="font-display text-sm font-bold text-ink">J.H. Cerilles State College</div><div class="text-xs text-slate-400">Competition Management System</div></div></div>
+                <p class="text-xs text-slate-400">&copy; {% now "Y" %} JHCSC. Fair scoring, trusted results.</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

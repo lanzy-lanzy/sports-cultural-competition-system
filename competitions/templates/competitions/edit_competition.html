@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Competition - {{ competition.name }}{% endblock %}
+{% block header_title %}Edit Competition{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Edit Competition</h1>
+        <p class="mt-1 text-sm text-slate-500">Update the details of your competition.</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label for="title" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Title</label>
+                <input type="text" id="title" name="title" value="{{ competition.name }}" required
+                       class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+            </div>
+
+            <div>
+                <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
+                <textarea id="description" name="description" rows="4" required
+                          class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">{{ competition.description }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ competition.start_date|date:'Y-m-d' }}" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label for="end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ competition.end_date|date:'Y-m-d' }}" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+            </div>
+
+            <div>
+                <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Status</label>
+                <select id="status" name="status" required
+                        class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    <option value="DRAFT" {% if competition.status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                    <option value="ACTIVE" {% if competition.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                    <option value="COMPLETED" {% if competition.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:justify-end">
+                <a href="{% url 'competition_detail' competition.id %}"
+                   class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                    </svg>
+                    Update Competition
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+
+    startDateInput.addEventListener('change', function () {
+        endDateInput.min = this.value;
+        if (endDateInput.value && endDateInput.value < this.value) {
+            endDateInput.value = this.value;
+        }
+    });
+
+    endDateInput.addEventListener('change', function () {
+        startDateInput.max = this.value;
+        if (startDateInput.value && startDateInput.value > this.value) {
+            startDateInput.value = this.value;
+        }
+    });
+</script>
+{% endblock %}

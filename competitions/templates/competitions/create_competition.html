@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Competition - Scoring System{% endblock %}
+{% block header_title %}New Competition{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl">
+    <div class="mb-6">
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Create New Competition</h1>
+        <p class="mt-1 text-sm text-slate-500">Set up your competition details and rounds.</p>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm
+            {% if message.tags == 'error' %}border-rose-200 bg-rose-50 text-rose-700{% else %}border-emerald-200 bg-emerald-50 text-emerald-700{% endif %}">
+            <svg class="h-5 w-5 shrink-0 {% if message.tags == 'error' %}text-rose-400{% else %}text-emerald-400{% endif %}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                {% if message.tags == 'error' %}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                {% else %}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                {% endif %}
+            </svg>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Basic Details -->
+        <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+            <div class="mb-6 flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+                    </svg>
+                </div>
+                <h2 class="font-display text-lg font-semibold text-slate-900">Competition Details</h2>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div>
+                    <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
+                    <select id="status" name="status" required
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="PENDING">Pending</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label for="end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
+                    <input type="date" id="end_date" name="end_date" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Describe your competition..."
+                              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rounds -->
+        <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+            <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 text-white">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                        </svg>
+                    </div>
+                    <h2 class="font-display text-lg font-semibold text-slate-900">Competition Rounds</h2>
+                </div>
+                <button type="button" onclick="addRound()"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+                    <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    Add Round
+                </button>
+            </div>
+
+            <div id="rounds-container" class="space-y-5">
+                <!-- Rounds will be added here -->
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Create Competition
+            </button>
+        </div>
+    </form>
+
+    <!-- Hidden Templates -->
+    <template id="round-template">
+        <div class="round-item rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-sm font-bold text-white">
+                        <span class="round-number"></span>
+                    </span>
+                    <h3 class="font-display text-base font-semibold text-slate-900">Round Details</h3>
+                </div>
+                <button type="button" onclick="removeRound(this)"
+                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                    Remove
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Round Name</label>
+                    <input type="text" name="round_names[]" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Order</label>
+                    <input type="number" name="round_orders[]" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Weight (%)</label>
+                    <input type="number" name="round_weights[]" required
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
+                    <select name="round_statuses[]" required
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="PENDING">Pending</option>
+                        <option value="ONGOING">Ongoing</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="criteria-section mt-5">
+                <div class="mb-3 flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-slate-700">Scoring Criteria</h4>
+                    <button type="button" onclick="addCriterion(this)"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                        </svg>
+                        Add Criterion
+                    </button>
+                </div>
+                <div class="criteria-container space-y-3">
+                    <!-- Criteria will be added here -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="criterion-template">
+        <div class="criterion-item rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-start gap-4">
+                <div class="min-w-[140px] flex-1">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                    <input type="text" name="criterion_names_ROUND_NUM[]" placeholder="Criterion name" required
+                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div class="w-28">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Max Score</label>
+                    <input type="number" name="criterion_max_scores_ROUND_NUM[]" placeholder="100" value="100" required
+                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div class="min-w-[180px] flex-1">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                    <input type="text" name="criterion_descriptions_ROUND_NUM[]" placeholder="Description"
+                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <button type="button" onclick="removeCriterion(this)"
+                        class="mt-6 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+    let roundCounter = 0;
+
+    function addRound() {
+        const template = document.getElementById('round-template');
+        const container = document.getElementById('rounds-container');
+        const clone = template.content.cloneNode(true);
+
+        roundCounter++;
+        clone.querySelector('.round-number').textContent = roundCounter;
+
+        container.appendChild(clone);
+        updateRoundNumbers();
+
+        const newRound = container.lastElementChild;
+        addCriterion(newRound.querySelector('button[onclick="addCriterion(this)"]'));
+    }
+
+    function removeRound(button) {
+        button.closest('.round-item').remove();
+        updateRoundNumbers();
+    }
+
+    function updateRoundNumbers() {
+        const rounds = document.querySelectorAll('.round-item');
+        rounds.forEach((round, index) => {
+            round.querySelector('.round-number').textContent = index + 1;
+        });
+        roundCounter = rounds.length;
+    }
+
+    function addCriterion(button) {
+        const roundItem = button.closest('.round-item');
+        const roundNum = roundItem.querySelector('.round-number').textContent;
+        const criteriaContainer = roundItem.querySelector('.criteria-container');
+
+        const template = document.getElementById('criterion-template');
+        const clone = template.content.cloneNode(true);
+
+        clone.querySelectorAll('input').forEach(input => {
+            input.name = input.name.replace('ROUND_NUM', roundNum);
+        });
+
+        criteriaContainer.appendChild(clone);
+    }
+
+    function removeCriterion(button) {
+        button.closest('.criterion-item').remove();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        addRound();
+    });
+</script>
+{% endblock %}

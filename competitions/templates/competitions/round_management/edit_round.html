@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Round - {{ round.name }}{% endblock %}
+{% block header_title %}Edit Round{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Edit Round</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ competition.name }} - {{ round.name }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Round Name</label>
+                <input type="text" id="name" name="name" required value="{{ round.name }}"
+                       class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+            </div>
+
+            <div>
+                <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
+                <textarea id="description" name="description" rows="3"
+                          class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">{{ round.description }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="order" class="mb-1.5 block text-sm font-medium text-slate-700">Order</label>
+                    <input type="number" id="order" name="order" required min="1" value="{{ round.order }}"
+                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label for="weight_percentage" class="mb-1.5 block text-sm font-medium text-slate-700">Weight Percentage</label>
+                    <div class="relative">
+                        <input type="number" id="weight_percentage" name="weight_percentage" required min="0" max="100" step="0.01" value="{{ round.weight_percentage }}"
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-slate-500">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Current Status</label>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                    {% if round.status == 'ONGOING' %}bg-emerald-100 text-emerald-700
+                    {% elif round.status == 'COMPLETED' %}bg-blue-100 text-blue-700
+                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                    <span class="h-1.5 w-1.5 rounded-full
+                        {% if round.status == 'ONGOING' %}bg-emerald-500
+                        {% elif round.status == 'COMPLETED' %}bg-blue-500
+                        {% else %}bg-slate-400{% endif %}"></span>
+                    {{ round.get_status_display }}
+                </span>
+                <p class="mt-2 text-xs text-slate-500">Use the toggle status button on the rounds list to change the status.</p>
+            </div>
+
+            <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:justify-end">
+                <a href="{% url 'manage_rounds' competition.id %}"
+                   class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                    </svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

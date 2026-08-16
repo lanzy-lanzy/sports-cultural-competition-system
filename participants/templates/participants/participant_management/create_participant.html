@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Participant{% endblock %}
+{% block header_title %}Create New Participant{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Create New Participant</h1>
+        <p class="mt-1 text-sm text-slate-500">Add a new participant to the system.</p>
+    </div>
+    <a href="{% url 'participant_management' %}" class="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 transition-colors hover:text-cyan-800">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+        </svg>
+        Back to Participant Management
+    </a>
+</div>
+
+<div class="rounded-2xl border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
+    <form method="POST" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+        {% if next_url %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+        {% endif %}
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+                <label for="name" class="mb-2 block text-sm font-medium text-slate-700">Full Name <span class="text-rose-500">*</span></label>
+                <input type="text" name="name" id="name" required placeholder="Juan Dela Cruz"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+            </div>
+            <div>
+                <label for="gender" class="mb-2 block text-sm font-medium text-slate-700">Gender</label>
+                <select name="gender" id="gender"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    <option value="">Select your gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+            </div>
+            <div>
+                <label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email <span class="text-rose-500">*</span></label>
+                <input type="email" name="email" id="email" required placeholder="juan@example.com"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+            </div>
+            <div>
+                <label for="phone" class="mb-2 block text-sm font-medium text-slate-700">Phone Number <span class="text-rose-500">*</span></label>
+                <input type="tel" name="phone" id="phone" required placeholder="0917 123 4567"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+            </div>
+            <div>
+                <label for="age" class="mb-2 block text-sm font-medium text-slate-700">Age</label>
+                <input type="number" name="age" id="age" placeholder="18"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+            </div>
+            <div class="md:col-span-2">
+                <label for="bio" class="mb-2 block text-sm font-medium text-slate-700">Bio</label>
+                <textarea name="bio" id="bio" rows="3" placeholder="Brief description about the participant."
+                          class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+            </div>
+            <div class="md:col-span-2">
+                <label for="achievements" class="mb-2 block text-sm font-medium text-slate-700">Achievements</label>
+                <textarea name="achievements" id="achievements" rows="3" placeholder="List any notable achievements or awards."
+                          class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+            </div>
+            <div class="md:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-slate-700">Profile Image</label>
+                <input type="file" name="profile_image" accept="image/*"
+                       class="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cyan-700 hover:file:bg-cyan-100">
+            </div>
+        </div>
+
+        <div class="flex justify-end border-t border-slate-200 pt-6">
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105 hover:shadow-xl">
+                Create Participant
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

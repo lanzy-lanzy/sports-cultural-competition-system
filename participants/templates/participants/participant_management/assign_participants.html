@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Participants - {{ competition.name }}{% endblock %}
+{% block header_title %}Assign Participants{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Assign Participants</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ competition.name|title }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-semibold text-cyan-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-cyan-50">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Add New Participant
+        </a>
+        <a href="{% url 'manage_participants' competition.id %}" class="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 transition-colors hover:text-cyan-800">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+            </svg>
+            Back to Management
+        </a>
+    </div>
+</div>
+
+<form method="POST" class="space-y-6" id="assignForm">
+    {% csrf_token %}
+
+    <!-- ===== Toolbar: Search, Filters, View Toggle ===== -->
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div class="flex-1">
+                <div class="relative">
+                    <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                    </svg>
+                    <input type="text" id="searchParticipant" placeholder="Search by name, email, phone..."
+                           class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- View Toggle -->
+                <div class="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1" role="group" aria-label="View mode">
+                    <button type="button" id="viewCardsBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h4v4H6V6zm8 0h4v4h-4V6zm-8 8h4v4H6v-4zm8 0h4v4h-4v-4z"/>
+                        </svg>
+                        Cards
+                    </button>
+                    <button type="button" id="viewTableBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="false">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"/>
+                        </svg>
+                        Table
+                    </button>
+                </div>
+
+                <button type="button" id="selectAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-50">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Select All
+                </button>
+                <button type="button" id="clearAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mt-4 flex flex-wrap items-end gap-4 rounded-xl bg-slate-50 p-4">
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
+                <select id="genderFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    <option value="all">All Genders</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+            </div>
+            {% if age_ranges %}
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Age Range</label>
+                <select id="ageFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    <option value="all">All Ages</option>
+                    {% for range in age_ranges %}
+                    <option value="{{ range.start }}-{{ range.end }}">{{ range.start }}-{{ range.end }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
+                <select id="statusFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    <option value="all">All Statuses</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="WITHDRAWN">Withdrawn</option>
+                    <option value="ELIMINATED">Eliminated</option>
+                </select>
+            </div>
+            <div class="ml-auto text-sm text-slate-500">
+                <span id="visibleCount">{{ total_available }}</span> of <span id="totalCount">{{ total_available }}</span> shown
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Sticky Selection Summary ===== -->
+    <div id="selectionBar" class="sticky bottom-4 z-20 hidden">
+        <div class="flex items-center justify-between gap-4 rounded-2xl border border-cyan-200 bg-white/95 p-4 shadow-xl shadow-cyan-500/10 backdrop-blur-xl">
+            <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900"><span id="selectedCount">0</span> participant(s) selected</p>
+                    <p class="text-xs text-slate-500">Ready to assign to {{ competition.name|title }}</p>
+                </div>
+            </div>
+            <button type="submit" form="assignForm" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105 hover:shadow-xl">
+                Assign Selected Participants
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {% if total_available %}
+    <!-- ===== Card View ===== -->
+    <div id="cardView" class="space-y-8">
+        {% for gender, participants in grouped_participants.items %}
+        {% if participants %}
+        <div class="participant-group" data-gender="{{ gender }}">
+            <h3 class="mb-4 flex items-center gap-2 font-display text-lg font-medium text-slate-900">
+                <span>
+                    {% if gender == 'male' %}Male
+                    {% elif gender == 'female' %}Female
+                    {% elif gender == 'other' %}Other
+                    {% else %}Prefer not to say{% endif %}
+                </span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{{ participants.count }}</span>
+            </h3>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {% for participant in participants %}
+                <label class="participant-card relative flex cursor-pointer items-start rounded-xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md"
+                       data-participant
+                       data-name="{{ participant.name|lower }}"
+                       data-email="{{ participant.email|lower }}"
+                       data-phone="{{ participant.phone|default:''|lower }}"
+                       data-gender="{{ participant.gender }}"
+                       data-age="{{ participant.age|default:'' }}"
+                       data-status="{{ participant.status }}">
+                    <div class="flex h-5 items-center pt-0.5">
+                        <input type="checkbox" name="participants" value="{{ participant.id }}"
+                               class="participant-checkbox h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center gap-3">
+                            {% if participant.profile_image %}
+                            <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-10 w-10 rounded-full object-cover">
+                            {% else %}
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-sm font-bold text-white">{{ participant.name|make_list|first }}</div>
+                            {% endif %}
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate font-medium text-slate-900">{{ participant.name }}</p>
+                                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-500">
+                                    {% if participant.email %}<span class="truncate">{{ participant.email }}</span>{% endif %}
+                                    {% if participant.age %}
+                                    <span class="flex items-center gap-1">
+                                        <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                                        </svg>
+                                        {{ participant.age }} yrs
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between">
+                            <span class="text-xs font-medium text-slate-500">{{ participant.get_gender_display }}</span>
+                            {% if participant.status != 'ACTIVE' %}
+                            <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold
+                                {% if participant.status == 'WITHDRAWN' %}bg-amber-100 text-amber-700
+                                {% elif participant.status == 'ELIMINATED' %}bg-rose-100 text-rose-700
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ participant.get_status_display|upper }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if participant.bio %}
+                        <p class="mt-2 text-sm text-slate-500 line-clamp-2">{{ participant.bio }}</p>
+                        {% endif %}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- ===== Table View ===== -->
+    <div id="tableView" class="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+        <div class="overflow-x-auto app-scrollbar">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="w-12 px-4 py-3"></th>
+                        <th class="px-4 py-3">Participant</th>
+                        <th class="px-4 py-3">Gender</th>
+                        <th class="px-4 py-3">Age</th>
+                        <th class="px-4 py-3">Phone</th>
+                        <th class="px-4 py-3">Status</th>
+                    </tr>
+                </thead>
+                {% for gender, participants in grouped_participants.items %}
+                {% if participants %}
+                <tbody class="participant-group" data-gender="{{ gender }}">
+                    <tr class="border-b border-slate-100 bg-slate-50/40">
+                        <td colspan="6" class="px-4 py-2 font-display text-xs font-bold uppercase tracking-wider text-slate-400">
+                            {% if gender == 'male' %}Male
+                            {% elif gender == 'female' %}Female
+                            {% elif gender == 'other' %}Other
+                            {% else %}Prefer not to say{% endif %}
+                            <span class="ml-1 text-slate-400">({{ participants.count }})</span>
+                        </td>
+                    </tr>
+                    {% for participant in participants %}
+                    <tr class="participant-row border-b border-slate-100 transition-colors last:border-0 hover:bg-cyan-50/40"
+                        data-participant
+                        data-name="{{ participant.name|lower }}"
+                        data-email="{{ participant.email|lower }}"
+                        data-phone="{{ participant.phone|default:''|lower }}"
+                        data-gender="{{ participant.gender }}"
+                        data-age="{{ participant.age|default:'' }}"
+                        data-status="{{ participant.status }}">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" name="participants" value="{{ participant.id }}"
+                                   class="participant-checkbox h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-3">
+                                {% if participant.profile_image %}
+                                <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-9 w-9 rounded-full object-cover">
+                                {% else %}
+                                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xs font-bold text-white">{{ participant.name|make_list|first }}</div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <p class="font-medium text-slate-900">{{ participant.name }}</p>
+                                    {% if participant.email %}<p class="truncate text-xs text-slate-500">{{ participant.email }}</p>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.get_gender_display }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.age|default:'—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.phone|default:'—' }}</td>
+                        <td class="px-4 py-3">
+                            {% if participant.status == 'ACTIVE' %}
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Active
+                            </span>
+                            {% elif participant.status == 'WITHDRAWN' %}
+                            <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">Withdrawn</span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">Eliminated</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/70 py-16 text-center shadow-sm backdrop-blur-sm">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
+            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+        </div>
+        <p class="font-medium text-slate-900">No available participants</p>
+        <p class="mt-1 text-sm text-slate-500">All registered participants are already assigned, or create a new one to add.</p>
+        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105">
+            Add New Participant
+        </a>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchParticipant');
+    const selectAllBtn = document.getElementById('selectAll');
+    const clearAllBtn = document.getElementById('clearAll');
+    const genderFilter = document.getElementById('genderFilter');
+    const ageFilter = document.getElementById('ageFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const checkboxes = document.querySelectorAll('.participant-checkbox');
+    const selectionBar = document.getElementById('selectionBar');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const visibleCountSpan = document.getElementById('visibleCount');
+    const totalCountSpan = document.getElementById('totalCount');
+
+    const cardView = document.getElementById('cardView');
+    const tableView = document.getElementById('tableView');
+    const viewCardsBtn = document.getElementById('viewCardsBtn');
+    const viewTableBtn = document.getElementById('viewTableBtn');
+
+    const activeBtnClasses = ['bg-white', 'text-cyan-700', 'shadow-sm'];
+    const inactiveBtnClasses = ['text-slate-500'];
+
+    function isVisible(el) {
+        return el && el.offsetParent !== null;
+    }
+
+    function setView(mode) {
+        const cardsActive = mode === 'cards';
+        cardView.classList.toggle('hidden', !cardsActive);
+        tableView.classList.toggle('hidden', cardsActive);
+
+        [viewCardsBtn, viewTableBtn].forEach(btn => {
+            btn.classList.remove(...activeBtnClasses, ...inactiveBtnClasses);
+        });
+        if (cardsActive) {
+            viewCardsBtn.classList.add(...activeBtnClasses);
+            viewTableBtn.classList.add(...inactiveBtnClasses);
+            viewCardsBtn.setAttribute('aria-pressed', 'true');
+            viewTableBtn.setAttribute('aria-pressed', 'false');
+        } else {
+            viewTableBtn.classList.add(...activeBtnClasses);
+            viewCardsBtn.classList.add(...inactiveBtnClasses);
+            viewTableBtn.setAttribute('aria-pressed', 'true');
+            viewCardsBtn.setAttribute('aria-pressed', 'false');
+        }
+        try { localStorage.setItem('assignViewMode', mode); } catch (e) {}
+    }
+
+    viewCardsBtn.addEventListener('click', () => setView('cards'));
+    viewTableBtn.addEventListener('click', () => setView('table'));
+
+    let savedView = 'cards';
+    try { savedView = localStorage.getItem('assignViewMode') || 'cards'; } catch (e) {}
+    setView(savedView === 'table' ? 'table' : 'cards');
+
+    function updateSelectionSummary() {
+        const selectedCount = document.querySelectorAll('.participant-checkbox:checked').length;
+        selectedCountSpan.textContent = selectedCount;
+        selectionBar.classList.toggle('hidden', selectedCount === 0);
+    }
+
+    function updateVisibleCount() {
+        const visible = Array.from(document.querySelectorAll('[data-participant]')).filter(isVisible).length;
+        visibleCountSpan.textContent = visible;
+    }
+
+    function filterParticipants() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedGender = genderFilter.value;
+        const selectedAgeRange = ageFilter.value;
+        const selectedStatus = statusFilter.value;
+
+        document.querySelectorAll('[data-participant]').forEach(item => {
+            const name = item.dataset.name;
+            const email = item.dataset.email || '';
+            const phone = item.dataset.phone || '';
+            const gender = item.dataset.gender;
+            const age = parseInt(item.dataset.age) || 0;
+            const status = item.dataset.status;
+
+            let show = name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm);
+
+            if (selectedGender !== 'all') {
+                show = show && gender === selectedGender;
+            }
+
+            if (selectedAgeRange !== 'all') {
+                const [minAge, maxAge] = selectedAgeRange.split('-').map(Number);
+                show = show && age >= minAge && age <= maxAge;
+            }
+
+            if (selectedStatus !== 'all') {
+                show = show && status === selectedStatus;
+            }
+
+            item.style.display = show ? '' : 'none';
+        });
+
+        document.querySelectorAll('.participant-group').forEach(group => {
+            const visible = Array.from(group.querySelectorAll('[data-participant]')).filter(item => item.style.display !== 'none').length;
+            group.style.display = visible > 0 ? '' : 'none';
+        });
+
+        updateVisibleCount();
+    }
+
+    searchInput.addEventListener('input', filterParticipants);
+    genderFilter.addEventListener('change', filterParticipants);
+    statusFilter.addEventListener('change', filterParticipants);
+    if (ageFilter) {
+        ageFilter.addEventListener('change', filterParticipants);
+    }
+
+    selectAllBtn.addEventListener('click', function() {
+        const visible = Array.from(checkboxes).filter(cb => isVisible(cb.closest('[data-participant]')));
+        const allChecked = visible.length > 0 && visible.every(cb => cb.checked);
+        visible.forEach(cb => cb.checked = !allChecked);
+        updateSelectionSummary();
+    });
+
+    clearAllBtn.addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = false);
+        updateSelectionSummary();
+    });
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateSelectionSummary));
+
+    updateSelectionSummary();
+    filterParticipants();
+});
+</script>
+{% endblock %}

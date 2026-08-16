@@ -1,0 +1,29 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+credentials.md
+
+# Django-generated and local data
+db.sqlite3
+db.sqlite3-*
+media/*
+!media/defaults/
+!media/defaults/**
+staticfiles/
+
+# Editors, local tooling, and generated verification output
+.vscode/
+.idea/
+.playwright-cli/
+output/
+*.log

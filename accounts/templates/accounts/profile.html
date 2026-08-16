@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Scoring System{% endblock %}
+{% block header_title %}Profile{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Profile</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage your personal information and profile photo.</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                <div class="relative shrink-0">
+                    <img class="h-24 w-24 rounded-full border-4 border-cyan-200 object-cover shadow-lg"
+                         src="{% if user.is_judge %}{{ user.judge.get_profile_image_url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&background=0891b2&color=fff{% endif %}"
+                         alt="Profile photo">
+                </div>
+                <div class="w-full space-y-4">
+                    <div>
+                        <label for="username" class="mb-1.5 block text-sm font-medium text-slate-700">Username</label>
+                        <input type="text" id="username" name="username" value="{{ user.username }}" required
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                    <div>
+                        <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" required
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                    <div>
+                        <label for="profile_image" class="mb-1.5 block text-sm font-medium text-slate-700">Profile Image</label>
+                        <input type="file" id="profile_image" name="profile_image"
+                               class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end border-t border-slate-100 pt-5">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                    </svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

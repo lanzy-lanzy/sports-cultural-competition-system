@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+
+{% block title %}Participants - Scoring System{% endblock %}
+{% block header_title %}Participants{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Participants</h1>
+        <p class="mt-1 text-sm text-slate-500">View and manage competition participants.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <!-- View toggle -->
+        <div class="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
+            <button type="button" id="view-grid-btn" onclick="setView('grid')"
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+                </svg>
+                <span class="hidden sm:inline">Cards</span>
+            </button>
+            <button type="button" id="view-table-btn" onclick="setView('table')"
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                </svg>
+                <span class="hidden sm:inline">Table</span>
+            </button>
+        </div>
+
+        <button type="button" onclick="openModal('create-participant-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Add Participant
+        </button>
+    </div>
+</div>
+
+{% if page_obj %}
+
+<!-- ===== Grid / Cards view ===== -->
+<div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    {% for participant in page_obj %}
+    <div class="group rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10">
+        <div class="flex items-center gap-4">
+            {% if participant.profile_image %}
+            <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-14 w-14 rounded-full border-2 border-cyan-100 object-cover">
+            {% else %}
+            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xl font-bold text-white">{{ participant.name|make_list|first }}</div>
+            {% endif %}
+            <div class="min-w-0">
+                <h3 class="truncate font-display text-lg font-semibold text-slate-900">{{ participant.name }}</h3>
+                <p class="text-sm text-slate-500">Participant #{{ participant.number }}</p>
+            </div>
+        </div>
+
+        <div class="mt-5 space-y-2 text-sm text-slate-600">
+            <div class="flex items-center gap-2.5">
+                <svg class="h-4 w-4 shrink-0 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                </svg>
+                <span class="truncate">{{ participant.email }}</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <svg class="h-4 w-4 shrink-0 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                </svg>
+                <span>{{ participant.phone }}</span>
+            </div>
+        </div>
+
+        <div class="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
+            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                {% if participant.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
+                {% elif participant.status == 'WITHDRAWN' %}bg-rose-100 text-rose-700
+                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                <span class="h-1.5 w-1.5 rounded-full
+                    {% if participant.status == 'ACTIVE' %}bg-emerald-500
+                    {% elif participant.status == 'WITHDRAWN' %}bg-rose-500
+                    {% else %}bg-slate-400{% endif %}"></span>
+                {{ participant.get_status_display }}
+            </span>
+            <div class="flex items-center gap-1">
+                <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" title="View Profile" class="cursor-pointer rounded-lg p-2 text-cyan-600 transition-colors hover:bg-cyan-50 hover:text-cyan-800">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </button>
+                <button type="button" onclick="openEditParticipant(this)" data-id="{{ participant.id }}" data-url="{% url 'edit_participant' participant.id %}" data-name="{{ participant.name }}" data-email="{{ participant.email }}" data-phone="{{ participant.phone }}" data-age="{{ participant.age }}" data-gender="{{ participant.gender }}" data-bio="{{ participant.bio }}" data-achievements="{{ participant.achievements }}" data-status="{{ participant.status }}" data-has-image="{% if participant.profile_image %}true{% else %}false{% endif %}" title="Edit" class="cursor-pointer rounded-lg p-2 text-slate-500 transition-colors hover:bg-cyan-50 hover:text-cyan-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/>
+                    </svg>
+                </button>
+                <button type="button" onclick="openDeleteParticipant(this)" data-url="{% url 'delete_participant' participant.id %}" data-name="{{ participant.name }}" title="Delete" class="cursor-pointer rounded-lg p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ===== Table view ===== -->
+<div id="table-view" class="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50/80">
+                <tr>
+                    <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Participant</th>
+                    <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Gender</th>
+                    <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Age</th>
+                    <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                    <th scope="col" class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+                {% for participant in page_obj %}
+                <tr class="transition-colors duration-150 hover:bg-cyan-50/40">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            {% if participant.profile_image %}
+                            <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-10 w-10 rounded-full border-2 border-cyan-100 object-cover">
+                            {% else %}
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-sm font-bold text-white">{{ participant.name|make_list|first|upper }}</div>
+                            {% endif %}
+                            <div>
+                                <p class="font-semibold text-slate-900">{{ participant.name }}</p>
+                                <p class="text-xs text-slate-400">{{ participant.email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 text-slate-600">{{ participant.get_gender_display }}</td>
+                    <td class="px-4 py-4 text-slate-600">{{ participant.age }}</td>
+                    <td class="px-4 py-4">
+                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                            {% if participant.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
+                            {% elif participant.status == 'WITHDRAWN' %}bg-rose-100 text-rose-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            <span class="h-1.5 w-1.5 rounded-full
+                                {% if participant.status == 'ACTIVE' %}bg-emerald-500
+                                {% elif participant.status == 'WITHDRAWN' %}bg-rose-500
+                                {% else %}bg-slate-400{% endif %}"></span>
+                            {{ participant.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="whitespace-nowrap px-6 py-4">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                            <button type="button"
+                                    data-url="{% url 'edit_participant' participant.id %}"
+                                    data-name="{{ participant.name }}"
+                                    data-email="{{ participant.email }}"
+                                    data-phone="{{ participant.phone }}"
+                                    data-age="{{ participant.age }}"
+                                    data-gender="{{ participant.gender }}"
+                                    data-bio="{{ participant.bio }}"
+                                    data-achievements="{{ participant.achievements }}"
+                                    data-status="{{ participant.status }}"
+                                    data-has-image="{% if participant.profile_image %}true{% else %}false{% endif %}"
+                                    onclick="openEditParticipant(this)"
+                                    class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
+                            <button type="button"
+                                    data-url="{% url 'delete_participant' participant.id %}"
+                                    data-name="{{ participant.name }}"
+                                    onclick="openDeleteParticipant(this)"
+                                    class="cursor-pointer rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include 'partials/pagination.html' %}
+{% else %}
+<div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center backdrop-blur-sm">
+    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+        <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+        </svg>
+    </div>
+    <h3 class="font-display text-xl font-semibold text-slate-900">No Participants</h3>
+    <p class="mt-2 text-sm text-slate-500">Get started by adding a new participant.</p>
+    <button type="button" onclick="openModal('create-participant-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+        </svg>
+        Add Participant
+    </button>
+</div>
+{% endif %}
+
+<!-- ===== Create Participant Modal ===== -->
+<div id="create-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('create-participant-modal')"></div>
+    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-slate-900">Create New Participant</h2>
+                    <p class="text-xs text-slate-500">Add a new participant to the system.</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto px-6 py-5">
+            <form method="POST" action="{% url 'create_participant' %}" enctype="multipart/form-data" class="space-y-5">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="p-name" class="mb-1.5 block text-sm font-medium text-slate-700">Full Name <span class="text-rose-500">*</span></label>
+                        <input type="text" name="name" id="p-name" required placeholder="Juan Dela Cruz"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="p-gender" class="mb-1.5 block text-sm font-medium text-slate-700">Gender</label>
+                        <select name="gender" id="p-gender"
+                               class="w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                            <option value="">Select your gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer_not_to_say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="p-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email <span class="text-rose-500">*</span></label>
+                        <input type="email" name="email" id="p-email" required placeholder="juan@example.com"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="p-phone" class="mb-1.5 block text-sm font-medium text-slate-700">Phone Number <span class="text-rose-500">*</span></label>
+                        <input type="tel" name="phone" id="p-phone" required placeholder="0917 123 4567"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="p-age" class="mb-1.5 block text-sm font-medium text-slate-700">Age</label>
+                        <input type="number" name="age" id="p-age" placeholder="18"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="p-bio" class="mb-1.5 block text-sm font-medium text-slate-700">Bio</label>
+                        <textarea name="bio" id="p-bio" rows="2" placeholder="Brief description about the participant."
+                                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="p-achievements" class="mb-1.5 block text-sm font-medium text-slate-700">Achievements</label>
+                        <textarea name="achievements" id="p-achievements" rows="2" placeholder="List any notable achievements or awards."
+                                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Profile Image</label>
+                        <input type="file" name="profile_image" accept="image/*"
+                               class="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cyan-700 hover:file:bg-cyan-100">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                    <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">Create Participant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Edit Participant Modal ===== -->
+<div id="edit-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('edit-participant-modal')"></div>
+    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-slate-900">Edit Participant</h2>
+                    <p class="text-xs text-slate-500">Update the participant details.</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto px-6 py-5">
+            <form method="POST" id="edit-participant-form" enctype="multipart/form-data" class="space-y-5">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label for="e-p-name" class="mb-1.5 block text-sm font-medium text-slate-700">Full Name <span class="text-rose-500">*</span></label>
+                        <input type="text" name="name" id="e-p-name" required
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="e-p-gender" class="mb-1.5 block text-sm font-medium text-slate-700">Gender</label>
+                        <select name="gender" id="e-p-gender"
+                               class="w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                            <option value="">Select your gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer_not_to_say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="e-p-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email <span class="text-rose-500">*</span></label>
+                        <input type="email" name="email" id="e-p-email" required
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="e-p-phone" class="mb-1.5 block text-sm font-medium text-slate-700">Phone Number <span class="text-rose-500">*</span></label>
+                        <input type="tel" name="phone" id="e-p-phone" required
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="e-p-age" class="mb-1.5 block text-sm font-medium text-slate-700">Age</label>
+                        <input type="number" name="age" id="e-p-age"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                    </div>
+                    <div>
+                        <label for="e-p-status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
+                        <select name="status" id="e-p-status"
+                                class="w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                            <option value="ACTIVE">Active</option>
+                            <option value="WITHDRAWN">Withdrawn</option>
+                            <option value="ELIMINATED">Eliminated</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="e-p-bio" class="mb-1.5 block text-sm font-medium text-slate-700">Bio</label>
+                        <textarea name="bio" id="e-p-bio" rows="2"
+                                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="e-p-achievements" class="mb-1.5 block text-sm font-medium text-slate-700">Achievements</label>
+                        <textarea name="achievements" id="e-p-achievements" rows="2"
+                                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Profile Image</label>
+                        <div id="e-p-image-actions" class="flex items-center gap-3">
+                            <input type="file" name="profile_image" accept="image/*"
+                                   class="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cyan-700 hover:file:bg-cyan-100">
+                            <label class="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-rose-600">
+                                <input type="checkbox" name="remove_image" value="true" class="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                Remove image
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                    <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Participant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Delete Participant Modal ===== -->
+<div id="delete-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('delete-participant-modal')"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-slate-900">Delete Participant</h3>
+        <p id="delete-participant-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="delete-participant-form">
+            {% csrf_token %}
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeModal('delete-participant-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Participant Detail Modals ===== -->
+{% for participant in page_obj %}
+<div id="view-participant-{{ participant.id }}" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('view-participant-{{ participant.id }}')"></div>
+    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-slate-900">{{ participant.name }}</h2>
+                    <p class="text-xs text-slate-500">Participant Profile</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto px-6 py-5">
+            <div class="mb-5 flex items-center gap-4">
+                {% if participant.profile_image %}
+                <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-16 w-16 rounded-full border-2 border-cyan-100 object-cover shadow-md">
+                {% else %}
+                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-2xl font-bold text-white">{{ participant.name|make_list|first|upper }}</div>
+                {% endif %}
+                <div>
+                    <p class="text-sm text-slate-500">Participant #{{ participant.number }}</p>
+                    <span class="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                        {% if participant.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
+                        {% elif participant.status == 'WITHDRAWN' %}bg-rose-100 text-rose-700
+                        {% else %}bg-slate-100 text-slate-600{% endif %}">
+                        <span class="h-1.5 w-1.5 rounded-full
+                            {% if participant.status == 'ACTIVE' %}bg-emerald-500
+                            {% elif participant.status == 'WITHDRAWN' %}bg-rose-500
+                            {% else %}bg-slate-400{% endif %}"></span>
+                        {{ participant.get_status_display }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600">
+                    <span class="block text-xs font-medium uppercase tracking-wider text-slate-500">Email</span>
+                    <span class="mt-1 block break-all">{{ participant.email }}</span>
+                </div>
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600">
+                    <span class="block text-xs font-medium uppercase tracking-wider text-slate-500">Phone</span>
+                    <span class="mt-1 block">{{ participant.phone }}</span>
+                </div>
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600">
+                    <span class="block text-xs font-medium uppercase tracking-wider text-slate-500">Age</span>
+                    <span class="mt-1 block">{{ participant.age }}</span>
+                </div>
+                <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-600">
+                    <span class="block text-xs font-medium uppercase tracking-wider text-slate-500">Gender</span>
+                    <span class="mt-1 block">{{ participant.get_gender_display }}</span>
+                </div>
+            </div>
+
+            {% if participant.bio or participant.achievements %}
+            <div class="mb-5 space-y-3">
+                {% if participant.bio %}
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Bio</h4>
+                    <p class="mt-1 text-sm leading-relaxed text-slate-600">{{ participant.bio }}</p>
+                </div>
+                {% endif %}
+                {% if participant.achievements %}
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Achievements</h4>
+                    <p class="mt-1 text-sm leading-relaxed text-slate-600">{{ participant.achievements }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div>
+                <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Competition History</h4>
+                {% if participant.participantcompetition_set.all %}
+                <div class="space-y-2">
+                    {% for pc in participant.participantcompetition_set.all %}
+                    <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3">
+                        <div>
+                            <p class="text-sm font-medium text-slate-900">{{ pc.competition.name }}</p>
+                            <p class="text-xs text-slate-500">{{ pc.competition.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold
+                            {% if pc.competition.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
+                            {% elif pc.competition.status == 'COMPLETED' %}bg-blue-100 text-blue-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            {{ pc.competition.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 py-8 text-center">
+                    <p class="text-sm text-slate-500">No competitions yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+            <a href="{% url 'participant_detail' participant.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Open Full Page</a>
+            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105">Close</button>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    const VIEW_KEY = 'participants_view_mode';
+    const ACTIVE_CLASSES = 'bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm';
+    const INACTIVE_CLASSES = 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
+
+    function applyViewClasses(btn, active) {
+        ACTIVE_CLASSES.split(' ').forEach(function (c) { btn.classList.toggle(c, active); });
+        INACTIVE_CLASSES.split(' ').forEach(function (c) { btn.classList.toggle(c, !active); });
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+
+    function setView(view) {
+        const grid = document.getElementById('grid-view');
+        const table = document.getElementById('table-view');
+        const gridBtn = document.getElementById('view-grid-btn');
+        const tableBtn = document.getElementById('view-table-btn');
+
+        const isGrid = view === 'grid';
+        grid.classList.toggle('hidden', !isGrid);
+        table.classList.toggle('hidden', isGrid);
+        applyViewClasses(gridBtn, isGrid);
+        applyViewClasses(tableBtn, !isGrid);
+        localStorage.setItem(VIEW_KEY, view);
+    }
+
+    function openModal(id) {
+        const m = document.getElementById(id);
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeModal(id) {
+        const m = document.getElementById(id);
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.flex').forEach(function (m) {
+                closeModal(m.id);
+            });
+        }
+    });
+
+    function openEditParticipant(btn) {
+        document.getElementById('edit-participant-form').action = btn.dataset.url;
+        document.getElementById('e-p-name').value = btn.dataset.name;
+        document.getElementById('e-p-email').value = btn.dataset.email;
+        document.getElementById('e-p-phone').value = btn.dataset.phone;
+        document.getElementById('e-p-age').value = btn.dataset.age || '';
+        document.getElementById('e-p-gender').value = btn.dataset.gender;
+        document.getElementById('e-p-bio').value = btn.dataset.bio || '';
+        document.getElementById('e-p-achievements').value = btn.dataset.achievements || '';
+        document.getElementById('e-p-status').value = btn.dataset.status;
+        const imageActions = document.getElementById('e-p-image-actions');
+        if (imageActions) {
+            imageActions.style.display = btn.dataset.hasImage === 'true' ? 'flex' : 'none';
+        }
+        openModal('edit-participant-modal');
+    }
+
+    function openDeleteParticipant(btn) {
+        document.getElementById('delete-participant-form').action = btn.dataset.url;
+        document.getElementById('delete-participant-message').textContent = 'Are you sure you want to delete "' + btn.dataset.name + '"? This action cannot be undone and will remove all their scores and results.';
+        openModal('delete-participant-modal');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setView(localStorage.getItem(VIEW_KEY) || 'grid');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Judge{% endblock %}
+{% block header_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl space-y-6">
+    <div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+            <h1 class="font-display text-2xl font-semibold text-slate-900">My Profile</h1>
+            <p class="mt-1 text-sm text-slate-500">Manage your judging profile and review your assignments.</p>
+        </div>
+        <span class="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            {{ judge.get_status_display }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Profile form -->
+        <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8 lg:col-span-2">
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+
+                <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                    <div class="relative shrink-0">
+                        <img class="h-24 w-24 rounded-full border-4 border-cyan-200 object-cover shadow-lg"
+                             src="{{ judge.get_profile_image_url }}"
+                             alt="Profile photo">
+                    </div>
+                    <div class="w-full space-y-4">
+                        <div>
+                            <label for="expertise" class="mb-1.5 block text-sm font-medium text-slate-700">Expertise</label>
+                            <input type="text" id="expertise" name="expertise" value="{{ judge.expertise }}" placeholder="e.g. Vocal Performance, Stage Presence"
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div>
+                            <label for="phone" class="mb-1.5 block text-sm font-medium text-slate-700">Phone Number</label>
+                            <input type="text" id="phone" name="phone" value="{{ judge.phone }}" required
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div>
+                            <label for="profile_image" class="mb-1.5 block text-sm font-medium text-slate-700">Profile Image</label>
+                            <input type="file" id="profile_image" name="profile_image"
+                                   class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                            {% if judge.profile_image %}
+                            <label class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                                <input type="checkbox" name="remove_image" value="true" class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                                Remove current profile image
+                            </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="bio" class="mb-1.5 block text-sm font-medium text-slate-700">Bio</label>
+                    <textarea id="bio" name="bio" rows="4" placeholder="Tell participants and organizers a little about yourself"
+                              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">{{ judge.bio }}</textarea>
+                </div>
+
+                <div class="flex justify-end border-t border-slate-100 pt-5">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                        </svg>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Assignments summary -->
+        <div class="space-y-6">
+            <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+                <div class="border-b border-slate-100 bg-slate-50/60 px-6 py-4">
+                    <h3 class="font-display text-base font-semibold text-slate-900">My Assignments</h3>
+                    <p class="text-sm text-slate-500">{{ assignments|length }} competition{{ assignments|length|pluralize }}</p>
+                </div>
+                {% if assignments %}
+                <div class="divide-y divide-slate-100">
+                    {% for assignment in assignments %}
+                    <div class="p-5">
+                        <div class="flex items-start justify-between gap-2">
+                            <h4 class="font-display text-sm font-semibold uppercase text-slate-900">{{ assignment.competition.name }}</h4>
+                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
+                                {% if assignment.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                <span class="h-1.5 w-1.5 rounded-full
+                                    {% if assignment.status == 'ACTIVE' %}bg-emerald-500{% else %}bg-slate-400{% endif %}"></span>
+                                {{ assignment.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            {% for round in assignment.rounds_list %}
+                            <span class="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-800 ring-1 ring-cyan-200">{{ round.name }}</span>
+                            {% empty %}
+                            <span class="text-xs text-slate-400">No rounds assigned</span>
+                            {% endfor %}
+                        </div>
+                        <p class="mt-3 text-xs text-slate-400">Assigned {{ assignment.assigned_at|date:"M d, Y" }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-6 text-center">
+                    <p class="text-sm text-slate-500">You have no judge assignments yet.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <a href="{% url 'judge_dashboard' %}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-slate-50">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+                </svg>
+                Back to Judge Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
