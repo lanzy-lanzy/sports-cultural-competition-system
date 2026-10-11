@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Group Standings - {{ event.name }}{% endblock %}
+{% block header_title %}Group Standings{% endblock %}
+
+{% block content %}
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Group stage standings</h1>
+        <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }} &middot; Top 2 per group qualify</p>
+    </div>
+    <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
+</div>
+
+{% for group in group_stage.groups %}
+<div class="mb-8">
+    <h2 class="mb-3 font-display text-xl font-bold text-ink">Group {{ group.group }}</h2>
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <th class="px-5 py-3">#</th>
+                    <th class="px-5 py-3">Team / Participant</th>
+                    <th class="px-5 py-3 text-center">P</th>
+                    <th class="px-5 py-3 text-center">W</th>
+                    <th class="px-5 py-3 text-center">D</th>
+                    <th class="px-5 py-3 text-center">L</th>
+                    <th class="px-5 py-3 text-center">PF</th>
+                    <th class="px-5 py-3 text-center">+/-</th>
+                    <th class="px-5 py-3 text-center">Pts</th>
+                    <th class="px-5 py-3 text-center">Qualify</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in group.rows %}
+                <tr class="border-b border-slate-100 last:border-0 {% if row.qualifies %}bg-emerald-50/60{% endif %}">
+                    <td class="px-5 py-3 font-display text-base font-bold text-ink">{{ row.rank }}</td>
+                    <td class="px-5 py-3 font-semibold text-slate-800">{{ row.name }}</td>
+                    <td class="px-5 py-3 text-center text-slate-500">{{ row.played }}</td>
+                    <td class="px-5 py-3 text-center font-semibold text-emerald-600">{{ row.wins }}</td>
+                    <td class="px-5 py-3 text-center text-amber-600">{{ row.draws }}</td>
+                    <td class="px-5 py-3 text-center text-rose-600">{{ row.losses }}</td>
+                    <td class="px-5 py-3 text-center text-slate-500">{{ row.points_for }}</td>
+                    <td class="px-5 py-3 text-center text-slate-500">{{ row.point_diff }}</td>
+                    <td class="px-5 py-3 text-center font-display text-base font-bold text-ink">{{ row.total_points }}</td>
+                    <td class="px-5 py-3 text-center">
+                        {% if row.qualifies %}
+                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700">YES</span>
+                        {% else %}
+                        <span class="text-xs text-slate-400">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+{% if group_stage.knockout %}
+<div>
+    <h2 class="mb-3 font-display text-xl font-bold text-ink">Knockout stage</h2>
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <th class="px-5 py-3">#</th>
+                    <th class="px-5 py-3">Team / Participant</th>
+                    <th class="px-5 py-3 text-center">Played</th>
+                    <th class="px-5 py-3 text-center">W</th>
+                    <th class="px-5 py-3 text-center">L</th>
+                    <th class="px-5 py-3">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in group_stage.knockout %}
+                <tr class="border-b border-slate-100 last:border-0 {% if row.is_champion %}bg-yellow-50/70{% endif %}">
+                    <td class="px-5 py-3 font-display text-base font-bold text-ink">{{ row.rank }}</td>
+                    <td class="px-5 py-3 font-semibold text-slate-800">{{ row.name }}</td>
+                    <td class="px-5 py-3 text-center text-slate-500">{{ row.played }}</td>
+                    <td class="px-5 py-3 text-center font-semibold text-emerald-600">{{ row.wins }}</td>
+                    <td class="px-5 py-3 text-center text-rose-600">{{ row.losses }}</td>
+                    <td class="px-5 py-3">
+                        {% if row.is_champion %}
+                        <span class="rounded-full bg-yellow-100 px-2.5 py-1 text-[10px] font-bold text-yellow-700">CHAMPION</span>
+                        {% elif row.rank == 2 %}
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">RUNNER-UP</span>
+                        {% else %}
+                        <span class="text-xs text-slate-400">Eliminated</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not group_stage.groups %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">No group standings available</p>
+    <p class="mt-2 text-sm text-slate-500">Standings are computed from completed group matches.</p>
+</div>
+{% endif %}
+{% endblock %}

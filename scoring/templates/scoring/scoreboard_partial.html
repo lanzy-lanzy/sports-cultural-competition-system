@@ -1,0 +1,87 @@
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Live &middot; {{ competition.name|title }}</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Scoreboard</h1>
+        <p class="mt-2 text-sm text-slate-500">Auto-refreshes every 5 seconds.</p>
+    </div>
+    <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Competition</a>
+</div>
+
+{% if events %}
+<div
+    hx-get="{% url 'scoreboard' competition.id %}"
+    hx-trigger="every 5s"
+    hx-swap="outerHTML"
+    hx-target="#scoreboard"
+>
+    <div class="space-y-8">
+        {% for item in events %}
+        <section>
+            <h2 class="mb-3 flex items-center gap-2 font-display text-xl font-bold text-ink">
+                {{ item.event.name }}
+                <span class="rounded-full bg-campus/10 px-2.5 py-1 text-[10px] font-bold text-campus">{{ item.event.get_format_display }}</span>
+            </h2>
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <th class="px-5 py-3">Match</th>
+                            <th class="px-5 py-3">Contestants</th>
+                            <th class="px-5 py-3 text-center">Score</th>
+                            <th class="px-5 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in item.matches %}
+                        <tr class="border-b border-slate-100 last:border-0 {% if match.status == 'ONGOING' %}bg-sky-50/60{% endif %}">
+                            <td class="px-5 py-3">
+                                <span class="font-semibold text-slate-800">{{ match.label }}</span>
+                                {% if match.venue %}<p class="text-xs text-slate-400">{{ match.venue.name }}</p>{% endif %}
+                            </td>
+                            <td class="px-5 py-3">
+                                <div class="space-y-0.5">
+                                    {% for entry in match.entries.all %}
+                                    <span class="flex items-center gap-1.5 {% if entry.is_winner %}font-bold text-emerald-700{% else %}text-slate-600{% endif %}">
+                                        {% if entry.is_winner %}<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/></svg>{% endif %}
+                                        {{ entry.display_name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <div class="space-y-0.5">
+                                    {% for entry in match.entries.all %}
+                                    <span class="font-display text-base font-bold {% if entry.is_winner %}text-emerald-700{% else %}text-slate-600{% endif %}">
+                                        {{ entry.score|default:'–' }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif match.status == 'ONGOING' %}bg-sky-100 text-sky-700 animate-pulse{% elif match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ match.get_status_display|upper }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+{% if not visible %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">The live scoreboard has not opened yet</p>
+    <p class="mt-2 text-sm text-slate-500">Scores appear here once the competition is underway or the results are published.</p>
+    {% if not user.is_authenticated %}
+    <a href="{% url 'login' %}?next={{ request.path }}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:brightness-105">Sign in to continue</a>
+    {% endif %}
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">No matches to display</p>
+    <p class="mt-2 text-sm text-slate-500">The scoreboard shows scheduled and completed matches once they are set up.</p>
+</div>
+{% endif %}
+{% endif %}

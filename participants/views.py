@@ -3,20 +3,25 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction, models
 from django.core.paginator import Paginator
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
 from .models import Participant, ParticipantCompetition
+from .forms import ParticipantForm
 from scoring.models import Score, CompetitionResult
+from accounts.access import management_required, role_required
+from accounts.models import UserProfile
 
 
-@login_required
+@management_required
 def participant_list(request):
     participants = Participant.objects.all().order_by('-registration_date')
     page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
     return render(request, 'participants/participant_list.html', {'page_obj': page_obj})
 
 
-@login_required
+@management_required
 def participant_detail(request, participant_id):
     participant = get_object_or_404(Participant, id=participant_id)
     participant_competitions = ParticipantCompetition.objects.filter(
@@ -30,48 +35,37 @@ def participant_detail(request, participant_id):
     return render(request, 'participants/participant_detail.html', context)
 
 
-@login_required
+@management_required
 def create_participant(request):
-    if request.method == 'POST':
-        try:
-            participant = Participant.objects.create(
-                name=request.POST.get('name'),
-                email=request.POST.get('email'),
-                phone=request.POST.get('phone'),
-                age=request.POST.get('age'),
-                gender=request.POST.get('gender'),
-                bio=request.POST.get('bio'),
-                achievements=request.POST.get('achievements'),
-                status='ACTIVE'
-            )
+    data = request.POST.copy() if request.method == 'POST' else None
+    if data is not None:
+        data.setdefault('category', Participant.Category.OPEN)
+        data.setdefault('status', 'ACTIVE')
+    form = ParticipantForm(data, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        participant = form.save()
+        messages.success(request, f'Participant {participant.participant_id} was created successfully.')
+        next_url = request.POST.get('next')
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(next_url)
+        return redirect('participant_list')
 
-            if 'profile_image' in request.FILES:
-                participant.profile_image = request.FILES['profile_image']
-                participant.save()
-
-            messages.success(request, 'Participant created successfully!')
-
-            next_url = request.POST.get('next')
-            if next_url and 'assign_participants' in next_url:
-                return redirect(next_url)
-            return redirect('participant_list')
-
-        except Exception as e:
-            messages.error(request, f'Error creating participant: {str(e)}')
-
-    next_url = request.GET.get('next', '')
-
-    return render(request, 'participants/participant_management/create_participant.html', {
-        'next_url': next_url
+    return render(request, 'participants/participant_management/participant_form.html', {
+        'form': form,
+        'form_title': 'Register participant',
+        'form_description': 'Create an athlete profile, classification, and identification record.',
+        'submit_label': 'Register participant',
+        'next_url': request.GET.get('next', ''),
     })
 
 
-@login_required
+@management_required
+@require_POST
 def delete_participant(request, participant_id):
-    if not request.user.is_superuser:
-        messages.error(request, "You don't have permission to delete participants.")
-        return redirect('participant_list')
-
     try:
         participant = get_object_or_404(Participant, id=participant_id)
         participant_name = participant.name
@@ -89,44 +83,73 @@ def delete_participant(request, participant_id):
     return redirect('participant_list')
 
 
-@login_required
+@management_required
 def edit_participant(request, participant_id):
     participant = get_object_or_404(Participant, id=participant_id)
+    form = ParticipantForm(request.POST or None, request.FILES or None, instance=participant)
+    if request.method == 'POST' and form.is_valid():
+        participant = form.save(commit=False)
+        if request.POST.get('remove_image') == 'true':
+            participant.profile_image = None
+        participant.save()
+        messages.success(request, 'Participant profile updated successfully.')
+        return redirect('participant_detail', participant_id=participant.id)
 
-    if request.method == 'POST':
-        try:
-            participant.name = request.POST.get('name', participant.name)
-            participant.email = request.POST.get('email', participant.email)
-            participant.phone = request.POST.get('phone', participant.phone)
-            participant.age = request.POST.get('age') or None
-            participant.gender = request.POST.get('gender', participant.gender)
-            participant.bio = request.POST.get('bio', participant.bio)
-            participant.achievements = request.POST.get('achievements', participant.achievements)
-            participant.status = request.POST.get('status', participant.status)
-
-            if 'profile_image' in request.FILES:
-                participant.profile_image = request.FILES['profile_image']
-            elif request.POST.get('remove_image') == 'true':
-                participant.profile_image = None
-
-            participant.save()
-            messages.success(request, 'Participant updated successfully!')
-        except Exception as e:
-            messages.error(request, f'Error updating participant: {str(e)}')
-
-        return redirect('participant_list')
-
-    return render(request, 'participants/participant_management/edit_participant.html', {
-        'participant': participant
+    return render(request, 'participants/participant_management/participant_form.html', {
+        'form': form,
+        'participant': participant,
+        'form_title': 'Edit participant',
+        'form_description': f'Update {participant.participant_id} and their athlete information.',
+        'submit_label': 'Save participant',
     })
 
 
-@login_required
-def participant_management(request):
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('dashboard')
+@role_required(UserProfile.Role.PARTICIPANT)
+def my_participant_profile(request):
+    participant = Participant.objects.filter(user=request.user).first()
+    if participant is None and request.user.email:
+        participant = Participant.objects.filter(
+            user__isnull=True,
+            email__iexact=request.user.email,
+        ).first()
 
+    initial = None
+    if participant is None:
+        initial = {
+            'name': request.user.get_full_name(),
+            'email': request.user.email,
+            'phone': request.user.account_profile.phone,
+        }
+
+    form = ParticipantForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=participant,
+        initial=initial,
+        self_service=True,
+    )
+    if request.method == 'POST' and form.is_valid():
+        participant = form.save(commit=False)
+        participant.user = request.user
+        participant.save()
+        messages.success(request, 'Your participant profile was saved successfully.')
+        return redirect('my_participant_profile')
+
+    history = ParticipantCompetition.objects.none()
+    if participant:
+        history = ParticipantCompetition.objects.filter(
+            participant=participant,
+        ).select_related('competition').order_by('-competition__start_date')
+
+    return render(request, 'participants/my_participant_profile.html', {
+        'form': form,
+        'participant': participant,
+        'participant_competitions': history,
+    })
+
+
+@management_required
+def participant_management(request):
     competitions = Competition.objects.all().order_by('-id')
     for competition in competitions:
         competition.participant_count = competition.participants.count()
@@ -137,12 +160,8 @@ def participant_management(request):
     return render(request, 'participants/participant_management/participant_management.html', context)
 
 
-@login_required
+@management_required
 def manage_participants(request, competition_id):
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to manage participants.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
     participants = competition.participants.all()
     available_participants = Participant.objects.exclude(competitions=competition)
@@ -155,12 +174,8 @@ def manage_participants(request, competition_id):
     return render(request, 'participants/participant_management/manage_participants.html', context)
 
 
-@login_required
+@management_required
 def assign_participants(request, competition_id):
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to assign participants.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
 
     if request.method == 'POST':
@@ -239,7 +254,7 @@ def assign_participants(request, competition_id):
     return render(request, 'participants/participant_management/assign_participants.html', context)
 
 
-@login_required
+@management_required
 def remove_participant_from_competition(request, competition_id, participant_id):
     try:
         competition = Competition.objects.get(id=competition_id)

@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+
+{% block title %}Bracket - {{ event.name }}{% endblock %}
+{% block header_title %}Bracket{% endblock %}
+
+{% block extra_head %}
+<style>
+    .bracket-card { height: 126px; overflow: hidden; }
+    #bracket-lines { position: absolute; inset: 0; z-index: 0; }
+    #bracket-lines path { fill: none; stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 5 5; }
+    #bracket-lines .bracket-line--won { stroke: #087f78; stroke-dasharray: none; }
+    #bracket-lines .bracket-line--live { stroke: #f59e0b; stroke-dasharray: 7 5; }
+    .bracket-col { position: relative; z-index: 10; }
+    @keyframes advance-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(8, 127, 120, .45); }
+        100% { box-shadow: 0 0 0 16px rgba(8, 127, 120, 0); }
+    }
+    .bracket-card--pulse { animation: advance-pulse 1s ease-out 2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Tournament bracket</h1>
+        <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}{% if bracket %} &middot; click a match to record its result; winners advance automatically{% endif %}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+        <a href="{% url 'match_schedule' event.id %}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Schedule</a>
+        <a href="{% url 'event_standings' event.id %}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Standings</a>
+        <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
+    </div>
+</div>
+
+{% if bracket %}
+<div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div class="overflow-x-auto app-scrollbar">
+        <div id="bracket-stage" class="relative flex min-w-max gap-x-14 px-2 py-2"></div>
+    </div>
+</div>
+
+{{ bracket|json_script:"bracket-data" }}
+
+<!-- Record result modal -->
+<div id="result-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+    <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm" data-result-close></div>
+    <div class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-soft">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-campus">Record result</p>
+                <h2 id="result-modal-title" class="mt-1 font-display text-lg font-bold text-ink">Match</h2>
+                <p id="result-modal-meta" class="mt-1 text-xs text-slate-500"></p>
+            </div>
+            <button type="button" data-result-close class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Close">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form method="POST" id="result-modal-form" class="px-6 py-5">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label for="result-score-1" id="result-label-1" class="mb-1.5 block text-xs font-semibold text-slate-600">Contestant 1</label>
+                    <input type="number" name="score_1" id="result-score-1" step="0.01" min="0" required placeholder="Score"
+                           class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
+                </div>
+                <div>
+                    <label for="result-score-2" id="result-label-2" class="mb-1.5 block text-xs font-semibold text-slate-600">Contestant 2</label>
+                    <input type="number" name="score_2" id="result-score-2" step="0.01" min="0" required placeholder="Score"
+                           class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
+                </div>
+                <div>
+                    <label for="result-notes" class="mb-1.5 block text-xs font-semibold text-slate-600">Notes <span class="font-normal text-slate-400">(optional)</span></label>
+                    <textarea name="notes" id="result-notes" rows="2" placeholder="Match sheet reference, protests, or remarks"
+                              class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></textarea>
+                </div>
+            </div>
+
+            <p id="result-modal-error" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"></p>
+            <p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                The higher score wins and advances in the bracket. Equal scores are saved as a draw.
+            </p>
+
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" data-result-close class="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:border-slate-400">Cancel</button>
+                <button type="submit" id="result-modal-save" class="rounded-xl bg-campus px-5 py-2.5 text-sm font-bold text-white shadow">Save result</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    var stage = document.getElementById('bracket-stage');
+    var dataEl = document.getElementById('bracket-data');
+    if (!stage || !dataEl) { return; }
+
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'bracket-lines';
+    stage.appendChild(svg);
+
+    var data = JSON.parse(dataEl.textContent);
+
+    var modal = document.getElementById('result-modal');
+    var form = document.getElementById('result-modal-form');
+    var errorBox = document.getElementById('result-modal-error');
+    var saveBtn = document.getElementById('result-modal-save');
+    var currentMatch = null;
+    var previousOverflow = '';
+
+    function el(tag, cls, text) {
+        var node = document.createElement(tag);
+        if (cls) { node.className = cls; }
+        if (text !== undefined && text !== null) { node.textContent = text; }
+        return node;
+    }
+
+    function chipColor(status) {
+        if (status === 'COMPLETED') { return 'bg-emerald-100 text-emerald-700'; }
+        if (status === 'ONGOING') { return 'bg-cyan-100 text-cyan-700'; }
+        if (status === 'POSTPONED') { return 'bg-amber-100 text-amber-700'; }
+        if (status === 'CANCELLED') { return 'bg-rose-100 text-rose-700'; }
+        return 'bg-slate-100 text-slate-500';
+    }
+
+    function buildCard(match) {
+        var card = el('div', 'bracket-card group rounded-xl border bg-white shadow-sm transition');
+        card.dataset.match = match.id;
+        card.classList.add(match.status === 'COMPLETED' ? 'border-emerald-200' : 'border-slate-200');
+
+        var head = el('div', 'flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5');
+        head.appendChild(el('span', 'truncate text-[10px] font-bold uppercase tracking-wider text-slate-400', match.label));
+        head.appendChild(el('span', 'shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ' + chipColor(match.status), match.statusDisplay));
+        card.appendChild(head);
+
+        var bySide = { 1: null, 2: null };
+        match.entries.forEach(function (entry) { bySide[entry.side] = entry; });
+
+        [1, 2].forEach(function (side) {
+            var entry = bySide[side];
+            var row = el('div', 'flex items-center gap-2 px-3 py-[7px]');
+            if (entry && entry.winner) { row.classList.add('bg-emerald-50/70'); }
+
+            var markCls = 'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold ';
+            var markText = '·';
+            if (entry && entry.winner) { markCls += 'bg-emerald-500 text-white'; markText = 'W'; }
+            else if (entry && entry.draw) { markCls += 'bg-amber-400 text-white'; markText = 'D'; }
+            else if (entry && match.status === 'COMPLETED') { markCls += 'bg-slate-200 text-slate-500'; markText = 'L'; }
+            else { markCls += 'bg-slate-100 text-slate-400'; }
+            row.appendChild(el('span', markCls, markText));
+
+            row.appendChild(el('span',
+                'flex-1 truncate text-sm ' + (entry && entry.winner ? 'font-bold text-emerald-800'
+                    : (entry && match.status === 'COMPLETED' ? 'text-slate-400'
+                        : (entry ? 'text-slate-600' : 'italic text-slate-400'))),
+                entry ? entry.name : 'Awaiting winner'));
+
+            if (entry && entry.score !== null) {
+                row.appendChild(el('span',
+                    'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold ' + (entry.winner ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'),
+                    String(entry.score)));
+            }
+            card.appendChild(row);
+        });
+
+        card.appendChild(el('div', 'truncate border-t border-slate-100 px-3 py-1 text-[9px] text-slate-400',
+            (match.venue || 'Venue TBA') + ' · ' + (match.start || 'Time TBA')));
+
+        if (match.status !== 'COMPLETED' && match.entries.length === 2) {
+            card.classList.add('cursor-pointer', 'hover:border-campus', 'hover:shadow-md');
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', 'Record result for ' + match.label);
+            card.addEventListener('click', function () { openModal(match); });
+            card.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openModal(match); }
+            });
+        }
+        return card;
+    }
+
+    function buildChampionCard() {
+        var card = el('div', 'bracket-card flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-200 bg-gradient-to-b from-amber-50 to-white px-4 text-center shadow-sm');
+        card.dataset.match = 'champion';
+        card.appendChild(el('span', 'text-[10px] font-bold uppercase tracking-[0.15em] text-amber-600', data.champion ? 'Champion' : 'To be decided'));
+        var trophy = el('div', '');
+        trophy.innerHTML = '<svg class="h-7 w-7 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M5 3.25a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v.43c0 .55-.05 1.09-.15 1.62h10.02a6.48 6.48 0 00-.15-1.62v-.43a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75V5.5a5.25 5.25 0 01-5.36 5.25 6.707 6.707 0 01-4.74 3.59v2.41h2.25a.75.75 0 010 1.5h-6a.75.75 0 010-1.5h2.25v-2.41A6.707 6.707 0 017.14 10.75 5.25 5.25 0 011.75 5.5V3.25A.75.75 0 012.5 2.5h1.75zm0 1.5H3.25a3.75 3.75 0 003.67 4.52 6.56 6.56 0 01-.42-1.86A6.56 6.56 0 015 4.75zm14 0h-1.75c.06.55.04 1.2-.08 1.91-.1.66-.24 1.28-.42 1.86a3.75 3.75 0 003.67-4.52 3.25 3.25 0 01-1.42.75z" clip-rule="evenodd"/></svg>';
+        card.appendChild(trophy);
+        card.appendChild(el('span', 'font-display text-sm font-bold text-ink', data.champion || 'Winner of the final'));
+        return card;
+    }
+
+    function render() {
+        Array.prototype.slice.call(stage.children).forEach(function (node) {
+            if (node !== svg) { node.remove(); }
+        });
+        data.rounds.forEach(function (round, roundIndex) {
+            var col = el('div', 'bracket-col flex w-60 shrink-0 flex-col');
+            var head = el('div', 'flex h-7 items-center justify-center gap-2');
+            head.appendChild(el('span', 'text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500', round.label));
+            head.appendChild(el('span', 'rounded-full px-2 py-0.5 text-[9px] font-bold ' + (round.done === round.total ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'), round.done + ' / ' + round.total + ' done'));
+            col.appendChild(head);
+            var body = el('div', 'flex flex-1 flex-col justify-around py-3');
+            // No gaps: pure space-around keeps each card pair's midpoint exactly
+            // level with its next-round target card, so connectors stay straight.
+            body.style.minHeight = (data.rounds[0].total * 150) + 'px';
+            round.matches.forEach(function (match) { body.appendChild(buildCard(match)); });
+            col.appendChild(body);
+            stage.appendChild(col);
+        });
+        var champCol = el('div', 'bracket-col flex w-60 shrink-0 flex-col');
+        var champHead = el('div', 'flex h-7 items-center justify-center');
+        champHead.appendChild(el('span', 'text-[10px] font-bold uppercase tracking-[0.15em] text-amber-600', 'Podium'));
+        champCol.appendChild(champHead);
+        var champBody = el('div', 'flex flex-1 flex-col justify-center py-3');
+        champBody.appendChild(buildChampionCard());
+        champCol.appendChild(champBody);
+        stage.appendChild(champCol);
+        drawLines();
+        if (document.fonts && document.fonts.ready) { document.fonts.ready.then(drawLines); }
+    }
+
+    function drawLines() {
+        while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+        var box = stage.getBoundingClientRect();
+        svg.setAttribute('width', box.width);
+        svg.setAttribute('height', box.height);
+        data.rounds.forEach(function (round, roundIndex) {
+            var isFinalRound = roundIndex === data.rounds.length - 1 && round.total === 1;
+            round.matches.forEach(function (match) {
+                var targetId = match.next || (isFinalRound ? 'champion' : null);
+                if (!targetId) { return; }
+                var src = stage.querySelector('[data-match="' + match.id + '"]');
+                var tgt = stage.querySelector('[data-match="' + targetId + '"]');
+                if (!src || !tgt) { return; }
+                var a = src.getBoundingClientRect();
+                var b = tgt.getBoundingClientRect();
+                var x1 = a.right - box.left;
+                var y1 = a.top + a.height / 2 - box.top;
+                var x2 = b.left - box.left;
+                var y2 = b.top + b.height / 2 - box.top;
+                var xm = x1 + (x2 - x1) / 2;
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', 'M' + x1 + ' ' + y1 + ' H' + xm + ' V' + y2 + ' H' + x2);
+                var cls = 'bracket-line';
+                if (match.status === 'COMPLETED') { cls += ' bracket-line--won'; }
+                else if (match.status === 'ONGOING') { cls += ' bracket-line--live'; }
+                path.setAttribute('class', cls);
+                svg.appendChild(path);
+            });
+        });
+    }
+
+    function openModal(match) {
+        currentMatch = match;
+        form.action = match.recordUrl;
+        document.getElementById('result-modal-title').textContent = match.label;
+        document.getElementById('result-modal-meta').textContent =
+            match.entries.map(function (e) { return e.name; }).join(' vs ') + ' · ' + (match.venue || 'Venue TBA');
+        var bySide = { 1: null, 2: null };
+        match.entries.forEach(function (entry) { bySide[entry.side] = entry; });
+        document.getElementById('result-label-1').textContent = bySide[1] ? bySide[1].name : 'Contestant 1';
+        document.getElementById('result-label-2').textContent = bySide[2] ? bySide[2].name : 'Contestant 2';
+        document.getElementById('result-score-1').value = '';
+        document.getElementById('result-score-2').value = '';
+        document.getElementById('result-notes').value = '';
+        errorBox.classList.add('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        document.getElementById('result-score-1').focus();
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = previousOverflow;
+    }
+
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('[data-result-close]')) {
+            event.preventDefault();
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) { closeModal(); }
+    });
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var body = new FormData(form);
+        body.set('format', 'json');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        fetch(form.action, { method: 'POST', body: body })
+            .then(function (response) { return response.json().catch(function () { return null; }).then(function (payload) { return { response: response, payload: payload }; }); })
+            .then(function (result) {
+                if (!result.response.ok || !result.payload || !result.payload.ok) {
+                    errorBox.textContent = (result.payload && result.payload.error) || 'Could not save the result. Please try again.';
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+                data = result.payload.bracket;
+                var advancedId = currentMatch && (currentMatch.next || 'champion');
+                closeModal();
+                render();
+                if (advancedId) {
+                    var card = stage.querySelector('[data-match="' + advancedId + '"]');
+                    if (card) { card.classList.add('bracket-card--pulse'); }
+                }
+            })
+            .catch(function () {
+                errorBox.textContent = 'Network error — the result was not saved.';
+                errorBox.classList.remove('hidden');
+            })
+            .finally(function () {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save result';
+            });
+    });
+
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(drawLines, 120);
+    });
+
+    render();
+}());
+</script>
+
+{% elif overview %}
+<div class="grid gap-4" style="grid-template-columns: repeat({{ overview|length }}, minmax(220px, 1fr));">
+    {% for round_number, round_matches in overview.items %}
+    <div class="flex flex-col justify-around gap-3">
+        <p class="text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {% if round_number == overview|length %}Champion
+            {% elif round_number == overview|length|add:"-1" %}Final
+            {% else %}Round {{ round_number }}{% endif %}
+        </p>
+        {% for match in round_matches %}
+        <div class="rounded-xl border p-3 shadow-sm {% if match.status == 'COMPLETED' %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200 bg-white{% endif %}">
+            {% for entry in match.entries.all %}
+            <div class="flex items-center justify-between gap-2 py-1">
+                <span class="flex items-center gap-1.5 text-sm {% if entry.is_winner %}font-bold text-emerald-700{% else %}text-slate-600{% endif %}">
+                    {% if entry.is_winner %}<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/></svg>{% endif %}
+                    {{ entry.display_name }}
+                </span>
+                {% if entry.score is not None %}<span class="text-xs font-bold text-slate-500">{{ entry.score }}</span>{% endif %}
+            </div>
+            {% empty %}
+            <p class="py-1 text-sm text-slate-400">TBD</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">No bracket generated</p>
+    <p class="mt-2 text-sm text-slate-500">Add confirmed entries and generate the bracket from the event page.</p>
+    <a href="{% url 'sport_event_detail' event.id %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Back to event</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Register for an Event - Scoring System{% endblock %}
+{% block header_title %}Online Registration{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Register for a competition</h1>
+        <p class="mt-1 text-sm text-slate-500">Choose a sport event or cultural competition. Your registration is reviewed by an organizer before it is confirmed.</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <form method="post" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.target_type.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Register for</label>
+                <select name="target_type" id="target-type-select" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
+                    {% for value, label in form.target_type.field.choices %}
+                    <option value="{{ value }}" {% if form.target_type.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="sport-event-field">
+                <label for="{{ form.sport_event.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Sport event</label>
+                {{ form.sport_event }}
+                {% if form.sport_event.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.sport_event.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div id="competition-field" class="hidden">
+                <label for="{{ form.competition.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Competition</label>
+                {{ form.competition }}
+                {% if form.competition.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.competition.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.team.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation <span class="font-normal text-slate-400">(team managers)</span></label>
+                {{ form.team }}
+                <p class="mt-1 text-xs text-slate-400">Leave empty to register yourself as an individual athlete.</p>
+                {% if form.team.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.team.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.requirements_document.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Requirements document</label>
+                {{ form.requirements_document }}
+                <p class="mt-1 text-xs text-slate-400">{{ form.requirements_document.help_text }}</p>
+                {% if form.requirements_document.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.requirements_document.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.notes.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Notes</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.notes.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-slate-100 pt-5">
+                <a href="{% url 'portal_home' %}" class="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</a>
+                <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+                    Submit registration
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('target-type-select');
+        function syncFields() {
+            var isSport = select.value === 'sport_event';
+            document.getElementById('sport-event-field').classList.toggle('hidden', !isSport);
+            document.getElementById('competition-field').classList.toggle('hidden', isSport);
+        }
+        select.addEventListener('change', syncFields);
+        syncFields();
+    });
+</script>
+{% endblock %}

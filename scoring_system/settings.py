@@ -46,8 +46,16 @@ INSTALLED_APPS = [
     'accounts',
     'competitions',
     'participants',
+    'teams',
     'judges',
     'scoring',
+    'sports',
+    'eligibility',
+    'announcements',
+    'registrations',
+    'protests',
+    'audit',
+    'reports',
 ]
 
 MIDDLEWARE = [
@@ -124,6 +132,14 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'portal_home'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@jhcsc-competition.local')
+EMAIL_BACKEND = os.environ.get(
+    'DJANGO_EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
 
 
 # Static files (CSS, JavaScript, Images)

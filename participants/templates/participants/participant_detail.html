@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}{{ participant.name }} - Profile{% endblock %}
 {% block header_title %}{{ participant.name }}{% endblock %}
@@ -7,7 +7,7 @@
 <div class="space-y-6">
     <!-- Profile Card -->
     <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
-        <div class="bg-gradient-to-r from-cyan-600 to-teal-500 p-8">
+        <div class="bg-campus p-8">
             <div class="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
                 {% if participant.profile_image %}
                     <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-24 w-24 rounded-full border-4 border-white/30 object-cover shadow-lg">
@@ -18,7 +18,7 @@
                 {% endif %}
                 <div>
                     <h1 class="font-display text-3xl font-semibold text-white">{{ participant.name }}</h1>
-                    <p class="mt-1 text-sm text-cyan-100">Participant #{{ participant.number }}</p>
+                    <p class="mt-1 text-sm text-cyan-100">{{ participant.participant_id }} &middot; {{ participant.get_category_display }}</p>
                 </div>
             </div>
         </div>
@@ -60,12 +60,23 @@
                             </div>
                             <span>{{ participant.get_gender_display }}</span>
                         </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">ID</div>
+                            <span>{{ participant.age_classification }}{% if participant.team_name %} &middot; {{ participant.team_name }}{% endif %}</span>
+                        </div>
                     </div>
                 </div>
 
                 <div>
                     <h2 class="mb-4 font-display text-lg font-semibold text-slate-900">About</h2>
                     <p class="leading-relaxed text-slate-600">{{ participant.bio }}</p>
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Category</p><p class="mt-1 text-sm font-semibold text-ink">{{ participant.get_category_display }}</p></div>
+                        <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Team / delegation</p><p class="mt-1 text-sm font-semibold text-ink">{{ participant.team_name|default:'Not assigned' }}</p></div>
+                    </div>
+                    {% if participant.identification_document %}
+                    <a href="{{ participant.identification_document.url }}" target="_blank" rel="noopener" class="mt-4 inline-flex items-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-bold text-campus hover:bg-teal-100">View {{ participant.get_identification_type_display|default:'identification document' }}</a>
+                    {% endif %}
                     {% if participant.achievements %}
                         <h3 class="mb-2 mt-6 font-display text-base font-semibold text-slate-900">Achievements</h3>
                         <p class="leading-relaxed text-slate-600">{{ participant.achievements }}</p>

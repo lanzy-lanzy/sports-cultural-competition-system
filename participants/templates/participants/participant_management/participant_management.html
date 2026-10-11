@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Participant Management{% endblock %}
 {% block header_title %}Participant Management{% endblock %}
@@ -16,7 +16,7 @@
             </svg>
             View All Participants
         </a>
-        <button type="button" onclick="openModal('create-participant-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+        <button type="button" onclick="openModal('create-participant-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
@@ -59,7 +59,7 @@
                         </svg>
                         Manage
                     </a>
-                    <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">
+                    <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-lg bg-campus px-4 py-2 text-sm font-medium text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                         </svg>
@@ -88,10 +88,10 @@
 <!-- ===== Create Participant Modal ===== -->
 <div id="create-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('create-participant-modal')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                     </svg>
@@ -161,7 +161,7 @@
                 </div>
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                     <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">Create Participant</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Create Participant</button>
                 </div>
             </form>
         </div>

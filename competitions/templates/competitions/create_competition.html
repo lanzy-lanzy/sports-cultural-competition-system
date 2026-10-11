@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Create Competition - Scoring System{% endblock %}
@@ -35,7 +35,7 @@
         <!-- Basic Details -->
         <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
             <div class="mb-6 flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                     </svg>
@@ -68,6 +68,52 @@
                     <input type="date" id="end_date" name="end_date" required
                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
+                <div>
+                    <label for="kind" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Kind</label>
+                    <select id="kind" name="kind"
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="MIXED" selected>Mixed (Sports + Cultural)</option>
+                        <option value="SPORTS">Sports</option>
+                        <option value="CULTURAL">Cultural</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Cultural Event Type <span class="font-normal text-slate-400">(optional)</span></label>
+                    <select id="cultural_event_type" name="cultural_event_type"
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="" selected>— None —</option>
+                        <option value="DANCE">Dance</option>
+                        <option value="SINGING">Singing</option>
+                        <option value="CULTURAL_PRESENTATION">Cultural Presentation</option>
+                        <option value="ESSAY_WRITING">Essay Writing</option>
+                        <option value="POSTER_MAKING">Poster Making</option>
+                        <option value="QUIZ_BEE">Quiz Bee</option>
+                        <option value="SPOKEN_POETRY">Spoken Poetry</option>
+                        <option value="COSTUME">Costume</option>
+                        <option value="TALENT_SHOW">Talent Show</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label for="gold_points" class="mb-1 block text-xs font-medium text-slate-500">Gold</label>
+                            <input type="number" id="gold_points" name="gold_points" value="10" step="0.5" min="0"
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div>
+                            <label for="silver_points" class="mb-1 block text-xs font-medium text-slate-500">Silver</label>
+                            <input type="number" id="silver_points" name="silver_points" value="5" step="0.5" min="0"
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div>
+                            <label for="bronze_points" class="mb-1 block text-xs font-medium text-slate-500">Bronze</label>
+                            <input type="number" id="bronze_points" name="bronze_points" value="3" step="0.5" min="0"
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                    </div>
+                </div>
                 <div class="md:col-span-2">
                     <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                     <textarea id="description" name="description" rows="4" placeholder="Describe your competition..."
@@ -80,7 +126,7 @@
         <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
             <div class="mb-6 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 text-white">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                         </svg>
@@ -103,7 +149,7 @@
 
         <div class="flex justify-end">
             <button type="submit"
-                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                    class="inline-flex items-center gap-2 rounded-xl bg-campus px-6 py-3 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -117,7 +163,7 @@
         <div class="round-item rounded-xl border border-slate-200 bg-slate-50/60 p-5">
             <div class="mb-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-sm font-bold text-white">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 text-sm font-bold text-white">
                         <span class="round-number"></span>
                     </span>
                     <h3 class="font-display text-base font-semibold text-slate-900">Round Details</h3>
@@ -187,6 +233,11 @@
                 <div class="w-28">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Max Score</label>
                     <input type="number" name="criterion_max_scores_ROUND_NUM[]" placeholder="100" value="100" required
+                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div class="w-24">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Weight %</label>
+                    <input type="number" name="criterion_weights_ROUND_NUM[]" placeholder="0" value="0" step="0.5" min="0" max="100"
                            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div class="min-w-[180px] flex-1">

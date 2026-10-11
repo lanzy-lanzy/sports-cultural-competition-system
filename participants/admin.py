@@ -4,9 +4,9 @@ from .models import Participant, ParticipantCompetition
 
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'phone', 'status', 'registration_date')
-    list_filter = ('status',)
-    search_fields = ('name', 'email', 'phone')
+    list_display = ('participant_id', 'name', 'category', 'team_name', 'status', 'registration_date')
+    list_filter = ('status', 'category', 'gender')
+    search_fields = ('participant_id', 'name', 'email', 'phone', 'team_name')
     date_hierarchy = 'registration_date'
 
 

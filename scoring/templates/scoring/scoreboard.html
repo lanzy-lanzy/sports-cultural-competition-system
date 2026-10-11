@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}Live Scoreboard - {{ competition.name }}{% endblock %}
+{% block header_title %}Live Scoreboard{% endblock %}
+
+{% block content %}
+<div id="scoreboard">
+    {% include 'scoring/scoreboard_partial.html' %}
+</div>
+{% endblock %}

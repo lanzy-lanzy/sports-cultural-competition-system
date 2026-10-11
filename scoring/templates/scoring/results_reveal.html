@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Results Reveal - {{ competition.name }}{% endblock %}
 {% block header_title %}Results Reveal{% endblock %}
@@ -23,7 +23,7 @@
         <div class="mb-16 grid grid-cols-3 gap-4">
             <!-- Second Place -->
             <div class="translate-y-8">
-                <div class="rounded-t-2xl bg-gradient-to-b from-cyan-300 to-cyan-400 p-6 text-center">
+                <div class="rounded-t-2xl bg-cyan-300 p-6 text-center">
                     <div class="mb-2 font-display text-3xl font-bold">2nd</div>
                     <div class="participant-card hidden">
                         {% if second_place.participant.profile_image %}
@@ -40,7 +40,7 @@
 
             <!-- First Place -->
             <div class="-translate-y-8">
-                <div class="rounded-t-2xl bg-gradient-to-b from-yellow-300 to-yellow-400 p-8 text-center">
+                <div class="rounded-t-2xl bg-yellow-300 p-8 text-center">
                     <div class="mb-4 font-display text-4xl font-bold text-yellow-900">1st</div>
                     <div class="participant-card hidden">
                         {% if first_place.participant.profile_image %}
@@ -57,7 +57,7 @@
 
             <!-- Third Place -->
             <div class="translate-y-16">
-                <div class="rounded-t-2xl bg-gradient-to-b from-amber-600 to-amber-700 p-4 text-center">
+                <div class="rounded-t-2xl bg-amber-600 p-4 text-center">
                     <div class="mb-2 font-display text-2xl font-bold text-white">3rd</div>
                     <div class="participant-card hidden">
                         {% if third_place.participant.profile_image %}
@@ -93,7 +93,7 @@
                                 {% if result.participant.profile_image %}
                                 <img src="{{ result.participant.profile_image.url }}" class="h-10 w-10 rounded-full object-cover">
                                 {% else %}
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-lg font-bold text-white">{{ result.participant.name|make_list|first|upper }}</div>
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-lg font-bold text-white">{{ result.participant.name|make_list|first|upper }}</div>
                                 {% endif %}
                                 <span>{{ result.participant.name }}</span>
                             </td>
@@ -115,7 +115,7 @@
                     {% if judge.profile_image %}
                     <img src="{{ judge.profile_image.url }}" alt="{{ judge.user.get_full_name }}" class="mx-auto mb-3 h-20 w-20 rounded-full object-cover">
                     {% else %}
-                    <div class="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xl font-bold text-white">{{ judge.user.get_full_name|make_list|first|upper }}</div>
+                    <div class="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-cyan-500 text-xl font-bold text-white">{{ judge.user.get_full_name|make_list|first|upper }}</div>
                     {% endif %}
                     <h3 class="text-center font-medium text-slate-900">{{ judge.user.get_full_name }}</h3>
                     <p class="text-center text-sm text-cyan-700">{{ judge.expertise }}</p>

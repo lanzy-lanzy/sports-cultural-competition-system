@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Competitions - Scoring System{% endblock %}
 {% block header_title %}Competitions{% endblock %}
@@ -7,7 +7,7 @@
 <div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
     <div>
         <h1 class="font-display text-2xl font-semibold text-slate-900">Competitions</h1>
-        <p class="mt-1 text-sm text-slate-500">Manage and view all your competitions in one place.</p>
+        <p class="mt-1 text-sm text-slate-500">{% if can_manage %}Manage and view all competitions in one place.{% else %}Browse current competitions and official information.{% endif %}</p>
     </div>
     <div class="flex items-center gap-3">
         <!-- View toggle -->
@@ -28,12 +28,12 @@
             </button>
         </div>
 
-        <button type="button" onclick="openModal('create-comp-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+        {% if can_manage %}<button type="button" onclick="openModal('create-comp-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
             Create Competition
-        </button>
+        </button>{% endif %}
     </div>
 </div>
 
@@ -42,13 +42,13 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for competition in page_obj %}
-    <div class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10">
+    <div class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all  hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10">
         <!-- Status accent bar -->
         <span class="absolute inset-x-0 top-0 h-1
-            {% if competition.status == 'ACTIVE' %}bg-gradient-to-r from-emerald-500 to-teal-500
-            {% elif competition.status == 'DRAFT' %}bg-gradient-to-r from-slate-400 to-slate-500
-            {% elif competition.status == 'COMPLETED' %}bg-gradient-to-r from-blue-500 to-indigo-500
-            {% else %}bg-gradient-to-r from-rose-500 to-rose-400{% endif %}"></span>
+            {% if competition.status == 'ACTIVE' %}bg-emerald-500
+            {% elif competition.status == 'DRAFT' %}bg-slate-400
+            {% elif competition.status == 'COMPLETED' %}bg-blue-500
+            {% else %}bg-rose-500{% endif %}"></span>
 
         <div class="flex flex-1 flex-col p-6">
             <div class="mb-3 flex items-start justify-between gap-3">
@@ -86,8 +86,9 @@
             </div>
 
             <!-- Actions -->
-            <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="mt-4 grid {% if can_manage %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
                 <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                {% if can_manage %}
                 <button type="button"
                         data-url="{% url 'edit_competition' competition.id %}"
                         data-name="{{ competition.name }}"
@@ -97,9 +98,11 @@
                         data-status="{{ competition.status }}"
                         onclick="openEditComp(this)"
                         class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
+                <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg bg-campus px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
+                {% endif %}
             </div>
 
+            {% if can_manage %}
             <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                 <form method="POST" action="{% url 'toggle_competition_status' competition.id %}">
                     {% csrf_token %}
@@ -116,6 +119,7 @@
                     Delete
                 </button>
             </div>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
@@ -164,6 +168,7 @@
                     <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center justify-end gap-1.5">
                             <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                            {% if can_manage %}
                             <button type="button"
                                     data-url="{% url 'edit_competition' competition.id %}"
                                     data-name="{{ competition.name }}"
@@ -173,12 +178,13 @@
                                     data-status="{{ competition.status }}"
                                     onclick="openEditComp(this)"
                                     class="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                            <a href="{% url 'manage_rounds' competition.id %}" class="rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
+                            <a href="{% url 'manage_rounds' competition.id %}" class="rounded-lg bg-campus px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
                             <button type="button"
                                     data-url="{% url 'delete_competition' competition.id %}"
                                     data-name="{{ competition.name }}"
                                     onclick="openDeleteComp(this)"
                                     class="cursor-pointer rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50">Delete</button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -198,23 +204,23 @@
         </svg>
     </div>
     <h3 class="font-display text-xl font-semibold text-slate-900">No Competitions Yet</h3>
-    <p class="mt-2 text-sm text-slate-500">Get started by creating your first competition.</p>
-    <button type="button" onclick="openModal('create-comp-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105">
+    <p class="mt-2 text-sm text-slate-500">{% if can_manage %}Get started by creating your first competition.{% else %}There are no current competitions to display.{% endif %}</p>
+    {% if can_manage %}<button type="button" onclick="openModal('create-comp-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
         Create Competition
-    </button>
+    </button>{% endif %}
 </div>
 {% endif %}
 
 <!-- ===== Create Competition Modal ===== -->
 <div id="create-comp-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('create-comp-modal')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div class="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-600 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                     </svg>
@@ -291,7 +297,7 @@
 
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                     <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+                    <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -307,7 +313,7 @@
         <div class="round-item rounded-xl border border-slate-200 bg-white p-4">
             <div class="mb-3 flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xs font-bold text-white">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-600 text-xs font-bold text-white">
                         <span class="round-number"></span>
                     </span>
                     <h4 class="text-sm font-semibold text-slate-900">Round Details</h4>
@@ -396,10 +402,10 @@
 <!-- ===== Edit Competition Modal ===== -->
 <div id="edit-comp-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('edit-comp-modal')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div class="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-600 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                     </svg>
@@ -453,7 +459,7 @@
                 </div>
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                     <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Competition</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Competition</button>
                 </div>
             </form>
         </div>
@@ -463,7 +469,7 @@
 <!-- ===== Delete Competition Modal ===== -->
 <div id="delete-comp-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('delete-comp-modal')"></div>
-    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
@@ -475,7 +481,7 @@
             {% csrf_token %}
             <div class="mt-6 flex justify-center gap-3">
                 <button type="button" onclick="closeModal('delete-comp-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                <button type="submit" class="cursor-pointer rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Delete</button>
+                <button type="submit" class="cursor-pointer rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Delete</button>
             </div>
         </form>
     </div>
@@ -485,10 +491,10 @@
 {% for competition in page_obj %}
 <div id="view-comp-{{ competition.id }}" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('view-comp-{{ competition.id }}')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-600 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                     </svg>
@@ -585,7 +591,7 @@
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
             <a href="{% url 'competition_detail' competition.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Open Full Page</a>
-            <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105">Close</button>
+            <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105">Close</button>
         </div>
     </div>
 </div>
@@ -593,7 +599,7 @@
 
 <script>
     const VIEW_KEY = 'competitions_view_mode';
-    const ACTIVE_CLASSES = 'bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm';
+    const ACTIVE_CLASSES = 'bg-campus text-white shadow-sm';
     const INACTIVE_CLASSES = 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
 
     function applyViewClasses(btn, active) {

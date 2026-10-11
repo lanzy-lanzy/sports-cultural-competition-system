@@ -25,7 +25,15 @@ urlpatterns = [
     path('', include('accounts.urls')),
     path('', include('competitions.urls')),
     path('', include('participants.urls')),
+    path('', include('teams.urls')),
     path('', include('judges.urls')),
     path('', include('scoring.urls')),
+    path('', include('sports.urls')),
+    path('', include('eligibility.urls')),
+    path('', include('announcements.urls')),
+    path('', include('registrations.urls')),
+    path('', include('protests.urls')),
+    path('', include('audit.urls')),
+    path('', include('reports.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

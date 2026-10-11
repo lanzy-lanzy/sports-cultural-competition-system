@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Assign Participants - {{ competition.name }}{% endblock %}
 {% block header_title %}Assign Participants{% endblock %}
@@ -115,7 +115,7 @@
     <div id="selectionBar" class="sticky bottom-4 z-20 hidden">
         <div class="flex items-center justify-between gap-4 rounded-2xl border border-cyan-200 bg-white/95 p-4 shadow-xl shadow-cyan-500/10 backdrop-blur-xl">
             <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 text-white">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -125,7 +125,7 @@
                     <p class="text-xs text-slate-500">Ready to assign to {{ competition.name|title }}</p>
                 </div>
             </div>
-            <button type="submit" form="assignForm" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105 hover:shadow-xl">
+            <button type="submit" form="assignForm" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-3 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
                 Assign Selected Participants
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
@@ -169,7 +169,7 @@
                             {% if participant.profile_image %}
                             <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-10 w-10 rounded-full object-cover">
                             {% else %}
-                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-sm font-bold text-white">{{ participant.name|make_list|first }}</div>
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-sm font-bold text-white">{{ participant.name|make_list|first }}</div>
                             {% endif %}
                             <div class="min-w-0 flex-1">
                                 <p class="truncate font-medium text-slate-900">{{ participant.name }}</p>
@@ -253,7 +253,7 @@
                                 {% if participant.profile_image %}
                                 <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-9 w-9 rounded-full object-cover">
                                 {% else %}
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xs font-bold text-white">{{ participant.name|make_list|first }}</div>
+                                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-xs font-bold text-white">{{ participant.name|make_list|first }}</div>
                                 {% endif %}
                                 <div class="min-w-0">
                                     <p class="font-medium text-slate-900">{{ participant.name }}</p>
@@ -293,7 +293,7 @@
         </div>
         <p class="font-medium text-slate-900">No available participants</p>
         <p class="mt-1 text-sm text-slate-500">All registered participants are already assigned, or create a new one to add.</p>
-        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105">
+        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
             Add New Participant
         </a>
     </div>

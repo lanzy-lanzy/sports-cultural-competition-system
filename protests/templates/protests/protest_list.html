@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Protest Review - Scoring System{% endblock %}
+{% block header_title %}Protests &amp; Appeals{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Protest Review Queue</h1>
+        <p class="mt-1 text-sm text-slate-500">Review complaints, assign a committee, and resolve or reject appeals.</p>
+    </div>
+    {% if pending_count %}
+    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>{{ pending_count }} pending
+    </span>
+    {% endif %}
+</div>
+
+<div class="mb-6">
+    <form method="get">
+        <select name="status" onchange="this.form.submit()" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-56">
+            <option value="">All statuses</option>
+            {% for value, label in statuses %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if page_obj %}
+<div class="space-y-4">
+    {% for protest in page_obj %}
+    <a href="{% url 'protest_detail' protest.id %}" class="block rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition hover:border-teal-200 hover:shadow-md">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="font-display text-lg font-semibold text-slate-900">{{ protest.title }}</h3>
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                        {% if protest.status == 'RESOLVED' %}bg-emerald-100 text-emerald-700
+                        {% elif protest.status == 'REJECTED' %}bg-rose-100 text-rose-700
+                        {% elif protest.status == 'UNDER_REVIEW' %}bg-cyan-100 text-cyan-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        {{ protest.get_status_display }}
+                    </span>
+                </div>
+                <p class="mt-1 text-sm text-slate-500">
+                    Submitted by <span class="font-semibold text-slate-700">{{ protest.submitter_name }}</span>
+                    &middot; Against <span class="font-semibold text-slate-700">{{ protest.target_name }}</span>
+                </p>
+                <p class="mt-2 line-clamp-2 text-sm text-slate-600">{{ protest.description }}</p>
+            </div>
+            <p class="shrink-0 text-xs text-slate-400">{{ protest.submitted_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% include 'partials/pagination.html' %}
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+    <h3 class="font-display text-xl font-semibold text-slate-900">No protests</h3>
+    <p class="mt-2 text-sm text-slate-500">Submitted protests and appeals appear here for review.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Edit Competition - {{ competition.name }}{% endblock %}
 {% block header_title %}Edit Competition{% endblock %}
@@ -49,13 +49,63 @@
                 </select>
             </div>
 
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="kind" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Kind</label>
+                    <select id="kind" name="kind"
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="MIXED" {% if competition.kind == 'MIXED' %}selected{% endif %}>Mixed (Sports + Cultural)</option>
+                        <option value="SPORTS" {% if competition.kind == 'SPORTS' %}selected{% endif %}>Sports</option>
+                        <option value="CULTURAL" {% if competition.kind == 'CULTURAL' %}selected{% endif %}>Cultural</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Cultural Event Type</label>
+                    <select id="cultural_event_type" name="cultural_event_type"
+                            class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="" {% if not competition.cultural_event_type %}selected{% endif %}>— None —</option>
+                        <option value="DANCE" {% if competition.cultural_event_type == 'DANCE' %}selected{% endif %}>Dance</option>
+                        <option value="SINGING" {% if competition.cultural_event_type == 'SINGING' %}selected{% endif %}>Singing</option>
+                        <option value="CULTURAL_PRESENTATION" {% if competition.cultural_event_type == 'CULTURAL_PRESENTATION' %}selected{% endif %}>Cultural Presentation</option>
+                        <option value="ESSAY_WRITING" {% if competition.cultural_event_type == 'ESSAY_WRITING' %}selected{% endif %}>Essay Writing</option>
+                        <option value="POSTER_MAKING" {% if competition.cultural_event_type == 'POSTER_MAKING' %}selected{% endif %}>Poster Making</option>
+                        <option value="QUIZ_BEE" {% if competition.cultural_event_type == 'QUIZ_BEE' %}selected{% endif %}>Quiz Bee</option>
+                        <option value="SPOKEN_POETRY" {% if competition.cultural_event_type == 'SPOKEN_POETRY' %}selected{% endif %}>Spoken Poetry</option>
+                        <option value="COSTUME" {% if competition.cultural_event_type == 'COSTUME' %}selected{% endif %}>Costume</option>
+                        <option value="TALENT_SHOW" {% if competition.cultural_event_type == 'TALENT_SHOW' %}selected{% endif %}>Talent Show</option>
+                        <option value="OTHER" {% if competition.cultural_event_type == 'OTHER' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label for="gold_points" class="mb-1 block text-xs font-medium text-slate-500">Gold</label>
+                        <input type="number" id="gold_points" name="gold_points" value="{{ competition.gold_points }}" step="0.5" min="0"
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                    <div>
+                        <label for="silver_points" class="mb-1 block text-xs font-medium text-slate-500">Silver</label>
+                        <input type="number" id="silver_points" name="silver_points" value="{{ competition.silver_points }}" step="0.5" min="0"
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                    <div>
+                        <label for="bronze_points" class="mb-1 block text-xs font-medium text-slate-500">Bronze</label>
+                        <input type="number" id="bronze_points" name="bronze_points" value="{{ competition.bronze_points }}" step="0.5" min="0"
+                               class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    </div>
+                </div>
+            </div>
+
             <div class="flex flex-col gap-4 pt-2 sm:flex-row sm:justify-end">
                 <a href="{% url 'competition_detail' competition.id %}"
                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
                     Cancel
                 </a>
                 <button type="submit"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                     </svg>

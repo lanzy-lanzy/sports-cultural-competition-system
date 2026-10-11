@@ -3,7 +3,275 @@ from collections import OrderedDict
 from django.db import transaction
 
 from participants.models import Participant
-from .models import Score, CompetitionResult
+from competitions.models import Competition
+from teams.models import TeamMembership
+from .models import Award, AwardRecipient, Score, CompetitionResult, ScoreChangeLog
+
+
+MEDAL_POINTS = {
+    Award.Type.GOLD_MEDAL: Decimal('10'),
+    Award.Type.SILVER_MEDAL: Decimal('5'),
+    Award.Type.BRONZE_MEDAL: Decimal('3'),
+}
+
+# Score statuses that count toward official totals and rankings.
+COUNTED_STATUSES = ('SUBMITTED', 'VERIFIED')
+
+
+def medal_points_for(competition):
+    """Per-competition gold/silver/bronze point values, falling back to defaults."""
+    if competition is None:
+        return dict(MEDAL_POINTS)
+    return {
+        Award.Type.GOLD_MEDAL: Decimal(str(competition.gold_points)),
+        Award.Type.SILVER_MEDAL: Decimal(str(competition.silver_points)),
+        Award.Type.BRONZE_MEDAL: Decimal(str(competition.bronze_points)),
+    }
+
+# Maps the podium labels produced by sports.services.event_podium onto award types.
+SPORT_MEDAL_TO_AWARD = {
+    'gold': Award.Type.GOLD_MEDAL,
+    'silver': Award.Type.SILVER_MEDAL,
+    'bronze': Award.Type.BRONZE_MEDAL,
+}
+
+PODIUM_ORDER = ('gold', 'silver', 'bronze')
+
+
+def record_score_change(score, action, user=None, old_score=None, old_status='', details=''):
+    """Append an immutable history row for a score creation or mutation."""
+    ScoreChangeLog.objects.create(
+        score=score,
+        participant_id=score.participant_id,
+        criterion_id=score.criterion_id,
+        judge_id=score.judge_id,
+        competition_id=score.criterion.round.competition_id,
+        round_id=score.criterion.round_id,
+        action=action,
+        old_score=old_score,
+        new_score=score.score,
+        old_status=old_status,
+        new_status=score.status,
+        changed_by=user if (user is not None and user.is_authenticated) else None,
+        details=details[:255],
+    )
+
+
+def contestant_identity(team=None, participant=None):
+    """Group a medal under a delegation.
+
+    Returns ``(key, name)`` so that the same delegation always produces the same
+    key regardless of whether the medal came from an award or a match result.
+    Teams win outright; individuals are folded into their active team, then
+    their named delegation, and only stand alone when they have neither.
+    """
+    if team is not None:
+        return ('team', team.id), team.name
+    if participant is None:
+        return None, 'TBD'
+
+    membership = getattr(participant, 'team_membership', None)
+    if membership is not None and membership.status == TeamMembership.Status.ACTIVE:
+        return ('team', membership.team_id), membership.team.name
+    if participant.team_name:
+        return ('delegation', participant.team_name.strip().lower()), participant.team_name
+    return ('individual', participant.id), participant.name
+
+
+def _award_medals(competition):
+    """Yield ``(key, name, medal_type, source, points)`` for a competition's awards."""
+    points_map = medal_points_for(competition)
+    recipients = (
+        AwardRecipient.objects
+        .filter(award__competition=competition, award__is_active=True)
+        .select_related(
+            'award', 'team', 'participant', 'participant__team_membership',
+            'participant__team_membership__team',
+        )
+        .order_by('award__type', 'id')
+    )
+    for recipient in recipients:
+        atype = recipient.award.type
+        if atype not in points_map:
+            continue
+        key, name = contestant_identity(
+            team=recipient.team, participant=recipient.participant,
+        )
+        yield key, name, atype, 'award', points_map[atype]
+
+
+def _sports_medals(competition):
+    """Yield ``(key, name, medal_type, source, points)`` for a competition's sport events."""
+    from sports.services import event_podium
+
+    points_map = medal_points_for(competition)
+    for event in competition.sport_events.all():
+        for entry, medal in event_podium(event):
+            atype = SPORT_MEDAL_TO_AWARD.get(medal)
+            if atype is None:
+                continue
+            key, name = contestant_identity(team=entry.team, participant=entry.participant)
+            yield key, name, atype, 'sports', points_map[atype]
+
+
+def _has_manual_medal_awards(competition):
+    return competition.awards.filter(
+        is_active=True, type__in=MEDAL_POINTS,
+    ).exists()
+
+
+def _standings_medals(competition):
+    """Yield podium medals for a judged competition from its final standings.
+
+    Manual awards always win: this only fills the gap for a completed
+    competition that has no medal awards entered yet, mirroring how sport
+    events derive their podium from results. A competition still running
+    never contributes, so the tally never shows a provisional champion.
+    """
+    if competition.status != 'COMPLETED':
+        return
+    if _has_manual_medal_awards(competition):
+        return
+    if not competition.rounds.exists():
+        return
+
+    points_map = medal_points_for(competition)
+    standings = build_overall_standings(competition)
+    participants = {
+        p.id: p
+        for p in competition.participants.select_related('team_membership__team')
+    }
+    ranked = sorted(standings.items(), key=lambda item: item[1]['rank'])
+
+    for medal, position in zip(PODIUM_ORDER, (1, 2, 3)):
+        for participant_id, data in ranked:
+            if data['rank'] != position:
+                continue
+            participant = participants.get(participant_id)
+            if participant is None:
+                continue
+            key, name = contestant_identity(participant=participant)
+            yield key, name, SPORT_MEDAL_TO_AWARD[medal], 'standings', points_map[SPORT_MEDAL_TO_AWARD[medal]]
+            break
+
+
+def _rank_rows(tally):
+    """Sort medal counts into rows, awarding shared ranks for identical totals."""
+    rows = sorted(
+        tally.values(),
+        key=lambda row: (
+            -row['points'], -row['gold'], -row['silver'], -row['bronze'], row['name'].lower(),
+        ),
+    )
+    rank = 0
+    previous_key = None
+    for idx, row in enumerate(rows, start=1):
+        key = (row['points'], row['gold'], row['silver'], row['bronze'])
+        if previous_key is not None and key == previous_key:
+            row['rank'] = rank
+        else:
+            rank = idx
+            row['rank'] = rank
+        previous_key = key
+    return rows
+
+
+def _accumulate(medals, track_sources=False):
+    """Fold ``(key, name, medal_type, source, points)`` tuples into ranked tally rows."""
+    tally = {}
+    for key, name, atype, source, points in medals:
+        row = tally.setdefault(key, {
+            'name': name,
+            'gold': 0,
+            'silver': 0,
+            'bronze': 0,
+            'points': Decimal('0'),
+        })
+        if atype == Award.Type.GOLD_MEDAL:
+            row['gold'] += 1
+        elif atype == Award.Type.SILVER_MEDAL:
+            row['silver'] += 1
+        elif atype == Award.Type.BRONZE_MEDAL:
+            row['bronze'] += 1
+        row['points'] += points
+        if track_sources:
+            row.setdefault('sources', {})
+            row['sources'][source] = row['sources'].get(source, 0) + 1
+
+    rows = _rank_rows(tally)
+    if track_sources:
+        for row in rows:
+            sources = row.get('sources', {})
+            row['sports'] = sources.get('sports', 0)
+            row['award'] = sources.get('award', 0)
+            row['standings'] = sources.get('standings', 0)
+    return rows
+
+
+def compute_medal_tally(competition):
+    """Aggregate medals per team or delegation for one competition.
+
+    Combines manually assigned awards with medals derived from the competition's
+    sport events, so a sports meet reports a podium without anyone entering it by
+    hand. Returns ``{'rows': [...], 'champion': row_or_None}`` where each row has
+    rank, name, medal counts, and points (gold/silver/bronze values are
+    configurable per competition on the Competition model).
+    """
+    medals = (
+        list(_award_medals(competition))
+        + list(_sports_medals(competition))
+        + list(_standings_medals(competition))
+    )
+    rows = _accumulate(medals)
+    return {'rows': rows, 'champion': rows[0] if rows else None}
+
+
+def compute_overall_medal_tally(competitions=None):
+    """Aggregate medals across competitions into one system-wide tally.
+
+    Every competition is merged so the same delegation accumulates medals from
+    sport events and from judged competitions alike. Returns the ranked rows,
+    the champion, and a per-competition breakdown of what each one contributed.
+    """
+    if competitions is None:
+        queryset = Competition.objects.all().select_related().prefetch_related('sport_events')
+    elif hasattr(competitions, 'select_related'):
+        queryset = competitions.select_related().prefetch_related('sport_events')
+    else:
+        queryset = list(competitions)
+
+    medals = []
+    breakdown = []
+    for competition in queryset:
+        competition_medals = (
+            list(_award_medals(competition))
+            + list(_sports_medals(competition))
+            + list(_standings_medals(competition))
+        )
+        medals.extend(competition_medals)
+        rows = _accumulate(competition_medals, track_sources=True)
+        breakdown.append({
+            'competition': competition,
+            'rows': rows,
+            'champion': rows[0] if rows else None,
+            'medal_count': len(competition_medals),
+        })
+
+    rows = _accumulate(medals, track_sources=True)
+    totals = {
+        'gold': sum(row['gold'] for row in rows),
+        'silver': sum(row['silver'] for row in rows),
+        'bronze': sum(row['bronze'] for row in rows),
+        'sports': sum(row['sports'] for row in rows),
+        'award': sum(row['award'] for row in rows),
+        'standings': sum(row['standings'] for row in rows),
+    }
+    return {
+        'rows': rows,
+        'champion': rows[0] if rows else None,
+        'breakdown': breakdown,
+        'totals': totals,
+    }
 
 
 def calculate_participant_total_score(
@@ -14,12 +282,18 @@ def calculate_participant_total_score(
 ):
     """Return the round points earned by a participant.
 
-    Each criterion's scores are averaged across judges, then the criterion
-    point averages are summed. ``max_score`` is already the criterion's point
-    allocation, so applying it as a percentage would scale the points twice.
+    Each criterion's scores are averaged across judges. When no criterion in
+    the round defines a percentage weight, the criterion averages are summed
+    (``max_score`` is already the criterion's point allocation). When any
+    criterion carries a ``weight_percentage`` (e.g. Creativity 30%), totals
+    are the weighted sum: ``average * weight / 100`` per criterion.
     """
     total_score = Decimal('0')
-    criteria = round_obj.criteria.all()
+    criteria = list(round_obj.criteria.all())
+    weighted = any(
+        criterion.weight_percentage and criterion.weight_percentage > 0
+        for criterion in criteria
+    )
 
     for criterion in criteria:
         scores_query = Score.objects.filter(
@@ -31,13 +305,18 @@ def calculate_participant_total_score(
             scores_query = scores_query.filter(judge=judge)
 
         if include_draft:
-            scores_query = scores_query.filter(status__in=['DRAFT', 'SUBMITTED'])
+            scores_query = scores_query.filter(
+                status__in=('DRAFT',) + COUNTED_STATUSES
+            )
         else:
-            scores_query = scores_query.filter(status='SUBMITTED')
+            scores_query = scores_query.filter(status__in=COUNTED_STATUSES)
 
         scores = list(scores_query.values_list('score', flat=True))
         if scores:
-            total_score += sum(scores, Decimal('0')) / Decimal(len(scores))
+            average = sum(scores, Decimal('0')) / Decimal(len(scores))
+            if weighted:
+                average *= (criterion.weight_percentage or Decimal('0')) / Decimal('100')
+            total_score += average
 
     return total_score.quantize(Decimal('0.01'))
 
@@ -47,7 +326,7 @@ def calculate_rankings(round_obj):
     with transaction.atomic():
         participants = Participant.objects.filter(
             scores__criterion__round=round_obj,
-            scores__status='SUBMITTED'
+            scores__status__in=COUNTED_STATUSES
         ).distinct()
 
         results = []
@@ -92,7 +371,7 @@ def build_round_results(competition):
             scores = Score.objects.filter(
                 participant=participant,
                 criterion__round=round_obj,
-                status='SUBMITTED'
+                status__in=COUNTED_STATUSES
             ).select_related('criterion', 'judge', 'judge__user')
 
             criterion_scores = {}

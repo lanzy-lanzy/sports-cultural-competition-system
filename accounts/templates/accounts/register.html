@@ -1,119 +1,61 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Register as a judge for the JHCSC Competition Management System.">
-    <title>Judge Registration - JHCSC Competition Hub</title>
+    <meta name="description" content="Create an account for the JHCSC Competition Management System.">
+    <title>Create Account - JHCSC Competition Hub</title>
     {% load static %}
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: { extend: {
-                colors: { ink: '#10263a', campus: '#087f78', aqua: '#1fb9ad', mist: '#eff8f6' },
-                fontFamily: { sans: ['"Open Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'], display: ['Poppins', '"Open Sans"', 'sans-serif'] },
-                boxShadow: { soft: '0 28px 80px -30px rgba(16, 38, 58, .30)' },
-            } },
-        };
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script>tailwind.config={theme:{extend:{colors:{ink:'#10263a',campus:'#087f78',aqua:'#1fb9ad',mist:'#eff8f6',cyan:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'},violet:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'}},fontFamily:{sans:['Open Sans','sans-serif'],display:['Poppins','sans-serif']},boxShadow:{soft:'0 8px 24px -16px rgba(16, 38, 58, .25)'}}}};</script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>.auth-grid { background-image: linear-gradient(rgba(8,127,120,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(8,127,120,.05) 1px, transparent 1px); background-size: 40px 40px; }</style>
 </head>
-<body class="min-h-screen bg-[#f4f8f7] font-sans text-slate-700 antialiased selection:bg-teal-200 selection:text-ink">
-    <div class="auth-grid relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-10">
-        <div class="pointer-events-none absolute -left-40 top-10 h-96 w-96 rounded-full bg-teal-200/50 blur-3xl"></div>
-        <div class="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-cyan-200/45 blur-3xl"></div>
-
-        <main class="relative grid w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white bg-white shadow-soft lg:min-h-[780px] lg:grid-cols-[.82fr_1.18fr]">
-            <section class="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col" aria-label="Judge registration information">
-                <div class="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full border-[55px] border-teal-300/10"></div>
-                <div class="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-campus/25 blur-3xl"></div>
-                <div class="relative flex items-center gap-3">
-                    <span class="flex items-center -space-x-2">
-                        <span class="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain"></span>
-                        <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg"><img src="{% static 'images/it_logo.png' %}" alt="Information Technology Department logo" class="h-full w-full object-contain"></span>
-                    </span>
-                    <span class="leading-tight"><span class="block font-display text-base font-bold">JHCSC Competition Hub</span><span class="block text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-300">Official scoring platform</span></span>
+<body class="min-h-screen bg-[#f4f8f7] font-sans text-slate-700 antialiased">
+    <main class="grid min-h-screen lg:grid-cols-[.8fr_1.2fr]">
+        <section class="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col">
+            <a href="{% url 'landing_page' %}" class="relative flex items-center gap-3">
+                <span class="flex -space-x-2"><span class="relative z-10 flex h-12 w-12 rounded-xl bg-white p-1"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo"></span><span class="flex h-12 w-12 rounded-xl bg-white p-1"><img src="{% static 'images/it_logo.png' %}" alt="IT Department logo"></span></span>
+                <span><span class="block font-display text-sm font-bold">Competition Hub</span><span class="text-[10px] uppercase tracking-widest text-teal-300">Secure account access</span></span>
+            </a>
+            <div class="relative my-auto max-w-md">
+                <p class="text-xs font-bold uppercase tracking-[.18em] text-teal-300">Module 1 · Accounts</p>
+                <h1 class="mt-5 font-display text-4xl font-bold leading-tight">One secure account, the right competition workspace.</h1>
+                <p class="mt-5 leading-7 text-slate-300">Choose your account type. Administrative roles are assigned separately by a system administrator.</p>
+                <div class="mt-9 grid gap-3 text-sm text-slate-300">
+                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Secure password validation</p>
+                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Role-based access</p>
+                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Recoverable account access</p>
                 </div>
+            </div>
+        </section>
 
-                <div class="relative my-auto max-w-sm py-12">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-teal-200"><span class="h-1.5 w-1.5 rounded-full bg-teal-300"></span>Judge onboarding</div>
-                    <h1 class="mt-6 font-display text-4xl font-bold leading-tight tracking-[-0.03em]">Your seat at the judging panel starts here.</h1>
-                    <p class="mt-5 text-base leading-7 text-slate-300">Create your secure account and get the focused tools you need to evaluate every performance fairly.</p>
+        <section class="flex items-center px-5 py-8 sm:px-10 lg:px-16">
+            <div class="mx-auto w-full max-w-2xl">
+                <div class="mb-7 flex items-center justify-between"><a href="{% url 'landing_page' %}" class="text-sm font-semibold text-slate-500 hover:text-campus">← Back to home</a><a href="{% url 'login' %}" class="text-sm font-bold text-campus">Sign in</a></div>
+                <p class="text-xs font-bold uppercase tracking-[.16em] text-campus">Account registration</p>
+                <h2 class="mt-2 font-display text-3xl font-bold text-ink">Create your account</h2>
+                <p class="mt-2 text-sm text-slate-500">Use accurate contact details so organizers can identify you.</p>
 
-                    <ol class="mt-10 space-y-5">
-                        <li class="flex gap-4"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-teal-300/20 bg-teal-300/10 text-xs font-bold text-teal-200">01</span><span><span class="block text-sm font-bold">Tell us who you are</span><span class="mt-1 block text-xs leading-5 text-slate-400">Add your contact and profile information.</span></span></li>
-                        <li class="flex gap-4"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-teal-300/20 bg-teal-300/10 text-xs font-bold text-teal-200">02</span><span><span class="block text-sm font-bold">Secure your account</span><span class="mt-1 block text-xs leading-5 text-slate-400">Choose credentials only you can access.</span></span></li>
-                        <li class="flex gap-4"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-teal-300/20 bg-teal-300/10 text-xs font-bold text-teal-200">03</span><span><span class="block text-sm font-bold">Join your assigned rounds</span><span class="mt-1 block text-xs leading-5 text-slate-400">Your administrator will connect you to competitions.</span></span></li>
-                    </ol>
-                </div>
-                <p class="relative text-xs text-slate-500">J.H. Cerilles State College &middot; Information Technology Department</p>
-            </section>
-
-            <section class="flex flex-col justify-center px-6 py-8 sm:px-10 sm:py-12 lg:px-14">
-                <div class="mb-8 flex items-center justify-between">
-                    <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-campus"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back to home</a>
-                    <div class="flex items-center -space-x-2 lg:hidden">
-                        <span class="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain"></span>
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm"><img src="{% static 'images/it_logo.png' %}" alt="IT Department logo" class="h-full w-full object-contain"></span>
-                    </div>
-                </div>
-
-                <div class="w-full">
-                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-campus">Judge registration</p>
-                    <h2 class="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Create your account</h2>
-                    <p class="mt-3 text-sm leading-6 text-slate-500">Use your official details so competition administrators can identify and assign you correctly.</p>
-
-                    {% if messages %}
-                    <div class="mt-5 space-y-2" role="alert">{% for message in messages %}<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ message }}</div>{% endfor %}</div>
-                    {% endif %}
-
-                    <form method="POST" id="registration-form" class="mt-7 space-y-7">
-                        {% csrf_token %}
-                        <fieldset>
-                            <legend class="mb-4 flex w-full items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400"><span>Personal details</span><span class="h-px flex-1 bg-slate-200"></span></legend>
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <div><label for="full_name" class="mb-2 block text-sm font-bold text-ink">Full name</label><input type="text" id="full_name" name="full_name" required autocomplete="name" placeholder="Jane Doe" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                                <div><label for="username" class="mb-2 block text-sm font-bold text-ink">Username</label><input type="text" id="username" name="username" required autocomplete="username" placeholder="jane.doe" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                                <div><label for="email" class="mb-2 block text-sm font-bold text-ink">Email address</label><input type="email" id="email" name="email" required autocomplete="email" placeholder="jane@jhcsc.edu.ph" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                                <div><label for="phone" class="mb-2 block text-sm font-bold text-ink">Phone number</label><input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="+63 9xx xxx xxxx" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                            </div>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend class="mb-4 flex w-full items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400"><span>Secure account</span><span class="h-px flex-1 bg-slate-200"></span></legend>
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <div><label for="password" class="mb-2 block text-sm font-bold text-ink">Password</label><input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                                <div><label for="password1" class="mb-2 block text-sm font-bold text-ink">Confirm password</label><input type="password" id="password1" name="password1" required minlength="8" autocomplete="new-password" placeholder="Repeat your password" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></div>
-                            </div>
-                            <p class="mt-3 flex items-center gap-2 text-xs text-slate-400"><svg class="h-4 w-4 text-campus" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l2.25 2.25L15 9.75m6-3.75a11.953 11.953 0 01-9-3.75A11.953 11.953 0 013 6c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622z"/></svg>Your password is securely stored and never displayed.</p>
-                        </fieldset>
-
-                        <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-100 pt-6 sm:flex-row">
-                            <p class="text-sm text-slate-500">Already registered? <a href="{% url 'login' %}" class="font-bold text-campus hover:text-teal-700">Sign in</a></p>
-                            <button type="submit" class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-campus to-aqua px-6 text-sm font-bold text-white shadow-lg shadow-teal-600/25 transition-all hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2 sm:w-auto">
-                                Create judge account
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
-                            </button>
+                {% if form.non_field_errors %}<div class="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+                <form method="post" class="mt-7 space-y-5" novalidate>
+                    {% csrf_token %}
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'role' %}sm:col-span-2{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="mt-1 text-xs leading-5 text-slate-400">{{ field.help_text|safe }}</div>{% endif %}
+                            {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                         </div>
-                    </form>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <script>
-        var form = document.getElementById('registration-form');
-        var password = document.getElementById('password');
-        var confirmation = document.getElementById('password1');
-        function validatePasswords() {
-            confirmation.setCustomValidity(password.value === confirmation.value ? '' : 'Passwords do not match.');
-        }
-        password.addEventListener('input', validatePasswords);
-        confirmation.addEventListener('input', validatePasswords);
-        form.addEventListener('submit', validatePasswords);
-    </script>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-200 pt-5 sm:flex-row">
+                        <p class="text-sm text-slate-500">Already registered? <a href="{% url 'login' %}" class="font-bold text-campus">Sign in</a></p>
+                        <button type="submit" class="h-12 w-full rounded-xl bg-campus px-6 text-sm font-bold text-white shadow sm:w-auto">Create account</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
 </body>
 </html>

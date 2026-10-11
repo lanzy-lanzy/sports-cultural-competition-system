@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Announcements - Scoring System{% endblock %}
+{% block header_title %}Announcements{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="font-display text-2xl font-semibold text-slate-900">Announcements</h1>
+    <p class="mt-1 text-sm text-slate-500">Latest news and updates from the organizers.</p>
+</div>
+
+{% if page_obj %}
+<div class="space-y-4">
+    {% for announcement in page_obj %}
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h3 class="font-display text-lg font-semibold text-slate-900">{{ announcement.title }}</h3>
+                <p class="mt-0.5 text-xs text-slate-400">
+                    {{ announcement.created_by.get_full_name|default:announcement.created_by.username }}
+                    &middot; {{ announcement.published_at|date:"M d, Y H:i" }}
+                    {% if announcement.competition %}&middot; {{ announcement.competition.name }}{% endif %}
+                </p>
+            </div>
+        </div>
+        <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{{ announcement.body }}</p>
+        {% if announcement.competition %}
+        <a href="{% url 'competition_detail' announcement.competition.id %}" class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-cyan-700 hover:text-cyan-900">View competition &rarr;</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% include 'partials/pagination.html' %}
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+    <h3 class="font-display text-xl font-semibold text-slate-900">No announcements</h3>
+    <p class="mt-2 text-sm text-slate-500">Check back later for updates.</p>
+</div>
+{% endif %}
+{% endblock %}

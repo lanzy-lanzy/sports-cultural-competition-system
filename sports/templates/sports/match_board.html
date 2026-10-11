@@ -1,0 +1,194 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Match Board - Competition Hub{% endblock %}
+{% block header_title %}Sports{% endblock %}
+
+{% block content %}
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Sports Operations &middot; All Competitions</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Match board</h1>
+        <p class="mt-2 text-sm text-slate-500">Every scheduled and completed match across every competition, grouped by day.</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports hub</a>
+        <a href="{% url 'export_schedule_csv' %}" class="inline-flex items-center justify-center rounded-xl bg-campus px-5 py-3 text-sm font-bold text-white shadow">Export CSV</a>
+    </div>
+</div>
+
+<form method="GET" id="board-filters" class="mb-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Competition</label>
+            <select name="competition" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
+                <option value="">All competitions</option>
+                {% for competition in competitions %}
+                <option value="{{ competition.id }}" {% if filter_state.competition == competition.id|stringformat:'s' %}selected{% endif %}>{{ competition.name|truncatechars:40 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Sport</label>
+            <select name="sport" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
+                <option value="">All sports</option>
+                {% for sport in sport_types %}
+                <option value="{{ sport.id }}" {% if filter_state.sport == sport.id|stringformat:'s' %}selected{% endif %}>{{ sport.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Venue</label>
+            <select name="venue" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
+                <option value="">All venues</option>
+                {% for venue in venues %}
+                <option value="{{ venue.id }}" {% if filter_state.venue == venue.id|stringformat:'s' %}selected{% endif %}>{{ venue.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Status</label>
+            <select name="status" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
+                <option value="">Any status</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if filter_state.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold text-slate-600">Day</label>
+            <input type="date" name="day" value="{{ filter_state.day }}" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
+        </div>
+    </div>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-slate-500">
+            <span class="font-bold text-ink">{{ total }}</span> match{{ total|pluralize }}
+            {% if active_count %}<span class="text-slate-400"> &middot; {{ active_count }} filter{{ active_count|pluralize }} applied</span>{% endif %}
+        </p>
+        <div class="flex gap-2">
+            {% if active_count %}
+            <a href="{% url 'match_board' %}" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:border-teal-200">Clear filters</a>
+            {% endif %}
+            <button type="submit" class="rounded-xl bg-ink px-5 py-2 text-sm font-bold text-white hover:bg-campus">Apply</button>
+        </div>
+    </div>
+</form>
+
+{% if days or unscheduled %}
+{% if day_keys|length > 1 %}
+<div class="mb-6 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Jump to day</span>
+    <a href="{% url 'match_board' %}" class="rounded-lg border px-3 py-1.5 text-xs font-bold transition {% if not filter_state.day %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">All</a>
+    {% for day_key in day_keys %}
+    <a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}day={{ day_key|date:'Y-m-d' }}"
+       class="rounded-lg border px-3 py-1.5 text-xs font-bold transition {% if filter_state.day == day_key|date:'Y-m-d' %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">{{ day_key|date:'D, M j' }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for day, day_matches in days.items %}
+<section class="mb-7">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-display text-xl font-bold text-ink">{{ day|date:'l, F j, Y' }}</h2>
+        <div class="flex items-center gap-2">
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ day_matches|length }} match{{ day_matches|length|pluralize }}</span>
+            {% if filter_state.day == day|date:'Y-m-d' %}
+            {% if prev_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}day={{ prev_day|date:'Y-m-d' }}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">&larr; Prev</a>{% endif %}
+            {% if next_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}day={{ next_day|date:'Y-m-d' }}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Next &rarr;</a>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <th class="px-5 py-3">Time</th>
+                    <th class="px-5 py-3">Match</th>
+                    <th class="px-5 py-3">Contestants</th>
+                    <th class="px-5 py-3">Venue</th>
+                    <th class="px-5 py-3">Status</th>
+                    <th class="px-5 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in day_matches %}
+                <tr class="border-b border-l-4 border-slate-100 align-top last:border-b-0 transition-colors {% if match.status == 'ONGOING' %}border-l-cyan-400 bg-cyan-50/40{% elif match.status == 'COMPLETED' %}border-l-emerald-200{% elif match.status == 'POSTPONED' %}border-l-amber-300{% elif match.status == 'CANCELLED' %}border-l-rose-300{% else %}border-l-transparent{% endif %} hover:bg-teal-50/40">
+                    <td class="whitespace-nowrap px-5 py-4 font-semibold text-slate-700">{{ match.scheduled_start|date:'H:i' }}<span class="block text-[10px] font-normal text-slate-400">{{ match.scheduled_end|date:'H:i' }}</span></td>
+                    <td class="px-5 py-4">
+                        <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-slate-800 hover:text-campus">{{ match.event.name }}</a>
+                        <span class="mt-0.5 block text-xs text-slate-500">{{ match.label }}{% if match.group %} &middot; Group {{ match.group }}{% endif %}</span>
+                        <span class="mt-0.5 block text-[10px] text-slate-400">{{ match.event.competition.name|truncatechars:40 }} &middot; {{ match.event.sport_type.name }}</span>
+                    </td>
+                    <td class="px-5 py-4">
+                        {% for entry in match.entries.all %}
+                        <div class="flex items-center gap-2 py-0.5">
+                            <span class="h-1.5 w-1.5 rounded-full {% if entry.is_winner %}bg-emerald-500{% elif entry.is_draw %}bg-amber-400{% else %}bg-slate-300{% endif %}"></span>
+                            <span class="{% if entry.is_winner %}font-semibold text-emerald-700{% else %}text-slate-600{% endif %}">{{ entry.display_name }}</span>
+                            {% if entry.score is not None %}<span class="ml-auto rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">{{ entry.score }}</span>{% endif %}
+                        </div>
+                        {% empty %}
+                        <span class="text-slate-400">Awaiting winners</span>
+                        {% endfor %}
+                    </td>
+                    <td class="px-5 py-4 text-slate-500">{% if match.venue %}<a href="{% url 'venue_detail' match.venue_id %}" class="hover:text-campus">{{ match.venue.name }}</a>{% else %}<span class="text-slate-400">Not assigned</span>{% endif %}</td>
+                    <td class="px-5 py-4">
+                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif match.status == 'ONGOING' %}bg-cyan-100 text-cyan-700{% elif match.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% elif match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{% if match.status == 'ONGOING' %}<span class="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 align-middle"></span>{% endif %}{{ match.get_status_display }}</span>
+                    </td>
+                    <td class="px-5 py-4">
+                        <div class="flex justify-end gap-2">
+                            <a href="{% url 'event_bracket' match.event_id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Bracket</a>
+                            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Schedule</a>
+                            <a href="{% url 'edit_match' match.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endfor %}
+
+{% if unscheduled %}
+<section class="mb-7">
+    <h2 class="mb-3 font-display text-xl font-bold text-ink">Not scheduled yet</h2>
+    <div class="overflow-x-auto rounded-2xl border border-dashed border-slate-300 bg-white/70 shadow-sm">
+        <table class="w-full text-left text-sm">
+            <tbody>
+                {% for match in unscheduled %}
+                <tr class="border-b border-slate-100 last:border-0">
+                    <td class="px-5 py-4">
+                        <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-slate-800 hover:text-campus">{{ match.event.name }}</a>
+                        <span class="block text-xs text-slate-500">{{ match.label }} &middot; {{ match.contestants_display }}</span>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <a href="{% url 'edit_match' match.id %}" class="rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Set time and venue</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">No matches match these filters</p>
+    <p class="mt-2 text-sm text-slate-500">Clear the filters, or generate a bracket from a sport event to create matches.</p>
+    {% if active_count %}
+    <a href="{% url 'match_board' %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Clear filters</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+    var form = document.getElementById('board-filters');
+    if (!form) { return; }
+    // Apply filters the moment a dropdown or date changes — no Apply click needed.
+    form.addEventListener('change', function (event) {
+        if (event.target.matches('select, input[type="date"]')) { form.requestSubmit(); }
+    });
+}());
+</script>
+{% endblock %}

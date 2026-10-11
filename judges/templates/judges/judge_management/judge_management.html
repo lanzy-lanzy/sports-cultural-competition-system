@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Judge Management{% endblock %}
 {% block header_title %}Judge Management{% endblock %}
@@ -35,7 +35,7 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
     {% for competition in page_obj %}
-    <div class="group rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div class="group rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
         <div class="mb-4 flex items-center justify-between">
             <h3 class="font-display text-xl font-semibold text-slate-900">{{ competition.name }}</h3>
             <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
@@ -68,7 +68,7 @@
         </div>
 
         <div class="flex justify-end">
-            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105 hover:shadow-xl">
+            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                 </svg>
@@ -157,7 +157,7 @@
 
 <script>
     const VIEW_KEY = 'judges_view_mode';
-    const ACTIVE_CLASSES = 'bg-gradient-to-r from-cyan-600 to-teal-500 text-white shadow-sm';
+    const ACTIVE_CLASSES = 'bg-campus text-white shadow-sm';
     const INACTIVE_CLASSES = 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
 
     function applyViewClasses(btn, active) {

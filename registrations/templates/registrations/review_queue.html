@@ -1,0 +1,98 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Registration Review - Scoring System{% endblock %}
+{% block header_title %}Online Registration{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Registration Review Queue</h1>
+        <p class="mt-1 text-sm text-slate-500">Approve or reject self-service registrations submitted by participants and team managers.</p>
+    </div>
+    {% if pending_count %}
+    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+        {{ pending_count }} pending
+    </span>
+    {% endif %}
+</div>
+
+<div class="mb-6">
+    <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <select name="competition" onchange="this.form.submit()" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
+            <option value="">All competitions</option>
+            {% for competition in competitions %}
+            <option value="{{ competition.id }}" {% if selected_competition == competition.id %}selected{% endif %}>{{ competition.name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if page_obj %}
+<div class="space-y-4">
+    {% for registration in page_obj %}
+    <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+        <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500 text-white font-display text-sm font-bold">
+                    {{ registration.contestant_name|make_list|first|upper }}
+                </span>
+                <div>
+                    <h3 class="font-display text-lg font-semibold text-slate-900">{{ registration.contestant_name }}</h3>
+                    <p class="text-xs text-slate-500">
+                        {{ registration.target_name }}
+                        {% if registration.team %}&middot; Team{% endif %}{% if registration.participant %}&middot; Individual{% endif %}
+                        &middot; {{ registration.created_at|date:"M d, Y H:i" }}
+                    </p>
+                </div>
+            </div>
+            <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                {% if registration.status == 'APPROVED' %}bg-emerald-100 text-emerald-700
+                {% elif registration.status == 'REJECTED' %}bg-rose-100 text-rose-700
+                {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-100 text-sky-700
+                {% else %}bg-amber-100 text-amber-700{% endif %}">
+                <span class="h-1.5 w-1.5 rounded-full
+                    {% if registration.status == 'APPROVED' %}bg-emerald-500
+                    {% elif registration.status == 'REJECTED' %}bg-rose-500
+                    {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-500
+                    {% else %}bg-amber-500{% endif %}"></span>
+                {{ registration.get_status_display }}
+            </span>
+        </div>
+
+        <div class="px-6 py-4">
+            <p class="text-xs text-slate-500">
+                Submitted by {{ registration.registrant.get_full_name|default:registration.registrant.username }}
+                {% if registration.requirements_document %}
+                &middot; <a href="{{ registration.requirements_document.url }}" target="_blank" class="font-semibold text-cyan-700 hover:text-cyan-900">View requirements</a>
+                {% endif %}
+            </p>
+            {% if registration.notes %}
+            <p class="mt-2 whitespace-pre-line rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{{ registration.notes }}</p>
+            {% endif %}
+        </div>
+
+        {% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}
+        <form method="post" action="{% url 'registration_review' registration.id %}" class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center">
+            {% csrf_token %}
+            <input type="text" name="admin_notes" placeholder="Review notes (optional)" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 shadow-sm sm:flex-1">
+            <div class="flex shrink-0 gap-2">
+                {% if registration.status == 'PENDING' %}
+                <button type="submit" name="action" value="review" class="cursor-pointer rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-700">Start Review</button>
+                {% endif %}
+                <button type="submit" name="action" value="approve" class="cursor-pointer rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700">Approve</button>
+                <button type="submit" name="action" value="reject" class="cursor-pointer rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-rose-700">Reject</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% include 'partials/pagination.html' %}
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+    <h3 class="font-display text-xl font-semibold text-slate-900">No registrations</h3>
+    <p class="mt-2 text-sm text-slate-500">Self-service registrations appear here for review.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -7,9 +7,10 @@ from competitions.models import Competition, Round
 from participants.models import Participant
 from scoring.models import Score
 from .models import Judge, JudgeAssignment
+from accounts.access import judge_required, management_required
 
 
-@login_required
+@judge_required
 def judge_profile(request):
     judge = get_object_or_404(Judge, user=request.user)
 
@@ -38,12 +39,8 @@ def judge_profile(request):
     return render(request, 'judges/judge/profile.html', context)
 
 
-@login_required
+@management_required
 def judge_management(request):
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('dashboard')
-
     competitions = Competition.objects.all().order_by('-id')
     for competition in competitions:
         competition.judge_count = JudgeAssignment.objects.filter(competition=competition).count()
@@ -57,12 +54,8 @@ def judge_management(request):
     return render(request, 'judges/judge_management/judge_management.html', context)
 
 
-@login_required
+@management_required
 def manage_judges(request, competition_id):
-    if not request.user.is_superuser:
-        messages.error(request, 'You do not have permission to manage judges.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
     assignments = JudgeAssignment.objects.filter(competition=competition).order_by('id')
     page_obj = Paginator(assignments, 10).get_page(request.GET.get('page'))
@@ -79,12 +72,8 @@ def manage_judges(request, competition_id):
     return render(request, 'judges/judge_management/manage_judges.html', context)
 
 
-@login_required
+@management_required
 def assign_judges(request, competition_id):
-    if not request.user.is_superuser:
-        messages.error(request, 'You do not have permission to assign judges.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
 
     if request.method == 'POST':
@@ -124,12 +113,8 @@ def assign_judges(request, competition_id):
     return render(request, 'judges/judge_management/assign_judges.html', context)
 
 
-@login_required
+@management_required
 def edit_judge_assignment(request, competition_id, assignment_id):
-    if not request.user.is_superuser:
-        messages.error(request, 'You do not have permission to edit judge assignments.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
     assignment = get_object_or_404(JudgeAssignment, id=assignment_id, competition=competition)
 
@@ -158,24 +143,16 @@ def edit_judge_assignment(request, competition_id, assignment_id):
     return render(request, 'judges/judge_management/edit_assignment.html', context)
 
 
-@login_required
+@management_required
 def delete_judge_assignment(request, competition_id, assignment_id):
-    if not request.user.is_superuser:
-        messages.error(request, 'You do not have permission to delete judge assignments.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     assignment = get_object_or_404(JudgeAssignment, id=assignment_id, competition_id=competition_id)
     assignment.delete()
     messages.success(request, 'Judge assignment deleted successfully.')
     return redirect('manage_judges', competition_id=competition_id)
 
 
-@login_required
+@judge_required
 def judge_history(request):
-    if not hasattr(request.user, 'judge'):
-        messages.error(request, 'You do not have permission to view scoring history.')
-        return redirect('dashboard')
-
     judge = get_object_or_404(Judge, user=request.user)
 
     assigned_round_ids = JudgeAssignment.objects.filter(
@@ -235,7 +212,7 @@ def judge_history(request):
     return render(request, 'judges/judge/history.html', context)
 
 
-@login_required
+@judge_required
 def judge_dashboard(request):
     judge = get_object_or_404(Judge, user=request.user)
 

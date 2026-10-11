@@ -39,7 +39,7 @@ class JudgeTest(TestCase):
 
     def test_judge_history_only_for_judges(self):
         resp = self.client.get(reverse('judge_history'))
-        self.assertRedirects(resp, reverse('dashboard'))
+        self.assertEqual(resp.status_code, 403)
 
     def test_judge_history_scoped_to_own_scores(self):
         self.client.logout()

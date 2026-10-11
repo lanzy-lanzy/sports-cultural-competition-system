@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Account Access{% endblock %} - JHCSC Competition Hub</title>
+    {% load static %}<script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{ink:'#10263a',campus:'#087f78',aqua:'#1fb9ad',mist:'#eff8f6',cyan:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'},violet:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'}},fontFamily:{sans:['Open Sans','sans-serif'],display:['Poppins','sans-serif']},boxShadow:{soft:'0 8px 24px -16px rgba(16, 38, 58, .25)'}}}};</script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-[#f4f8f7] font-sans text-slate-700">
+    <main class="flex min-h-screen items-center justify-center px-4 py-10">
+        <div class="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="p-7 sm:p-10">
+                <a href="{% url 'landing_page' %}" class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 p-1"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo"></span><span class="font-display text-sm font-bold text-ink">Competition Hub</span></a>
+                <div class="mt-8">{% block content %}{% endblock %}</div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+

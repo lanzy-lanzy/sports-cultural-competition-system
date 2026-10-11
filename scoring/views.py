@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction, models
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
+from django.views.decorators.http import require_POST
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
@@ -25,13 +27,22 @@ from reportlab.pdfbase.ttfonts import TTFont
 from competitions.models import Competition, Round, Criterion
 from participants.models import Participant
 from judges.models import Judge, JudgeAssignment
-from .models import Score, CompetitionResult
+from teams.models import Team
+from accounts.access import MANAGEMENT_ROLES, get_user_role, judge_required, management_required
+from accounts.models import UserProfile
+from .models import Score, CompetitionResult, Award, AwardRecipient, ScoreChangeLog
+from .forms import AwardForm, AwardRecipientForm
 from .services import (
+    COUNTED_STATUSES,
     calculate_participant_total_score,
     calculate_rankings,
     build_round_results,
     build_overall_standings,
+    compute_medal_tally,
+    compute_overall_medal_tally,
+    record_score_change,
 )
+from audit.models import record_action_from_request
 
 
 def _parse_score_value(raw_value, maximum):
@@ -61,7 +72,21 @@ def _is_assigned_to_round(judge, round_obj):
     ).exists()
 
 
-@login_required
+def _can_view_results(user, competition):
+    role = get_user_role(user)
+    return (
+        competition.show_results
+        or role in MANAGEMENT_ROLES
+        or role == UserProfile.Role.JUDGE
+    )
+
+
+def _ensure_results_visible(user, competition):
+    if not _can_view_results(user, competition):
+        raise PermissionDenied('The results for this competition have not been published.')
+
+
+@judge_required
 def scoring_panel(request, round_id):
     round_obj = get_object_or_404(Round, id=round_id)
     judge = get_object_or_404(Judge, user=request.user)
@@ -88,7 +113,7 @@ def scoring_panel(request, round_id):
                 participant=participant,
                 criterion__round=round_obj,
                 judge=judge,
-                status='SUBMITTED',
+                status__in=COUNTED_STATUSES,
             ).exists():
                 messages.warning(request, 'These scores have already been submitted and are locked.')
                 return redirect('scoring_panel', round_id=round_id)
@@ -110,7 +135,12 @@ def scoring_panel(request, round_id):
                 return redirect('scoring_panel', round_id=round_id)
 
             for criterion, score_value, remarks in parsed_scores:
-                Score.objects.update_or_create(
+                existing = Score.objects.filter(
+                    participant=participant,
+                    criterion=criterion,
+                    judge=judge,
+                ).first()
+                score_obj, _created = Score.objects.update_or_create(
                     participant=participant,
                     criterion=criterion,
                     judge=judge,
@@ -119,6 +149,14 @@ def scoring_panel(request, round_id):
                         'remarks': remarks,
                         'status': 'SUBMITTED'
                     }
+                )
+                record_score_change(
+                    score_obj,
+                    ScoreChangeLog.Action.SUBMITTED,
+                    user=request.user,
+                    old_score=existing.score if existing else None,
+                    old_status=existing.status if existing else '',
+                    details=f'{round_obj.competition.name} - {round_obj.name}',
                 )
 
             total_score = calculate_participant_total_score(
@@ -138,13 +176,19 @@ def scoring_panel(request, round_id):
             )
 
             calculate_rankings(round_obj)
+            record_action_from_request(
+                request,
+                'SCORE_SUBMIT',
+                target=participant,
+                details=f'Scores submitted for {participant.name} in {round_obj.competition.name} - {round_obj.name}',
+            )
             messages.success(request, 'Scores submitted successfully!')
             return redirect('scoring_panel', round_id=round_id)
 
     submitted_scores = set(Score.objects.filter(
         judge=judge,
         criterion__round=round_obj,
-        status='SUBMITTED'
+        status__in=COUNTED_STATUSES
     ).values_list('participant_id', flat=True).distinct())
 
     participants = Participant.objects.filter(
@@ -197,7 +241,7 @@ def scoring_panel(request, round_id):
     return render(request, 'scoring/judge/scoring_panel.html', context)
 
 
-@login_required
+@judge_required
 def update_score(request, round_id):
     if not request.headers.get('HX-Request'):
         return HttpResponseBadRequest("Not an HTMX request")
@@ -243,10 +287,10 @@ def update_score(request, round_id):
         criterion=criterion,
         judge=judge,
     ).first()
-    if existing_score and existing_score.status == 'SUBMITTED':
+    if existing_score and existing_score.status in COUNTED_STATUSES:
         return HttpResponse('Submitted scores are locked.', status=409)
 
-    Score.objects.update_or_create(
+    score_obj, created = Score.objects.update_or_create(
         participant=participant,
         criterion=criterion,
         judge=judge,
@@ -255,6 +299,15 @@ def update_score(request, round_id):
             'status': 'DRAFT',
         },
     )
+    if created or (existing_score and existing_score.score != score_obj.score):
+        record_score_change(
+            score_obj,
+            ScoreChangeLog.Action.DRAFT_UPDATE,
+            user=request.user,
+            old_score=existing_score.score if existing_score else None,
+            old_status=existing_score.status if existing_score else '',
+            details='Live draft edit from scoring panel',
+        )
 
     total_score = calculate_participant_total_score(
         participant,
@@ -277,6 +330,7 @@ def competition_results_detail(request, competition_id):
         'judge_assignments',
         'judge_assignments__judge'
     ), id=competition_id)
+    _ensure_results_visible(request.user, competition)
 
     rounds = list(build_round_results(competition))
     overall_standings = build_overall_standings(competition)
@@ -302,6 +356,7 @@ def results_print(request, competition_id):
         'judge_assignments__judge',
         'judge_assignments__rounds',
     ), id=competition_id)
+    _ensure_results_visible(request.user, competition)
 
     rounds = list(build_round_results(competition))
     overall_standings = build_overall_standings(competition)
@@ -355,6 +410,7 @@ def results_reveal(request, competition_id):
         'judge_assignments__judge__user',
         'results'
     ), id=competition_id)
+    _ensure_results_visible(request.user, competition)
 
     results = CompetitionResult.objects.filter(
         competition=competition,
@@ -380,22 +436,117 @@ def results_reveal(request, competition_id):
     return render(request, 'scoring/results_reveal.html', context)
 
 
-@login_required
+@management_required
+@require_POST
 def toggle_results_visibility(request, competition_id):
-    if request.method == 'POST' and request.user.is_superuser:
-        competition = get_object_or_404(Competition, id=competition_id)
-        show_results = request.POST.get('show_results') == 'true'
+    competition = get_object_or_404(Competition, id=competition_id)
+    show_results = request.POST.get('show_results') == 'true'
+    competition.show_results = show_results
+    competition.save(update_fields=['show_results'])
+    record_action_from_request(
+        request,
+        'RESULTS_VISIBILITY',
+        target=competition,
+        details=f'Results {"published" if show_results else "hidden"} for {competition.name}',
+    )
+    return JsonResponse({'status': 'success', 'show_results': show_results})
 
-        competition.show_results = show_results
-        competition.save()
 
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'}, status=403)
+@management_required
+@require_POST
+def verify_round_scores(request, round_id):
+    """Result approval: lock a round's submitted scores as VERIFIED."""
+    round_obj = get_object_or_404(Round.objects.select_related('competition'), id=round_id)
+    with transaction.atomic():
+        scores = list(Score.objects.filter(
+            criterion__round=round_obj,
+            status='SUBMITTED',
+        ).select_related('criterion', 'participant'))
+        for score in scores:
+            score.status = 'VERIFIED'
+            score.save(update_fields=['status'])
+            record_score_change(
+                score,
+                ScoreChangeLog.Action.VERIFIED,
+                user=request.user,
+                old_score=score.score,
+                old_status='SUBMITTED',
+                details='Result approval',
+            )
+    calculate_rankings(round_obj)
+    record_action_from_request(
+        request,
+        'RESULT_VERIFIED',
+        target=round_obj,
+        details=(
+            f'{len(scores)} score(s) verified for round "{round_obj.name}" '
+            f'in {round_obj.competition.name}'
+        ),
+    )
+    messages.success(request, f'{len(scores)} submitted score(s) verified for "{round_obj.name}".')
+    return redirect('round_results', competition_id=round_obj.competition_id, round_id=round_obj.id)
+
+
+@management_required
+@require_POST
+def unverify_round_scores(request, round_id):
+    """Reopen a verified round: flip VERIFIED scores back to SUBMITTED."""
+    round_obj = get_object_or_404(Round.objects.select_related('competition'), id=round_id)
+    with transaction.atomic():
+        scores = list(Score.objects.filter(
+            criterion__round=round_obj,
+            status='VERIFIED',
+        ).select_related('criterion', 'participant'))
+        for score in scores:
+            score.status = 'SUBMITTED'
+            score.save(update_fields=['status'])
+            record_score_change(
+                score,
+                ScoreChangeLog.Action.UNVERIFIED,
+                user=request.user,
+                old_score=score.score,
+                old_status='VERIFIED',
+                details='Verification cleared',
+            )
+    record_action_from_request(
+        request,
+        'RESULT_VERIFIED',
+        target=round_obj,
+        details=f'Verification cleared for round "{round_obj.name}" in {round_obj.competition.name}',
+    )
+    messages.success(request, f'Verification cleared for "{round_obj.name}". Scores are editable again after reopening the round.')
+    return redirect('round_results', competition_id=round_obj.competition_id, round_id=round_obj.id)
+
+
+@management_required
+def score_history(request, competition_id):
+    """Score change history for one competition, optionally filtered by round."""
+    competition = get_object_or_404(Competition, id=competition_id)
+    logs = ScoreChangeLog.objects.filter(
+        competition=competition
+    ).select_related(
+        'participant', 'criterion', 'judge', 'judge__user', 'changed_by', 'round',
+    )
+    round_id = request.GET.get('round')
+    if round_id:
+        try:
+            logs = logs.filter(round_id=int(round_id))
+        except (TypeError, ValueError):
+            round_id = None
+
+    page_obj = Paginator(logs, 25).get_page(request.GET.get('page'))
+    return render(request, 'scoring/score_history.html', {
+        'competition': competition,
+        'rounds': competition.rounds.all(),
+        'selected_round': round_id,
+        'page_obj': page_obj,
+    })
 
 
 @login_required
 def round_results(request, competition_id, round_id):
     competition = get_object_or_404(Competition, id=competition_id)
+    _ensure_results_visible(request.user, competition)
     round_obj = get_object_or_404(Round, id=round_id, competition=competition)
 
     if round_obj.status != 'COMPLETED':
@@ -416,7 +567,7 @@ def round_results(request, competition_id, round_id):
             avg_score = Score.objects.filter(
                 participant=result.participant,
                 criterion=criterion,
-                status='SUBMITTED'
+                status__in=COUNTED_STATUSES
             ).aggregate(avg=models.Avg('score'))['avg'] or 0
             criterion_scores[criterion.id] = avg_score
         result.criterion_scores = criterion_scores
@@ -429,13 +580,21 @@ def round_results(request, competition_id, round_id):
         'total_participants': len(scores)
     }
 
+    role = get_user_role(request.user)
     context = {
         'competition': competition,
         'round': round_obj,
         'criteria': criteria,
         'results': results,
         'page_obj': results,
-        'statistics': statistics
+        'statistics': statistics,
+        'can_manage_round': role in MANAGEMENT_ROLES or request.user.is_superuser,
+        'submitted_count': Score.objects.filter(
+            criterion__round=round_obj, status='SUBMITTED',
+        ).count(),
+        'verified_count': Score.objects.filter(
+            criterion__round=round_obj, status='VERIFIED',
+        ).count(),
     }
 
     return render(request, 'scoring/round_results.html', context)
@@ -444,6 +603,7 @@ def round_results(request, competition_id, round_id):
 @login_required
 def generate_results_pdf(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
+    _ensure_results_visible(request.user, competition)
     rounds = competition.rounds.all().order_by('order')
 
     response = HttpResponse(content_type='application/pdf')
@@ -853,6 +1013,10 @@ def results_list(request):
         'rounds__criteria'
     ).order_by('-start_date')
 
+    role = get_user_role(request.user)
+    if role not in MANAGEMENT_ROLES and role != UserProfile.Role.JUDGE:
+        competitions = competitions.filter(show_results=True)
+
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
 
     competition_results = []
@@ -891,4 +1055,319 @@ def results_list(request):
         'competition_results': competition_results,
         'page_obj': page_obj,
         'page_title': 'Competition Results'
+    })
+
+
+@management_required
+def award_list(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    awards = competition.awards.prefetch_related('recipients__participant', 'recipients__team').order_by('rank', 'name')
+    for award in awards:
+        award.recipients_list = list(award.recipients.all())
+        award.recipient_form = AwardRecipientForm(award=award)
+    return render(request, 'scoring/awards/award_list.html', {
+        'competition': competition,
+        'awards': awards,
+        'recipient_types': AwardRecipient.RecipientType.choices,
+        'recipient_form': AwardRecipientForm(award=Award()),
+    })
+
+
+@management_required
+def create_award(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    form = AwardForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        award = form.save(commit=False)
+        award.competition = competition
+        award.save()
+        record_action_from_request(
+            request,
+            'AWARD_CHANGE',
+            target=award,
+            details=f'Award "{award.name}" created',
+        )
+        messages.success(request, f'Award "{award.name}" created.')
+        return redirect('award_list', competition_id=competition.id)
+    return render(request, 'scoring/awards/award_form.html', {
+        'form': form,
+        'competition': competition,
+        'award': None,
+        'form_title': 'Create award',
+    })
+
+
+@management_required
+def edit_award(request, award_id):
+    award = get_object_or_404(Award.objects.select_related('competition'), id=award_id)
+    form = AwardForm(request.POST or None, instance=award)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        record_action_from_request(
+            request,
+            'AWARD_CHANGE',
+            target=award,
+            details=f'Award "{award.name}" updated',
+        )
+        messages.success(request, 'Award updated.')
+        return redirect('award_list', competition_id=award.competition_id)
+    return render(request, 'scoring/awards/award_form.html', {
+        'form': form,
+        'competition': award.competition,
+        'award': award,
+        'form_title': 'Edit award',
+    })
+
+
+@management_required
+@require_POST
+def delete_award(request, award_id):
+    award = get_object_or_404(Award.objects.select_related('competition'), id=award_id)
+    competition_id = award.competition_id
+    record_action_from_request(
+        request,
+        'AWARD_CHANGE',
+        target=award,
+        details=f'Award "{award.name}" deleted',
+    )
+    award.delete()
+    messages.success(request, 'Award deleted.')
+    return redirect('award_list', competition_id=competition_id)
+
+
+@management_required
+@require_POST
+def award_recipient_add(request, award_id):
+    award = get_object_or_404(Award.objects.select_related('competition'), id=award_id)
+    form = AwardRecipientForm(request.POST, award=award)
+    if form.is_valid():
+        recipient = AwardRecipient.objects.create(
+            award=award,
+            recipient_type=form.cleaned_data['recipient_type'],
+            participant=form.cleaned_data['participant'],
+            team=form.cleaned_data['team'],
+            citation=form.cleaned_data['citation'],
+        )
+        record_action_from_request(
+            request,
+            'AWARD_CHANGE',
+            target=recipient,
+            details=f'Recipient {recipient.display_name} added to award "{award.name}"',
+        )
+        messages.success(request, 'Recipient added to the award.')
+    else:
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+    return redirect('award_list', competition_id=award.competition_id)
+
+
+@management_required
+@require_POST
+def award_recipient_remove(request, recipient_id):
+    recipient = get_object_or_404(
+        AwardRecipient.objects.select_related('award__competition'),
+        id=recipient_id,
+    )
+    competition_id = recipient.award.competition_id
+    record_action_from_request(
+        request,
+        'AWARD_CHANGE',
+        target=recipient,
+        details=f'Recipient {recipient.display_name} removed from award "{recipient.award.name}"',
+    )
+    recipient.delete()
+    messages.success(request, 'Recipient removed from the award.')
+    return redirect('award_list', competition_id=competition_id)
+
+
+def _can_view_certificate(user, recipient):
+    role = get_user_role(user)
+    if role in MANAGEMENT_ROLES or user.is_superuser:
+        return True
+    if recipient.participant_id:
+        return recipient.participant.user_id == user.id
+    if recipient.team_id:
+        return recipient.team.staff_assignments.filter(user=user).exists()
+    return False
+
+
+@login_required
+def certificate_pdf(request, recipient_id):
+    recipient = get_object_or_404(
+        AwardRecipient.objects.select_related(
+            'award__competition', 'participant', 'team',
+        ),
+        id=recipient_id,
+    )
+    if not _can_view_certificate(request.user, recipient):
+        raise PermissionDenied('You are not allowed to download this certificate.')
+
+    award = recipient.award
+    competition = award.competition
+    recipient_name = recipient.display_name
+
+    response = HttpResponse(content_type='application/pdf')
+    filename = f'{competition.name}_{award.name}.pdf'.replace('/', '_')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=60,
+        leftMargin=60,
+        topMargin=50,
+        bottomMargin=50,
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    accent = colors.HexColor('#1e3a8a')
+    gold = colors.HexColor('#d4a017')
+
+    border_table = Table([['']], colWidths=[landscape(A4)[0] - 132], rowHeights=[landscape(A4)[1] - 112])
+    border_table.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 3, gold),
+        ('LINEBEFORE', (0, 0), (-1, -1), 8, accent),
+        ('LINEAFTER', (0, 0), (-1, -1), 8, accent),
+        ('LINEABOVE', (0, 0), (-1, -1), 8, accent),
+        ('LINEBELOW', (0, 0), (-1, -1), 8, accent),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    inner = []
+    inner.append(Spacer(1, 30))
+    inner.append(Paragraph('J.H. CERILLES STATE COLLEGE', ParagraphStyle(
+        'Institution', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=15,
+        textColor=accent, alignment=1, spaceAfter=2)))
+    inner.append(Paragraph('COMPETITION MANAGEMENT SYSTEM', ParagraphStyle(
+        'Org', parent=styles['Normal'], fontName='Helvetica', fontSize=9,
+        textColor=colors.gray, alignment=1, spaceAfter=26)))
+
+    inner.append(Paragraph('CERTIFICATE OF AWARD', ParagraphStyle(
+        'Title', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=30,
+        textColor=accent, alignment=1, spaceAfter=14, leading=36)))
+    inner.append(HRFlowable(width='60%', thickness=1.5, color=gold, spaceBefore=4, spaceAfter=22, hAlign='CENTER'))
+
+    inner.append(Paragraph('This certificate is proudly presented to', ParagraphStyle(
+        'Intro', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor('#334155'),
+        alignment=1, spaceAfter=14, leading=16)))
+    inner.append(Paragraph(recipient_name.upper(), ParagraphStyle(
+        'Recipient', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=28,
+        textColor=colors.HexColor('#0f766e'), alignment=1, spaceAfter=14, leading=34)))
+    inner.append(Paragraph(
+        f'in recognition of receiving the <b>{award.name}</b> '
+        f'at the <b>{competition.name}</b>.',
+        ParagraphStyle('Award', parent=styles['Normal'], fontSize=13,
+                       textColor=colors.HexColor('#334155'), alignment=1, spaceAfter=8, leading=18)))
+    if award.description:
+        inner.append(Paragraph(award.description, ParagraphStyle(
+            'Desc', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#64748b'),
+            alignment=1, spaceAfter=16, leading=14)))
+    else:
+        inner.append(Spacer(1, 16))
+
+    sig_cell = [
+        Spacer(1, 28),
+        HRFlowable(width='70%', thickness=1, color=accent, hAlign='CENTER'),
+        Paragraph('Competition Chairperson', ParagraphStyle(
+            'Sig', parent=styles['Normal'], fontSize=10, fontName='Helvetica-Bold',
+            textColor=colors.HexColor('#334155'), alignment=1, spaceBefore=6, leading=13)),
+    ]
+    sig_table = Table([[sig_cell]], colWidths=[280])
+    sig_table.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
+    inner.append(sig_table)
+
+    inner.append(Spacer(1, 24))
+    inner.append(Paragraph(f'Issued on {datetime.now().strftime("%B %d, %Y")}', ParagraphStyle(
+        'Date', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#64748b'),
+        alignment=1, spaceBefore=8, leading=13)))
+
+    border_content = Table([[inner]], colWidths=[landscape(A4)[0] - 132], rowHeights=[landscape(A4)[1] - 112])
+    border_content.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 24),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 24),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+    ]))
+
+    elements.append(border_table)
+    elements.append(Spacer(1, 16))
+    elements.append(border_content)
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    return response
+
+
+@login_required
+def medal_tally(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    _ensure_results_visible(request.user, competition)
+    tally = compute_medal_tally(competition)
+    return render(request, 'scoring/medal_tally.html', {
+        'competition': competition,
+        'tally': tally,
+        'overall': compute_overall_medal_tally([competition]),
+    })
+
+
+@management_required
+def overall_medal_tally(request):
+    """One medal table across every competition, sports and judged alike."""
+    tally = compute_overall_medal_tally()
+    return render(request, 'scoring/overall_medal_tally.html', {
+        'tally': tally,
+    })
+
+
+def _can_view_scoreboard(user, competition):
+    """Spectators (including anonymous) may watch the live board while the
+    competition is running or once results are published. Before that, only
+    management and judges can see it."""
+    if competition.show_results or competition.status == 'ACTIVE':
+        return True
+    if user.is_authenticated:
+        role = get_user_role(user)
+        return role in MANAGEMENT_ROLES or role == UserProfile.Role.JUDGE
+    return False
+
+
+def scoreboard(request, competition_id):
+    competition = get_object_or_404(
+        Competition.objects.prefetch_related(
+            'sport_events',
+            'sport_events__matches',
+            'sport_events__matches__entries',
+            'sport_events__matches__venue',
+        ),
+        id=competition_id,
+    )
+    visible = _can_view_scoreboard(request.user, competition)
+
+    events = []
+    if visible:
+        for event in competition.sport_events.all():
+            matches = [
+                m for m in event.matches.all()
+                if m.status != 'CANCELLED' and m.entries.count() > 0
+            ]
+            if not matches:
+                continue
+            events.append({
+                'event': event,
+                'matches': matches,
+            })
+
+    events.sort(key=lambda item: item['event'].name.lower())
+
+    template = 'scoring/scoreboard_partial.html' if request.headers.get('HX-Request') else 'scoring/scoreboard.html'
+    return render(request, template, {
+        'competition': competition,
+        'events': events if visible else [],
+        'visible': visible,
     })

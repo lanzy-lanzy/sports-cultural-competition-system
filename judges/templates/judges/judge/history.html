@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load scoring_filters %}
 
 {% block title %}Scoring History{% endblock %}
@@ -17,7 +17,7 @@
     <div class="space-y-6">
         {% for entry in history_data %}
         <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
-            <div class="flex flex-col justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-cyan-50 to-teal-50 px-6 py-5 sm:flex-row sm:items-center">
+            <div class="flex flex-col justify-between gap-3 border-b border-slate-100 bg-cyan-50 px-6 py-5 sm:flex-row sm:items-center">
                 <div>
                     <h3 class="font-display text-lg font-semibold uppercase text-slate-900">{{ entry.competition.name }}</h3>
                     <p class="text-sm text-slate-500">{{ entry.round.name }} &middot; Weight {{ entry.round.weight_percentage }}% &middot; {{ entry.round.get_status_display }}</p>
@@ -49,7 +49,7 @@
                                     {% if pdata.participant.profile_image %}
                                     <img src="{{ pdata.participant.profile_image.url }}" class="mr-3 h-9 w-9 rounded-full object-cover">
                                     {% else %}
-                                    <div class="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-xs font-bold text-white">{{ pdata.participant.name|make_list|first }}</div>
+                                    <div class="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-xs font-bold text-white">{{ pdata.participant.name|make_list|first }}</div>
                                     {% endif %}
                                     <span class="font-medium text-slate-900">{{ pdata.participant.name }}</span>
                                 </div>
@@ -96,7 +96,7 @@
         </div>
         <h3 class="font-display text-xl font-semibold text-slate-900">No Scoring History Yet</h3>
         <p class="mt-2 text-sm text-slate-500">Your submitted scores will appear here once you start scoring participants.</p>
-        <a href="{% url 'judge_dashboard' %}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:brightness-105">
+        <a href="{% url 'judge_dashboard' %}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125H8.625c-.621 0-1.125.504-1.125 1.125v3.375"/>
             </svg>

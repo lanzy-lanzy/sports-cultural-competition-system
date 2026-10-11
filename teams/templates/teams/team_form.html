@@ -1,0 +1,23 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{% if team %}Edit {{ team.name }}{% else %}Create Team{% endif %} - Competition Hub{% endblock %}
+{% block header_title %}Teams{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <div class="mb-7"><p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Team and Delegation Management</p><h1 class="mt-1 font-display text-3xl font-bold text-ink">{% if team %}Edit {{ team.name }}{% else %}Create a team or delegation{% endif %}</h1><p class="mt-2 text-sm text-slate-500">{% if team %}Update the team identity, category, logo, and approval status.{% else %}Define the team identity, category, and logo.{% endif %}</p></div>
+    {% if auto_approved %}
+    <div class="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3">
+        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+        <p class="text-sm text-emerald-800">Teams you create are <span class="font-bold">approved automatically</span>, so there is no status to choose. You can suspend a team later from its page.</p>
+    </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-soft">
+        {% csrf_token %}
+        <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
+            {% for field in form %}<div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}</div>{% endfor %}
+        </div>
+        <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-6 py-5 sm:px-8"><a href="{% if team %}{% url 'team_detail' team.id %}{% else %}{% url 'team_list' %}{% endif %}" class="text-sm font-bold text-slate-500 hover:text-ink">Cancel</a><button type="submit" class="rounded-xl bg-campus px-6 py-3 text-sm font-bold text-white shadow">{% if team %}Save team{% else %}Create team{% endif %}</button></div>
+    </form>
+</div>
+{% endblock %}

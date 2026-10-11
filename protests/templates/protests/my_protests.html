@@ -1,0 +1,62 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}My Protests - Scoring System{% endblock %}
+{% block header_title %}Protests &amp; Appeals{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">My Protests</h1>
+        <p class="mt-1 text-sm text-slate-500">Track the status of the protests and appeals you submitted.</p>
+    </div>
+    <a href="{% url 'submit_protest' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Submit protest
+    </a>
+</div>
+
+{% if protests %}
+<div class="space-y-4">
+    {% for protest in protests %}
+    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+        <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="font-display text-lg font-semibold text-slate-900">{{ protest.title }}</h3>
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
+                        {% if protest.status == 'RESOLVED' %}bg-emerald-100 text-emerald-700
+                        {% elif protest.status == 'REJECTED' %}bg-rose-100 text-rose-700
+                        {% elif protest.status == 'UNDER_REVIEW' %}bg-cyan-100 text-cyan-700
+                        {% else %}bg-amber-100 text-amber-700{% endif %}">
+                        <span class="h-1.5 w-1.5 rounded-full
+                            {% if protest.status == 'RESOLVED' %}bg-emerald-500
+                            {% elif protest.status == 'REJECTED' %}bg-rose-500
+                            {% elif protest.status == 'UNDER_REVIEW' %}bg-cyan-500
+                            {% else %}bg-amber-500{% endif %}"></span>
+                        {{ protest.get_status_display }}
+                    </span>
+                </div>
+                <p class="mt-1 text-sm text-slate-500">Against: <span class="font-semibold text-slate-700">{{ protest.target_name }}</span></p>
+                <p class="mt-2 line-clamp-2 text-sm text-slate-600">{{ protest.description }}</p>
+            </div>
+            <p class="shrink-0 text-xs text-slate-400">{{ protest.submitted_at|date:"M d, Y H:i" }}</p>
+        </div>
+        {% if protest.decision %}
+        <div class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <span class="font-semibold text-slate-700">Decision:</span> {{ protest.decision }}
+        </div>
+        {% endif %}
+        {% if protest.reviewed_by %}
+        <p class="mt-3 text-xs text-slate-400">Reviewed by {{ protest.reviewed_by.get_full_name|default:protest.reviewed_by.username }} on {{ protest.reviewed_at|date:"M d, Y" }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+    <h3 class="font-display text-xl font-semibold text-slate-900">No protests submitted</h3>
+    <p class="mt-2 text-sm text-slate-500">If you believe a decision was unfair, you can file a protest.</p>
+    <a href="{% url 'submit_protest' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">Submit a protest</a>
+</div>
+{% endif %}
+{% endblock %}

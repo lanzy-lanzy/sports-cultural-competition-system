@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,6 +9,36 @@ from django.views.decorators.http import require_POST
 from .models import Competition, Round, Criterion
 from scoring.services import calculate_rankings
 from django.db.models import Count
+from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required
+
+
+def _parse_decimal(raw, default=None):
+    if raw in (None, ''):
+        return default
+    try:
+        value = Decimal(raw)
+    except (InvalidOperation, TypeError):
+        return default
+    if not value.is_finite():
+        return default
+    return value
+
+
+def _competition_extras(post):
+    """Fields shared by create/edit competition forms for kinds and medals."""
+    kind = post.get('kind')
+    if kind not in Competition.Kind.values:
+        kind = Competition.Kind.MIXED
+    event_type = post.get('cultural_event_type')
+    if event_type not in Competition.CulturalEventType.values:
+        event_type = ''
+    return {
+        'kind': kind,
+        'cultural_event_type': event_type,
+        'gold_points': _parse_decimal(post.get('gold_points'), Decimal('10')),
+        'silver_points': _parse_decimal(post.get('silver_points'), Decimal('5')),
+        'bronze_points': _parse_decimal(post.get('bronze_points'), Decimal('3')),
+    }
 
 
 @login_required
@@ -17,13 +47,18 @@ def competition_list(request):
         rounds_count=Count('rounds', distinct=True),
         criteria_count=Count('rounds__criteria', distinct=True),
     )
+    if get_user_role(request.user) not in MANAGEMENT_ROLES:
+        competitions = competitions.filter(status__in=['ACTIVE', 'COMPLETED'])
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
     return render(request, 'competitions/competition_list.html', {'page_obj': page_obj})
 
 
 @login_required
 def competition_detail(request, competition_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competitions = Competition.objects.all()
+    if get_user_role(request.user) not in MANAGEMENT_ROLES:
+        competitions = competitions.filter(status__in=['ACTIVE', 'COMPLETED'])
+    competition = get_object_or_404(competitions, id=competition_id)
     rounds = competition.rounds.all().prefetch_related('criteria').order_by('order')
 
     context = {
@@ -39,7 +74,7 @@ def competition_detail(request, competition_id):
     return render(request, 'competitions/competition_detail.html', context)
 
 
-@login_required
+@management_required
 def create_competition(request):
     if request.method == 'POST':
         try:
@@ -50,7 +85,8 @@ def create_competition(request):
                     start_date=request.POST.get('start_date'),
                     end_date=request.POST.get('end_date'),
                     status=request.POST.get('status'),
-                    created_by=request.user
+                    created_by=request.user,
+                    **_competition_extras(request.POST)
                 )
 
                 round_names = request.POST.getlist('round_names[]')
@@ -74,6 +110,8 @@ def create_competition(request):
                         criterion_descriptions = request.POST.getlist(desc_prefix)
                         score_prefix = f'criterion_max_scores_{i+1}[]'
                         criterion_max_scores = request.POST.getlist(score_prefix)
+                        weight_prefix = f'criterion_weights_{i+1}[]'
+                        criterion_weights = request.POST.getlist(weight_prefix)
 
                         for j in range(len(criterion_names)):
                             if criterion_names[j].strip():
@@ -81,7 +119,11 @@ def create_competition(request):
                                     round=round_obj,
                                     name=criterion_names[j].upper(),
                                     description=criterion_descriptions[j].upper() if j < len(criterion_descriptions) and criterion_descriptions[j] else '',
-                                    max_score=float(criterion_max_scores[j]) if j < len(criterion_max_scores) and criterion_max_scores[j] else 100
+                                    max_score=float(criterion_max_scores[j]) if j < len(criterion_max_scores) and criterion_max_scores[j] else 100,
+                                    weight_percentage=_parse_decimal(
+                                        criterion_weights[j] if j < len(criterion_weights) else '',
+                                        Decimal('0'),
+                                    )
                                 )
 
             messages.success(request, 'Competition created successfully!')
@@ -93,7 +135,7 @@ def create_competition(request):
     return render(request, 'competitions/create_competition.html')
 
 
-@login_required
+@management_required
 def edit_competition(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
 
@@ -109,6 +151,8 @@ def edit_competition(request, competition_id):
         competition.start_date = start_date
         competition.end_date = end_date
         competition.status = status
+        for key, value in _competition_extras(request.POST).items():
+            setattr(competition, key, value)
         competition.save()
 
         messages.success(request, 'Competition updated successfully!')
@@ -117,7 +161,7 @@ def edit_competition(request, competition_id):
     return render(request, 'competitions/edit_competition.html', {'competition': competition})
 
 
-@login_required
+@management_required
 def delete_competition(request, competition_id):
     if request.method == 'POST':
         competition = get_object_or_404(Competition, id=competition_id)
@@ -127,7 +171,7 @@ def delete_competition(request, competition_id):
     return redirect('competition_list')
 
 
-@login_required
+@management_required
 def toggle_competition_status(request, competition_id):
     if request.method == 'POST':
         competition = get_object_or_404(Competition, id=competition_id)
@@ -146,12 +190,8 @@ def toggle_competition_status(request, competition_id):
         return redirect('competition_list')
 
 
-@login_required
+@management_required
 def manage_rounds(request, competition_id):
-    if not request.user.is_staff:
-        messages.error(request, 'You do not have permission to manage rounds.')
-        return redirect('competition_detail', competition_id=competition_id)
-
     competition = get_object_or_404(Competition, id=competition_id)
     rounds = competition.rounds.all().order_by('order')
     page_obj = Paginator(rounds, 10).get_page(request.GET.get('page'))
@@ -173,7 +213,7 @@ def manage_rounds(request, competition_id):
     return render(request, 'competitions/round_management/manage_rounds.html', context)
 
 
-@login_required
+@management_required
 def create_round(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
 
@@ -211,6 +251,7 @@ def create_round(request, competition_id):
                 criterion_names = request.POST.getlist('criterion_names[]')
                 criterion_descriptions = request.POST.getlist('criterion_descriptions[]')
                 criterion_max_scores = request.POST.getlist('criterion_max_scores[]')
+                criterion_weights = request.POST.getlist('criterion_weights[]')
 
                 for i in range(len(criterion_names)):
                     if criterion_names[i].strip():
@@ -218,7 +259,11 @@ def create_round(request, competition_id):
                             round=round_obj,
                             name=criterion_names[i].upper(),
                             description=criterion_descriptions[i].upper() if i < len(criterion_descriptions) and criterion_descriptions[i] else '',
-                            max_score=float(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100
+                            max_score=float(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100,
+                            weight_percentage=_parse_decimal(
+                                criterion_weights[i] if i < len(criterion_weights) else '',
+                                Decimal('0'),
+                            )
                         )
 
                 messages.success(request, 'Round and criteria created successfully!')
@@ -234,7 +279,7 @@ def create_round(request, competition_id):
     return render(request, 'competitions/round_management/create_round.html', context)
 
 
-@login_required
+@management_required
 def edit_round(request, competition_id, round_id):
     competition = get_object_or_404(Competition, id=competition_id)
     round_obj = get_object_or_404(Round, id=round_id, competition=competition)
@@ -270,35 +315,44 @@ def edit_round(request, competition_id, round_id):
                 updated_criteria_ids = set()
 
                 criterion_names = request.POST.getlist('criterion_names[]')
-                criterion_descriptions = request.POST.getlist('criterion_descriptions[]')
-                criterion_max_scores = request.POST.getlist('criterion_max_scores[]')
-                criterion_ids = request.POST.getlist('criterion_ids[]')
 
-                for i in range(len(criterion_names)):
-                    if not criterion_names[i].strip():
-                        continue
+                if criterion_names:
+                    criterion_descriptions = request.POST.getlist('criterion_descriptions[]')
+                    criterion_max_scores = request.POST.getlist('criterion_max_scores[]')
+                    criterion_ids = request.POST.getlist('criterion_ids[]')
+                    criterion_weights = request.POST.getlist('criterion_weights[]')
 
-                    criterion_id = criterion_ids[i] if i < len(criterion_ids) else None
-                    if criterion_id and criterion_id.isdigit():
-                        criterion_id = int(criterion_id)
-                        if criterion_id in existing_criteria_ids:
-                            criterion = Criterion.objects.get(id=criterion_id)
-                            criterion.name = criterion_names[i].upper()
-                            criterion.description = criterion_descriptions[i].upper() if i < len(criterion_descriptions) and criterion_descriptions[i] else ''
-                            criterion.max_score = Decimal(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100
-                            criterion.save()
-                            updated_criteria_ids.add(criterion_id)
-                    else:
-                        criterion = Criterion.objects.create(
-                            round=round_obj,
-                            name=criterion_names[i].upper(),
-                            description=criterion_descriptions[i].upper() if i < len(criterion_descriptions) and criterion_descriptions[i] else '',
-                            max_score=Decimal(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100
+                    for i in range(len(criterion_names)):
+                        if not criterion_names[i].strip():
+                            continue
+
+                        weight = _parse_decimal(
+                            criterion_weights[i] if i < len(criterion_weights) else '',
+                            Decimal('0'),
                         )
-                        updated_criteria_ids.add(criterion.id)
+                        criterion_id = criterion_ids[i] if i < len(criterion_ids) else None
+                        if criterion_id and criterion_id.isdigit():
+                            criterion_id = int(criterion_id)
+                            if criterion_id in existing_criteria_ids:
+                                criterion = Criterion.objects.get(id=criterion_id)
+                                criterion.name = criterion_names[i].upper()
+                                criterion.description = criterion_descriptions[i].upper() if i < len(criterion_descriptions) and criterion_descriptions[i] else ''
+                                criterion.max_score = Decimal(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100
+                                criterion.weight_percentage = weight
+                                criterion.save()
+                                updated_criteria_ids.add(criterion_id)
+                        else:
+                            criterion = Criterion.objects.create(
+                                round=round_obj,
+                                name=criterion_names[i].upper(),
+                                description=criterion_descriptions[i].upper() if i < len(criterion_descriptions) and criterion_descriptions[i] else '',
+                                max_score=Decimal(criterion_max_scores[i]) if i < len(criterion_max_scores) and criterion_max_scores[i] else 100,
+                                weight_percentage=weight
+                            )
+                            updated_criteria_ids.add(criterion.id)
 
-                criteria_to_delete = existing_criteria_ids - updated_criteria_ids
-                Criterion.objects.filter(id__in=criteria_to_delete).delete()
+                    criteria_to_delete = existing_criteria_ids - updated_criteria_ids
+                    Criterion.objects.filter(id__in=criteria_to_delete).delete()
 
                 messages.success(request, 'Round and criteria updated successfully!')
                 return redirect('manage_rounds', competition_id=competition_id)
@@ -315,7 +369,7 @@ def edit_round(request, competition_id, round_id):
     return render(request, 'competitions/round_management/edit_round.html', context)
 
 
-@login_required
+@management_required
 def delete_round(request, competition_id, round_id):
     if request.method != 'POST':
         messages.error(request, 'Invalid request method.')
@@ -335,7 +389,7 @@ def delete_round(request, competition_id, round_id):
     return redirect('manage_rounds', competition_id=competition_id)
 
 
-@login_required
+@management_required
 @require_POST
 def toggle_round_status(request, competition_id, round_id):
     with transaction.atomic():
@@ -375,7 +429,7 @@ def toggle_round_status(request, competition_id, round_id):
     return redirect('manage_rounds', competition_id=competition_id)
 
 
-@login_required
+@management_required
 @require_POST
 def start_round(request, competition_id, round_id):
     competition = get_object_or_404(Competition, id=competition_id)
@@ -396,7 +450,7 @@ def start_round(request, competition_id, round_id):
     return redirect('manage_rounds', competition_id=competition_id)
 
 
-@login_required
+@management_required
 @require_POST
 def complete_round(request, competition_id, round_id):
     competition = get_object_or_404(Competition, id=competition_id)

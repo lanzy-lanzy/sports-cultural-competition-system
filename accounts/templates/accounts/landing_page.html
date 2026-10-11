@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,9 +11,13 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { ink: '#10263a', campus: '#087f78', aqua: '#1fb9ad', mist: '#eff8f6' },
+                    colors: {
+                        ink: '#10263a', campus: '#087f78', aqua: '#1fb9ad', mist: '#eff8f6',
+                        cyan: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' },
+                        violet: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' }
+                    },
                     fontFamily: { sans: ['"Open Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'], display: ['Poppins', '"Open Sans"', 'sans-serif'] },
-                    boxShadow: { soft: '0 24px 70px -30px rgba(15, 60, 70, .28)' },
+                    boxShadow: { soft: '0 8px 24px -16px rgba(15, 60, 70, .25)' },
                 },
             },
         };
@@ -23,21 +27,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         .page-grid {
-            background-image: linear-gradient(rgba(8, 127, 120, .055) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 120, .055) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(8, 127, 120, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(8, 127, 120, .05) 1px, transparent 1px);
             background-size: 42px 42px;
             -webkit-mask-image: linear-gradient(to bottom, black, transparent 76%);
             mask-image: linear-gradient(to bottom, black, transparent 76%);
         }
-        .score-card { animation: float-card 6s ease-in-out infinite; }
-        @keyframes float-card { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-        @media (prefers-reduced-motion: reduce) { .score-card { animation: none; } * { scroll-behavior: auto !important; } }
+        @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
     </style>
 </head>
 <body class="bg-[#f7faf9] font-sans text-slate-700 antialiased selection:bg-teal-200 selection:text-ink">
     <div class="relative min-h-screen overflow-hidden">
         <div class="page-grid pointer-events-none absolute inset-x-0 top-0 h-[780px]"></div>
-        <div class="pointer-events-none absolute -left-36 top-48 h-80 w-80 rounded-full bg-teal-200/45 blur-3xl"></div>
-        <div class="pointer-events-none absolute -right-40 top-20 h-96 w-96 rounded-full bg-cyan-200/35 blur-3xl"></div>
+        
+        
 
         <header class="relative z-20 px-4 pt-4 sm:px-6 lg:px-8">
             <nav class="mx-auto flex max-w-7xl items-center justify-between rounded-2xl border border-white/90 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl sm:px-5" aria-label="Main navigation">
@@ -63,7 +65,7 @@
 
                 <div class="flex shrink-0 items-center gap-2">
                     <a href="{% url 'login' %}" class="hidden rounded-xl px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-slate-100 sm:inline-flex">Sign in</a>
-                    <a href="{% url 'register' %}" class="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-campus focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2 sm:px-5">
+                    <a href="{% url 'register' %}" class="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:bg-campus focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2 sm:px-5">
                         <span class="hidden sm:inline">Judge registration</span>
                         <span class="sm:hidden">Register</span>
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
@@ -86,7 +88,7 @@
                     <p class="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
 
                     <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-campus to-aqua px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-teal-600/25 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-teal-600/25 focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2">
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-campus px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-teal-600/25 transition-all hover:shadow-lg hover:shadow-teal-600/25 focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2">
                             Enter competition hub
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                         </a>
@@ -105,9 +107,9 @@
 
                 <div class="relative lg:col-span-5">
                     <div class="score-card relative mx-auto max-w-lg">
-                        <div class="absolute -inset-5 rounded-[2.2rem] bg-gradient-to-br from-teal-200/70 via-cyan-100/20 to-amber-100/60 blur-2xl"></div>
-                        <div class="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-ink p-3 shadow-2xl shadow-slate-900/25">
-                            <div class="rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-[#173d4a] to-[#0d2b38] p-5 sm:p-6">
+                        
+                        <div class="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-ink p-3 shadow-lg shadow-slate-900/25">
+                            <div class="rounded-[1.35rem] border border-white/10 bg-[#173d4a] p-5 sm:p-6">
                                 <div class="flex items-start justify-between gap-4">
                                     <div>
                                         <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-teal-300"><span class="h-2 w-2 rounded-full bg-teal-300 shadow-[0_0_12px_rgba(94,234,212,.8)]"></span>Scoring in progress</div>
@@ -151,17 +153,17 @@
                     </div>
 
                     <div class="mt-10 grid gap-5 md:grid-cols-3">
-                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-150 hover:border-teal-200 hover:bg-white hover:shadow-soft">
                             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-white shadow-lg shadow-slate-900/15 transition-colors group-hover:bg-campus"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0L6 21m9.75-4.5L18 21M8.25 9l2.25 2.25L15.75 6"/></svg></div>
                             <h3 class="mt-5 font-display text-lg font-bold text-ink">For administrators</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Create competitions, organize rounds, assign judges, and manage participants from one clear workspace.</p>
                         </article>
-                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-150 hover:border-teal-200 hover:bg-white hover:shadow-soft">
                             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-campus text-white shadow-lg shadow-teal-700/20"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zM19.5 7.125L16.862 4.487M18 14.25v4.875A2.625 2.625 0 0115.375 21H4.875A2.625 2.625 0 012.25 18.375V7.875A2.625 2.625 0 014.875 5.25H9.75"/></svg></div>
                             <h3 class="mt-5 font-display text-lg font-bold text-ink">For judges</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Score confidently with guided criteria, automatic totals, and a focused panel built for fast decisions.</p>
                         </article>
-                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-teal-200 hover:bg-white hover:shadow-soft">
+                        <article class="group rounded-2xl border border-slate-200 bg-[#f9fbfb] p-6 transition-all duration-150 hover:border-teal-200 hover:bg-white hover:shadow-soft">
                             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400 text-amber-950 shadow-lg shadow-amber-500/20"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497M5.25 4.236V2.721A48.46 48.46 0 0112 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.75 6.75 0 008.54 0"/></svg></div>
                             <h3 class="mt-5 font-display text-lg font-bold text-ink">For results teams</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Review live rankings, switch between rounds, and produce polished official reports ready to print.</p>
@@ -171,10 +173,10 @@
             </section>
 
             <section id="workflow" class="px-6 py-20 lg:px-8">
-                <div class="mx-auto max-w-7xl rounded-[2rem] bg-ink px-6 py-10 text-white shadow-2xl shadow-slate-900/15 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:py-12">
+                <div class="mx-auto max-w-7xl rounded-[2rem] bg-ink px-6 py-10 text-white shadow-lg shadow-slate-900/15 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:py-12">
                     <div class="max-w-xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">Ready when you are</p><h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Run the next competition with confidence.</h2><p class="mt-4 leading-7 text-slate-300">Sign in to manage an event, or register for a judge account to start scoring.</p></div>
                     <div class="mt-7 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-aqua px-6 py-3.5 text-sm font-bold text-ink transition-all hover:-translate-y-0.5 hover:bg-teal-300">Sign in to the hub</a>
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-aqua px-6 py-3.5 text-sm font-bold text-ink transition-all hover:bg-teal-300">Sign in to the hub</a>
                         <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10">Register as judge</a>
                     </div>
                 </div>

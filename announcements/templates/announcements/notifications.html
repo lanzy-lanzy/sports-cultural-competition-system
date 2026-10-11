@@ -1,0 +1,55 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Notifications - Scoring System{% endblock %}
+{% block header_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Notifications</h1>
+        <p class="mt-1 text-sm text-slate-500">Your in-app activity and announcement feed.</p>
+    </div>
+    {% if unread_count %}
+    <form method="post" action="{% url 'mark_all_notifications_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            Mark all as read
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{% if page_obj %}
+<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <ul class="divide-y divide-slate-100">
+        {% for notification in page_obj %}
+        <li class="flex items-start gap-4 px-6 py-4 {% if not notification.is_read %}bg-cyan-50/50{% endif %}">
+            <span class="mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {% if notification.is_read %}bg-slate-100 text-slate-400{% else %}bg-cyan-500 text-white{% endif %}">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M3.124 7.5A8.969 8.969 0 015.292 3m13.416 0a8.969 8.969 0 012.168 4.5"/></svg>
+            </span>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-slate-900">{{ notification.title }}</p>
+                {% if notification.body %}<p class="mt-0.5 whitespace-pre-line text-sm text-slate-600">{{ notification.body }}</p>{% endif %}
+                <p class="mt-1 text-xs text-slate-400">{{ notification.created_at|date:"M d, Y H:i" }}</p>
+                {% if notification.link %}
+                <a href="{{ notification.link }}" class="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-cyan-700 hover:text-cyan-900">Open &rarr;</a>
+                {% endif %}
+            </div>
+            {% if not notification.is_read %}
+            <form method="post" action="{% url 'mark_notification_read' notification.id %}">
+                {% csrf_token %}
+                <button type="submit" class="cursor-pointer rounded-lg border border-cyan-200 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-700 shadow-sm transition-colors hover:bg-cyan-50">Mark read</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% include 'partials/pagination.html' %}
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+    <h3 class="font-display text-xl font-semibold text-slate-900">No notifications</h3>
+    <p class="mt-2 text-sm text-slate-500">You are all caught up.</p>
+</div>
+{% endif %}
+{% endblock %}
