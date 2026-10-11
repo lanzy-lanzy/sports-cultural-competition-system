@@ -7,6 +7,9 @@ from .models import UserProfile
 
 @receiver(post_save, sender=User)
 def ensure_user_profile(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        # Loading a fixture: the profile itself comes with the data.
+        return
     if not created:
         return
     if instance.is_superuser:
@@ -20,6 +23,8 @@ def ensure_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender='judges.Judge')
 def mark_judge_role(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
     if instance.user.is_superuser:
         return
     profile, _ = UserProfile.objects.get_or_create(user=instance.user)

@@ -94,13 +94,66 @@ WSGI_APPLICATION = 'scoring_system.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# Default backend is the local XAMPP MySQL/MariaDB server. Set DB_ENGINE=sqlite
+# to fall back to the previous db.sqlite3 file.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DB_ENGINE = os.environ.get('DB_ENGINE', 'mysql').lower()
+
+if DB_ENGINE == 'sqlite':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE', 'competition_hub')
+    MYSQL_HOST = os.environ.get('MYSQL_HOST', '127.0.0.1')
+    MYSQL_PORT = int(os.environ.get('MYSQL_PORT', '3306'))
+    MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': MYSQL_DATABASE,
+            'USER': MYSQL_USER,
+            'PASSWORD': MYSQL_PASSWORD,
+            'HOST': MYSQL_HOST,
+            'PORT': MYSQL_PORT,
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                # utf8mb4_bin keeps string comparisons case-sensitive, matching
+                # SQLite/Postgres; XAMPP's default unicode_ci would silently
+                # change lookup and unique-constraint behaviour.
+                'COLLATION': 'utf8mb4_bin',
+            },
+        }
+    }
+
+    def _ensure_mysql_database():
+        """Create the MySQL database on the local server if it does not exist."""
+        try:
+            import MySQLdb
+            connection = MySQLdb.connect(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USER, password=MYSQL_PASSWORD)
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        f'CREATE DATABASE IF NOT EXISTS `{MYSQL_DATABASE}` '
+                        'CHARACTER SET utf8mb4 COLLATE utf8mb4_bin'
+                    )
+                connection.commit()
+            finally:
+                connection.close()
+        except Exception:
+            # Surface the real connection error later through Django's DB layer.
+            pass
+
+    _ensure_mysql_database()
 
 
 # Password validation

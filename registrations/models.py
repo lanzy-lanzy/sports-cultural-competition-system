@@ -27,21 +27,9 @@ class EventRegistration(models.Model):
                 condition=(Q(competition__isnull=False) | Q(sport_event__isnull=False)),
                 name='registration_has_target',
             ),
-            models.UniqueConstraint(
-                fields=['sport_event', 'team'],
-                condition=Q(sport_event__isnull=False, team__isnull=False),
-                name='unique_registration_sport_event_team',
-            ),
-            models.UniqueConstraint(
-                fields=['sport_event', 'participant'],
-                condition=Q(sport_event__isnull=False, participant__isnull=False),
-                name='unique_registration_sport_event_participant',
-            ),
-            models.UniqueConstraint(
-                fields=['competition', 'participant'],
-                condition=Q(competition__isnull=False, participant__isnull=False),
-                name='unique_registration_competition_participant',
-            ),
+            models.UniqueConstraint(fields=['sport_event', 'team'], name='unique_registration_sport_event_team'),
+            models.UniqueConstraint(fields=['sport_event', 'participant'], name='unique_registration_sport_event_participant'),
+            models.UniqueConstraint(fields=['competition', 'participant'], name='unique_registration_competition_participant'),
         ]
 
     registrant = models.ForeignKey(

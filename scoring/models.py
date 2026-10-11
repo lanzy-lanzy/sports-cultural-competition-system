@@ -135,16 +135,8 @@ class AwardRecipient(models.Model):
                           | (Q(participant__isnull=True) & Q(team__isnull=False)),
                 name='award_recipient_single_contestant',
             ),
-            models.UniqueConstraint(
-                fields=['award', 'participant'],
-                condition=Q(participant__isnull=False),
-                name='unique_award_participant',
-            ),
-            models.UniqueConstraint(
-                fields=['award', 'team'],
-                condition=Q(team__isnull=False),
-                name='unique_award_team',
-            ),
+            models.UniqueConstraint(fields=['award', 'participant'], name='unique_award_participant'),
+            models.UniqueConstraint(fields=['award', 'team'], name='unique_award_team'),
         ]
 
     award = models.ForeignKey(Award, on_delete=models.CASCADE, related_name='recipients')

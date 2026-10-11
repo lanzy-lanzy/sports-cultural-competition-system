@@ -117,16 +117,10 @@ class EventEntry(models.Model):
                           | (Q(team__isnull=True) & Q(participant__isnull=False)),
                 name='event_entry_single_contestant',
             ),
-            models.UniqueConstraint(
-                fields=['event', 'team'],
-                condition=Q(team__isnull=False),
-                name='unique_event_team_entry',
-            ),
-            models.UniqueConstraint(
-                fields=['event', 'participant'],
-                condition=Q(participant__isnull=False),
-                name='unique_event_participant_entry',
-            ),
+            # NULL never conflicts in a unique index on any supported backend,
+            # so the isnull guards from the old conditional constraints are implicit.
+            models.UniqueConstraint(fields=['event', 'team'], name='unique_event_team_entry'),
+            models.UniqueConstraint(fields=['event', 'participant'], name='unique_event_participant_entry'),
         ]
 
     event = models.ForeignKey(SportsEvent, on_delete=models.CASCADE, related_name='entries')

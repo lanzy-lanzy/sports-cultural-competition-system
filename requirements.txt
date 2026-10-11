@@ -20,6 +20,8 @@ django-shortcuts==1.6
     # via scoring
 faker==40.23.0
     # via scoring
+mysqlclient==2.3.0
+    # via scoring
 pillow==12.2.0
     # via
     #   reportlab

@@ -10,7 +10,7 @@ result approval, and public publication.
 | Layer        | Technology                                                   |
 |--------------|--------------------------------------------------------------|
 | Backend      | Django (installed: **6.0.8**)                                |
-| Database     | **SQLite 3** (`db.sqlite3`) — see *Database* below            |
+| Database     | **MySQL / MariaDB** via XAMPP (`competition_hub`) — see *Database* below |
 | Templates    | Django Templates                                              |
 | Interactivity| HTMX (`django-htmx` middleware) + vanilla JS (`static/js`)    |
 | Styling      | Tailwind CSS (Play CDN) + Google Fonts (Poppins / Open Sans)  |
@@ -66,8 +66,24 @@ No `.env.example` exists yet; add one mirroring the table above when deploying.
 
 ## Database
 
-The project is configured for **SQLite 3** (`scoring_system/settings.py`), not PostgreSQL.
-To switch to PostgreSQL, change the `DATABASES` setting and provide connection env vars.
+The project runs on the **local XAMPP MySQL/MariaDB server** (`scoring_system/settings.py`).
+The database `competition_hub` is **created automatically** on first `migrate` if missing.
+Defaults match a stock XAMPP install (user `root`, empty password, `127.0.0.1:3306`);
+override with env vars: `MYSQL_DATABASE`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`,
+`MYSQL_PASSWORD`. The database uses the case-sensitive `utf8mb4_bin` collation so
+string lookups behave like the previous SQLite setup (XAMPP's default collation
+ignores case). Strict mode (`STRICT_TRANS_TABLES`) is enabled on every connection.
+
+First run:
+
+1. Start **MySQL** in the XAMPP Control Panel.
+2. `uv run python manage.py migrate` — creates the database and schema if needed.
+3. Optional demo data: `uv run python manage.py populate_db` and
+   `uv run python manage.py seed_sports`.
+
+Set `DB_ENGINE=sqlite` to fall back to the previous `db.sqlite3` file (e.g. to export
+old data: `DB_ENGINE=sqlite python manage.py dumpdata --natural-primary --natural-foreign
+-e auth.permission -e sessions -e admin.logentry -o data.json`, then `loaddata` it on MySQL).
 
 **Migrations & data safety**
 
@@ -111,7 +127,8 @@ exposed to templates via `accounts/context_processors.py`.
 
 - **Tailwind via CDN** in `base.html` and the auth/landing shells; switch to a compiled
   Tailwind build for production.
-- **SQLite** is the configured database; production deployments should use PostgreSQL.
+- **XAMPP MySQL must be running** before any management command or page load; the
+  production target remains PostgreSQL.
 - **Email** defaults to the console backend, so password-reset messages print to the
   terminal instead of being delivered.
 - The UI was simplified for clarity: decorative gradients were flattened to solid brand
