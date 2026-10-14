@@ -13,9 +13,17 @@ INPUT_CLASS = (
     'focus:bg-white focus:ring-4 focus:ring-teal-100'
 )
 
+FILE_INPUT_CLASS = (
+    'h-12 w-full rounded-xl border border-slate-600 bg-white/5 px-3 text-xs '
+    'text-slate-300 outline-none transition file:mr-3 file:rounded-lg file:border-0 '
+    'file:bg-campus file:px-3 file:py-2 file:text-xs file:font-bold file:text-white'
+)
+
 
 class RegistrationForm(UserCreationForm):
-    full_name = forms.CharField(max_length=150)
+    first_name = forms.CharField(max_length=100)
+    middle_name = forms.CharField(max_length=100, required=False)
+    last_name = forms.CharField(max_length=100)
     email = forms.EmailField()
     phone = forms.CharField(max_length=30)
     role = forms.ChoiceField(
@@ -28,12 +36,19 @@ class RegistrationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('full_name', 'username', 'email', 'phone', 'role', 'password1', 'password2')
+        fields = (
+            'first_name', 'middle_name', 'last_name', 'username', 'email',
+            'phone', 'role', 'password1', 'password2',
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['middle_name'].label = 'Middle name (optional)'
         for field in self.fields.values():
-            field.widget.attrs['class'] = INPUT_CLASS
+            if isinstance(field.widget, forms.FileInput):
+                field.widget.attrs['class'] = FILE_INPUT_CLASS
+            else:
+                field.widget.attrs['class'] = INPUT_CLASS
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
@@ -50,14 +65,14 @@ class RegistrationForm(UserCreationForm):
     @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
-        names = self.cleaned_data['full_name'].strip().split(maxsplit=1)
-        user.first_name = names[0]
-        user.last_name = names[1] if len(names) > 1 else ''
+        user.first_name = self.cleaned_data['first_name'].strip()
+        user.last_name = self.cleaned_data['last_name'].strip()
         user.email = self.cleaned_data['email']
         if commit:
             user.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.role = self.cleaned_data['role']
+            profile.middle_name = self.cleaned_data['middle_name'].strip()
             profile.phone = self.cleaned_data['phone'].strip()
             profile.save()
 
@@ -71,7 +86,9 @@ class RegistrationForm(UserCreationForm):
 
 
 class ProfileForm(forms.Form):
-    full_name = forms.CharField(max_length=150)
+    first_name = forms.CharField(max_length=100)
+    middle_name = forms.CharField(max_length=100, required=False)
+    last_name = forms.CharField(max_length=100)
     username = forms.CharField(max_length=150)
     email = forms.EmailField()
     phone = forms.CharField(max_length=30, required=False)
@@ -82,14 +99,22 @@ class ProfileForm(forms.Form):
         profile, _ = UserProfile.objects.get_or_create(user=user)
         self.profile = profile
         kwargs.setdefault('initial', {
-            'full_name': user.get_full_name(),
+            'first_name': user.first_name,
+            'middle_name': profile.middle_name,
+            'last_name': user.last_name,
             'username': user.username,
             'email': user.email,
             'phone': profile.phone,
         })
         super().__init__(*args, **kwargs)
+        self.fields['middle_name'].label = 'Middle name (optional)'
+        # Grouped as name pair, optional middle name, then contact details.
+        self.order_fields(('first_name', 'last_name', 'middle_name', 'email', 'username', 'phone'))
         for field in self.fields.values():
-            field.widget.attrs['class'] = INPUT_CLASS
+            if isinstance(field.widget, forms.FileInput):
+                field.widget.attrs['class'] = FILE_INPUT_CLASS
+            else:
+                field.widget.attrs['class'] = INPUT_CLASS
 
     def clean_username(self):
         username = self.cleaned_data['username'].strip()
@@ -105,13 +130,13 @@ class ProfileForm(forms.Form):
 
     @transaction.atomic
     def save(self):
-        names = self.cleaned_data['full_name'].strip().split(maxsplit=1)
-        self.user.first_name = names[0]
-        self.user.last_name = names[1] if len(names) > 1 else ''
+        self.user.first_name = self.cleaned_data['first_name'].strip()
+        self.user.last_name = self.cleaned_data['last_name'].strip()
         self.user.username = self.cleaned_data['username']
         self.user.email = self.cleaned_data['email']
         self.user.save()
 
+        self.profile.middle_name = self.cleaned_data['middle_name'].strip()
         self.profile.phone = self.cleaned_data['phone'].strip()
         if self.cleaned_data.get('profile_image'):
             self.profile.profile_image = self.cleaned_data['profile_image']

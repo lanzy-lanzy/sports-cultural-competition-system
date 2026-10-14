@@ -1,13 +1,13 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}{{ form_title }} - Competition Hub{% endblock %}
+{% block title %}{{ form_title }} - Competrack{% endblock %}
 {% block header_title %}Participants{% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-5xl">
     <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-            <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Participant and Athlete Management</p>
+            <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Participant Management</p>
             <h1 class="mt-1 font-display text-3xl font-bold tracking-tight text-ink">{{ form_title }}</h1>
             <p class="mt-2 text-sm text-slate-500">{{ form_description }}</p>
         </div>
@@ -19,20 +19,29 @@
         {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
         <div class="border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8">
             <div class="flex items-center justify-between gap-4">
-                <div><p class="font-display font-bold text-ink">Athlete record</p><p class="mt-1 text-xs text-slate-500">Contact, classification, and supporting identification.</p></div>
+                <div><p class="font-display font-bold text-ink">Participant record</p><p class="mt-1 text-xs text-slate-500">Contact, classification, and supporting identification.</p></div>
                 {% if participant %}<span class="rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-campus">{{ participant.participant_id }}</span>{% endif %}
             </div>
         </div>
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
             {% if form.non_field_errors %}<div class="sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
-            {% for field in form %}
+            <div class="sm:col-span-2 grid gap-5 sm:grid-cols-3">
+                {% for field in form %}{% if field.name == 'first_name' or field.name == 'middle_name' or field.name == 'last_name' %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+            {% for field in form %}{% if field.name != 'first_name' and field.name != 'middle_name' and field.name != 'last_name' %}
             <div class="{% if field.name == 'bio' or field.name == 'achievements' or field.name == 'profile_image' or field.name == 'identification_document' %}sm:col-span-2{% endif %}">
                 <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
                 {{ field }}
                 {% if field.help_text %}<p class="mt-1 text-xs text-slate-400">{{ field.help_text }}</p>{% endif %}
                 {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
             </div>
-            {% endfor %}
+            {% endif %}{% endfor %}
             {% if participant.profile_image %}
             <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm font-semibold text-rose-600"><input type="checkbox" name="remove_image" value="true" class="h-4 w-4 rounded"> Remove current profile image</label>
             {% endif %}

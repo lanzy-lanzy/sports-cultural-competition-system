@@ -77,9 +77,11 @@ def logout_view(request):
 @login_required
 def portal_home(request):
     competitions = Competition.objects.filter(status__in=['ACTIVE', 'COMPLETED']).order_by('-start_date')[:8]
+    role = get_user_role(request.user)
     return render(request, 'accounts/portal_home.html', {
         'competitions': competitions,
-        'account_role': get_user_role(request.user),
+        'account_role': role,
+        'participant_has_profile': role == UserProfile.Role.PARTICIPANT and Participant.objects.filter(user=request.user).exists(),
     })
 
 

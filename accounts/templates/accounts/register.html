@@ -1,67 +1,125 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create an account for the JHCSC Competition Management System.">
-    <title>Create Account - JHCSC Competition Hub</title>
+    <meta name="description" content="Create your Competrack account for the J.H. Cerilles State College competition platform.">
+    <title>Create Account - Competrack</title>
     {% load static %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config={theme:{extend:{colors:{ink:'#10263a',campus:'#087f78',aqua:'#1fb9ad',mist:'#eff8f6',cyan:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'},violet:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'}},fontFamily:{sans:['Open Sans','sans-serif'],display:['Poppins','sans-serif']},boxShadow:{soft:'0 8px 24px -16px rgba(16, 38, 58, .25)'}}}};</script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-[#f4f8f7] font-sans text-slate-700 antialiased">
-    <main class="grid min-h-screen lg:grid-cols-[.8fr_1.2fr]">
-        <section class="relative hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col">
-            <a href="{% url 'landing_page' %}" class="relative flex items-center gap-3">
+    <main class="grid min-h-screen lg:grid-cols-[.78fr_1.22fr]">
+        <section class="hidden flex-col justify-between bg-ink px-12 py-14 text-white lg:flex">
+            <a href="{% url 'landing_page' %}" class="flex items-center gap-3">
                 <span class="flex -space-x-2"><span class="relative z-10 flex h-12 w-12 rounded-xl bg-white p-1"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo"></span><span class="flex h-12 w-12 rounded-xl bg-white p-1"><img src="{% static 'images/it_logo.png' %}" alt="IT Department logo"></span></span>
-                <span><span class="block font-display text-sm font-bold">Competition Hub</span><span class="text-[10px] uppercase tracking-widest text-teal-300">Secure account access</span></span>
+                <span><span class="block font-display text-sm font-bold">Competrack</span><span class="block text-[10px] uppercase tracking-widest text-teal-300">JHCSC competition platform</span></span>
             </a>
-            <div class="relative my-auto max-w-md">
-                <p class="text-xs font-bold uppercase tracking-[.18em] text-teal-300">Module 1 · Accounts</p>
-                <h1 class="mt-5 font-display text-4xl font-bold leading-tight">One secure account, the right competition workspace.</h1>
-                <p class="mt-5 leading-7 text-slate-300">Choose your account type. Administrative roles are assigned separately by a system administrator.</p>
-                <div class="mt-9 grid gap-3 text-sm text-slate-300">
-                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Secure password validation</p>
-                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Role-based access</p>
-                    <p class="rounded-xl border border-white/10 bg-white/5 px-4 py-3">✓ Recoverable account access</p>
-                </div>
+            <div class="max-w-sm">
+                <h1 class="font-display text-3xl font-bold leading-snug tracking-[-0.02em]">Create the account that fits your role.</h1>
+                <p class="mt-5 text-sm leading-7 text-slate-300">Participants register for events, judges score from a guided panel, and team managers handle their delegations.</p>
+                <ol class="mt-8 space-y-3 text-sm text-slate-300">
+                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 font-display text-xs font-bold text-teal-200">1</span>Enter your name and contact details</li>
+                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 font-display text-xs font-bold text-teal-200">2</span>Choose the role you sign up for</li>
+                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 font-display text-xs font-bold text-teal-200">3</span>Sign in to your workspace</li>
+                </ol>
             </div>
+            <p class="text-xs text-slate-500">Administrative roles are assigned by a system administrator.</p>
         </section>
 
-        <section class="flex items-center px-5 py-8 sm:px-10 lg:px-16">
-            <div class="mx-auto w-full max-w-2xl">
-                <div class="mb-7 flex items-center justify-between"><a href="{% url 'landing_page' %}" class="text-sm font-semibold text-slate-500 hover:text-campus">← Back to home</a><a href="{% url 'login' %}" class="text-sm font-bold text-campus">Sign in</a></div>
-                <p class="text-xs font-bold uppercase tracking-[.16em] text-campus">Account registration</p>
-                <h2 class="mt-2 font-display text-3xl font-bold text-ink">Create your account</h2>
-                <p class="mt-2 text-sm text-slate-500">Use accurate contact details so organizers can identify you.</p>
+        <section class="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
+            <div class="w-full max-w-xl">
+                <a href="{% url 'landing_page' %}" class="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-campus lg:hidden">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back to home
+                </a>
 
-                {% if form.non_field_errors %}<div class="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
-                <form method="post" class="mt-7 space-y-5" novalidate>
+                <h2 class="font-display text-3xl font-bold tracking-tight text-ink">Create your account</h2>
+                <p class="mt-3 text-sm leading-6 text-slate-500">Use your full school name so organizers can verify your entry.</p>
+
+                {% if form.non_field_errors %}<div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+                <form method="post" class="mt-8 space-y-6" novalidate>
                     {% csrf_token %}
-                    <div class="grid gap-5 sm:grid-cols-2">
-                        {% for field in form %}
-                        <div class="{% if field.name == 'role' %}sm:col-span-2{% endif %}">
-                            <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}</label>
-                            {% if field.name == 'password1' or field.name == 'password2' %}
+
+                    <fieldset class="space-y-5">
+                        <legend class="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-campus">Your name</legend>
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label for="{{ form.first_name.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">First name</label>
+                                {{ form.first_name }}
+                                {% for error in form.first_name.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.last_name.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Last name</label>
+                                {{ form.last_name }}
+                                {% for error in form.last_name.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="{{ form.middle_name.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Middle name (optional)</label>
+                                {{ form.middle_name }}
+                                {% for error in form.middle_name.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="space-y-5">
+                        <legend class="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-campus">Account details</legend>
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div class="sm:col-span-2">
+                                <label for="{{ form.email.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Email address</label>
+                                {{ form.email }}
+                                {% for error in form.email.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.username.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Username</label>
+                                {{ form.username }}
+                                {% for error in form.username.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label for="{{ form.phone.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Mobile number</label>
+                                {{ form.phone }}
+                                {% for error in form.phone.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label for="{{ form.role.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">{{ form.role.label }}</label>
+                                {{ form.role }}
+                                <p class="mt-1.5 text-xs text-slate-500">Participants register for events; judges score assigned events.</p>
+                                {% for error in form.role.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="space-y-4">
+                        <legend class="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-campus">Password</legend>
+                        <div>
+                            <label for="{{ form.password1.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Password</label>
                             <div class="relative">
-                                {{ field }}
-                                <button type="button" class="password-toggle absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-campus" aria-label="Show password" aria-pressed="false" data-target="{{ field.id_for_label }}">
+                                {{ form.password1 }}
+                                <button type="button" class="password-toggle absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-campus" aria-label="Show password" aria-pressed="false" data-target="{{ form.password1.id_for_label }}">
                                     <svg class="eye-open-icon h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .638C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <svg class="eye-closed-icon hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.331 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.669 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
                                 </button>
                             </div>
-                            {% else %}
-                            {{ field }}
-                            {% endif %}
-                            {% if field.help_text %}<div class="mt-1 text-xs leading-5 text-slate-400">{{ field.help_text|safe }}</div>{% endif %}
-                            {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                            {% for error in form.password1.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
-                    <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-200 pt-5 sm:flex-row">
+                        <div>
+                            <label for="{{ form.password2.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-ink">Confirm password</label>
+                            <div class="relative">
+                                {{ form.password2 }}
+                                <button type="button" class="password-toggle absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-campus" aria-label="Show password" aria-pressed="false" data-target="{{ form.password2.id_for_label }}">
+                                    <svg class="eye-open-icon h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .638C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg class="eye-closed-icon hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.331 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.669 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
+                                </button>
+                            </div>
+                            {% for error in form.password2.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                        </div>
+                        <p class="text-xs text-slate-500">Use at least 8 characters, with a mix of letters, numbers, and symbols.</p>
+                    </fieldset>
+
+                    <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row">
                         <p class="text-sm text-slate-500">Already registered? <a href="{% url 'login' %}" class="font-bold text-campus">Sign in</a></p>
-                        <button type="submit" class="h-12 w-full rounded-xl bg-campus px-6 text-sm font-bold text-white shadow sm:w-auto">Create account</button>
+                        <button type="submit" class="h-12 w-full rounded-xl bg-campus px-6 text-sm font-bold text-white shadow transition hover:bg-ink sm:w-auto">Create account</button>
                     </div>
                 </form>
             </div>

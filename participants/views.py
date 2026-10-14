@@ -57,7 +57,7 @@ def create_participant(request):
     return render(request, 'participants/participant_management/participant_form.html', {
         'form': form,
         'form_title': 'Register participant',
-        'form_description': 'Create an athlete profile, classification, and identification record.',
+        'form_description': 'Create a participant record, classification, and identification profile.',
         'submit_label': 'Register participant',
         'next_url': request.GET.get('next', ''),
     })
@@ -99,7 +99,7 @@ def edit_participant(request, participant_id):
         'form': form,
         'participant': participant,
         'form_title': 'Edit participant',
-        'form_description': f'Update {participant.participant_id} and their athlete information.',
+        'form_description': f'Update {participant.participant_id} and their participant information.',
         'submit_label': 'Save participant',
     })
 
@@ -115,11 +115,18 @@ def my_participant_profile(request):
 
     initial = None
     if participant is None:
+        middle_name = getattr(request.user.account_profile, 'middle_name', '')
         initial = {
-            'name': request.user.get_full_name(),
-            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'middle_name': middle_name,
+            'last_name': request.user.last_name,
             'phone': request.user.account_profile.phone,
         }
+        if not (initial['first_name'] or initial['last_name']):
+            first, middle, last = ParticipantForm.split_full_name(
+                request.user.get_full_name() or request.user.username
+            )
+            initial.update({'first_name': first, 'middle_name': middle, 'last_name': last})
 
     form = ParticipantForm(
         request.POST or None,
@@ -131,6 +138,9 @@ def my_participant_profile(request):
     if request.method == 'POST' and form.is_valid():
         participant = form.save(commit=False)
         participant.user = request.user
+        if not participant.email:
+            # Email is captured from the authenticated account, not from the form.
+            participant.email = request.user.email or f'{request.user.username}@jhcsc.edu.ph'
         participant.save()
         messages.success(request, 'Your participant profile was saved successfully.')
         return redirect('my_participant_profile')

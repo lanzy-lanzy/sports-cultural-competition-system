@@ -1,7 +1,7 @@
 """Seed the sports module with a full intramural sports meet.
 
 Creates sport types, venues, teams with rosters and coaches, individual
-athletes, sport events across every bracket format, and a real match schedule
+participants, sport events across every bracket format, and a real match schedule
 with venues, start/end times, and recorded results.
 
 Run it with::
@@ -362,7 +362,7 @@ class ScheduleBoard:
 
 
 class Command(BaseCommand):
-    help = 'Seeds sport types, venues, teams, athletes, events, brackets, and a match schedule.'
+    help = 'Seeds sport types, venues, teams, participants, events, brackets, and a match schedule.'
 
     def add_arguments(self, parser):
         parser.add_argument('--flush', action='store_true',
@@ -591,7 +591,7 @@ class Command(BaseCommand):
         return participant
 
     def _create_athletes(self, competition):
-        """Create the individual athletes and return them in registration order."""
+        """Create the individual participants and return them in registration order."""
         athletes = []
         for index, (name, gender, age, bio) in enumerate(INDIVIDUAL_ATHLETES, start=1):
             email = f'athlete.sport{index:02d}@jhcsc.edu.ph'

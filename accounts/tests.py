@@ -17,21 +17,23 @@ class AccountTest(TestCase):
             'username': 'newjudge', 'email': 'n@a.com',
             'password1': 'A-Strong-Competition-Pass-928!',
             'password2': 'A-Strong-Competition-Pass-928!',
-            'full_name': 'Jane Doe', 'phone': '123', 'role': 'JUDGE',
+            'first_name': 'Jane', 'middle_name': 'M.', 'last_name': 'Doe',
+            'phone': '123', 'role': 'JUDGE',
         })
         self.assertRedirects(resp, reverse('login'))
         self.assertTrue(Judge.objects.filter(user__username='newjudge').exists())
-        self.assertEqual(
-            UserProfile.objects.get(user__username='newjudge').role,
-            UserProfile.Role.JUDGE,
-        )
+        profile = UserProfile.objects.get(user__username='newjudge')
+        self.assertEqual(profile.role, UserProfile.Role.JUDGE)
+        self.assertEqual(profile.user.first_name, 'Jane')
+        self.assertEqual(profile.user.last_name, 'Doe')
+        self.assertEqual(profile.middle_name, 'M.')
 
     def test_public_registration_rejects_management_roles(self):
         resp = self.client.post(reverse('register'), {
             'username': 'organizer', 'email': 'organizer@example.com',
             'password1': 'A-Strong-Competition-Pass-928!',
             'password2': 'A-Strong-Competition-Pass-928!',
-            'full_name': 'Event Organizer', 'phone': '123',
+            'first_name': 'Event', 'last_name': 'Organizer', 'phone': '123',
             'role': UserProfile.Role.EVENT_ORGANIZER,
         })
 
@@ -77,12 +79,13 @@ class AccountTest(TestCase):
     def test_edit_profile_updates_account_details(self):
         self.client.login(username='admin', password='pass')
         resp = self.client.post(reverse('edit_profile'), {
-            'full_name': 'System Administrator', 'username': 'admin',
-            'email': 'new@a.com', 'phone': '09170000000',
+            'first_name': 'System', 'middle_name': 'Q', 'last_name': 'Administrator',
+            'username': 'admin', 'email': 'new@a.com', 'phone': '09170000000',
         })
         self.assertRedirects(resp, reverse('edit_profile'))
         self.admin.refresh_from_db()
         self.assertEqual(self.admin.get_full_name(), 'System Administrator')
+        self.assertEqual(self.admin.account_profile.middle_name, 'Q')
         self.assertEqual(self.admin.account_profile.phone, '09170000000')
 
     def test_login_redirects_spectator_to_portal(self):
@@ -118,3 +121,22 @@ class AccountTest(TestCase):
         self.assertRedirects(resp, reverse('password_reset_done'))
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('/password-reset/', mail.outbox[0].body)
+
+    def test_participant_sidebar_omits_removed_workspace_actions(self):
+        participant = User.objects.create_user('contestant', 'c@example.com', 'pass')
+        UserProfile.objects.filter(user=participant).update(role=UserProfile.Role.PARTICIPANT)
+        self.client.force_login(participant)
+        resp = self.client.get(reverse('portal_home'))
+
+        self.assertContains(resp, '<span>Participant Profile</span>')
+        for label in ('Eligibility', 'Announcements', 'Submit Protest'):
+            self.assertNotContains(resp, f'<span>{label}</span>')
+
+    def test_team_manager_sidebar_keeps_shared_workspace_actions(self):
+        manager = User.objects.create_user('skipper', 'm@example.com', 'pass')
+        UserProfile.objects.filter(user=manager).update(role=UserProfile.Role.TEAM_MANAGER)
+        self.client.force_login(manager)
+        resp = self.client.get(reverse('portal_home'))
+
+        self.assertContains(resp, '<span>Announcements</span>')
+        self.assertContains(resp, '<span>Submit Protest</span>')

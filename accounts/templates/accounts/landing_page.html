@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="The official competition scoring and management platform of J.H. Cerilles State College.">
-    <title>JHCSC Competition Management System</title>
+    <title>Competrack &middot; JHCSC Competition Management System</title>
     {% load static %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -43,7 +43,7 @@
 
         <header class="relative z-20 px-4 pt-4 sm:px-6 lg:px-8">
             <nav class="mx-auto flex max-w-7xl items-center justify-between rounded-2xl border border-white/90 bg-white/85 px-4 py-3 shadow-soft backdrop-blur-xl sm:px-5" aria-label="Main navigation">
-                <a href="{% url 'landing_page' %}" class="group flex min-w-0 items-center gap-3" aria-label="JHCSC Competition Hub home">
+                <a href="{% url 'landing_page' %}" class="group flex min-w-0 items-center gap-3" aria-label="Competrack home">
                     <span class="flex shrink-0 items-center -space-x-2">
                         <span class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm transition-transform group-hover:-rotate-2">
                             <img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain">
@@ -53,8 +53,8 @@
                         </span>
                     </span>
                     <span class="hidden min-w-0 leading-tight sm:block">
-                        <span class="block truncate font-display text-sm font-bold text-ink sm:text-base">JHCSC Competition Hub</span>
-                        <span class="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-campus sm:block">Official scoring platform</span>
+                        <span class="block truncate font-display text-sm font-bold text-ink sm:text-base">Competrack</span>
+                        <span class="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-campus sm:block">JHCSC competition platform</span>
                     </span>
                 </a>
 
@@ -89,7 +89,7 @@
 
                     <div class="mt-9 flex flex-col gap-3 sm:flex-row">
                         <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-campus px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-teal-600/25 transition-all hover:shadow-lg hover:shadow-teal-600/25 focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2">
-                            Enter competition hub
+                            Enter Competrack
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                         </a>
                         <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-bold text-ink shadow-sm backdrop-blur transition-all hover:border-teal-300 hover:bg-white hover:text-campus">
@@ -176,7 +176,7 @@
                 <div class="mx-auto max-w-7xl rounded-[2rem] bg-ink px-6 py-10 text-white shadow-lg shadow-slate-900/15 sm:px-10 lg:flex lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:py-12">
                     <div class="max-w-xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">Ready when you are</p><h2 class="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Run the next competition with confidence.</h2><p class="mt-4 leading-7 text-slate-300">Sign in to manage an event, or register for a judge account to start scoring.</p></div>
                     <div class="mt-7 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-aqua px-6 py-3.5 text-sm font-bold text-ink transition-all hover:bg-teal-300">Sign in to the hub</a>
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center rounded-xl bg-aqua px-6 py-3.5 text-sm font-bold text-ink transition-all hover:bg-teal-300">Sign in to Competrack</a>
                         <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10">Register as judge</a>
                     </div>
                 </div>
@@ -185,7 +185,7 @@
 
         <footer class="relative z-10 border-t border-slate-200 bg-white/70 px-6 py-7 lg:px-8">
             <div class="mx-auto flex max-w-7xl flex-col gap-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-                <div class="flex items-center justify-center gap-3 sm:justify-start"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-mist p-1.5"><img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full object-contain"></div><div><div class="font-display text-sm font-bold text-ink">J.H. Cerilles State College</div><div class="text-xs text-slate-400">Competition Management System</div></div></div>
+                <div class="flex items-center justify-center gap-3 sm:justify-start"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-mist p-1.5"><img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full object-contain"></div><div><div class="font-display text-sm font-bold text-ink">Competrack &middot; J.H. Cerilles State College</div><div class="text-xs text-slate-400">Competition Management System</div></div></div>
                 <p class="text-xs text-slate-400">&copy; {% now "Y" %} JHCSC. Fair scoring, trusted results.</p>
             </div>
         </footer>

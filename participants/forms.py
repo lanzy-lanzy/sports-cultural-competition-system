@@ -11,8 +11,32 @@ INPUT_CLASS = (
     'focus:bg-white focus:ring-4 focus:ring-teal-100'
 )
 
+TEXTAREA_CLASS = INPUT_CLASS.replace('h-12 ', '') + ' py-3'
+
+FILE_INPUT_CLASS = (
+    'h-12 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-3 '
+    'text-sm text-slate-600 outline-none transition focus:border-campus focus:bg-white '
+    'file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:py-2 '
+    'file:text-xs file:font-bold file:text-white'
+)
+
+# Competition identification is verified against the participant's school record,
+# so School ID is the only selectable document type.
+ALLOWED_IDENTIFICATION_TYPES = [Participant.IdentificationType.SCHOOL_ID]
+
+NAME_FIELD_ORDER = (
+    'first_name', 'middle_name', 'last_name', 'profile_image', 'phone', 'email',
+    'birth_date', 'age', 'gender', 'category', 'team_name', 'status',
+    'identification_type', 'identification_number', 'identification_document',
+    'bio', 'achievements',
+)
+
 
 class ParticipantForm(forms.ModelForm):
+    first_name = forms.CharField(label='First name', max_length=80)
+    middle_name = forms.CharField(label='Middle name (optional)', max_length=80, required=False)
+    last_name = forms.CharField(label='Last name', max_length=80)
+
     class Meta:
         model = Participant
         fields = (
@@ -29,10 +53,67 @@ class ParticipantForm(forms.ModelForm):
     def __init__(self, *args, self_service=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.self_service = self_service
+
+        # The single stored name is captured through three dedicated inputs.
+        stored_name = getattr(self.instance, 'name', '') or ''
+        if not self.is_bound and stored_name and not self.initial.get('first_name'):
+            first, middle, last = self.split_full_name(stored_name)
+            self.initial.update({'first_name': first, 'middle_name': middle, 'last_name': last})
+        self.fields.pop('name')
+
+        self.fields['identification_type'] = forms.ChoiceField(
+            label='Identification type',
+            required=False,
+            choices=(
+                [('', 'Select identification type')]
+                + [(value, Participant.IdentificationType(value).label)
+                   for value in ALLOWED_IDENTIFICATION_TYPES]
+            ),
+            help_text='Only a School ID is accepted as competition identification.',
+        )
+
         if self_service:
-            self.fields.pop('status')
+            # Participants maintain identity and classification only; contact and
+            # narrative fields are managed by administrators.
+            for field_name in ('status', 'email', 'bio', 'achievements'):
+                self.fields.pop(field_name, None)
+
+        self.order_fields(
+            [name for name in NAME_FIELD_ORDER if name in self.fields]
+        )
+
         for field in self.fields.values():
-            field.widget.attrs['class'] = INPUT_CLASS
+            if isinstance(field.widget, forms.FileInput):
+                field.widget.attrs['class'] = FILE_INPUT_CLASS
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs['class'] = TEXTAREA_CLASS
+            else:
+                field.widget.attrs['class'] = INPUT_CLASS
+
+    @staticmethod
+    def split_full_name(name):
+        parts = name.split()
+        if not parts:
+            return '', '', ''
+        if len(parts) == 1:
+            return parts[0], '', ''
+        if len(parts) == 2:
+            return parts[0], '', parts[1]
+        return parts[0], ' '.join(parts[1:-1]), parts[-1]
+
+    def composed_name(self):
+        parts = [
+            self.cleaned_data.get('first_name', ''),
+            self.cleaned_data.get('middle_name', ''),
+            self.cleaned_data.get('last_name', ''),
+        ]
+        return ' '.join(part.strip() for part in parts if part and part.strip())
+
+    def clean_identification_type(self):
+        value = self.cleaned_data['identification_type']
+        if value and value not in ALLOWED_IDENTIFICATION_TYPES:
+            raise forms.ValidationError('Only a School ID can be used as identification.')
+        return value
 
     def clean_identification_document(self):
         document = self.cleaned_data.get('identification_document')
@@ -50,5 +131,9 @@ class ParticipantForm(forms.ModelForm):
         identification_type = cleaned_data.get('identification_type')
         identification_document = cleaned_data.get('identification_document')
         if identification_document and not identification_type:
-            self.add_error('identification_type', 'Select the type of identification uploaded.')
+            self.add_error('identification_type', 'Upload your School ID to confirm your identity.')
         return cleaned_data
+
+    def save(self, commit=True):
+        self.instance.name = self.composed_name()
+        return super().save(commit=commit)

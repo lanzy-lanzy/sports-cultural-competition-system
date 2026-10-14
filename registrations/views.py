@@ -28,7 +28,7 @@ def register_for_event(request):
         if team is None and participant is None:
             messages.error(
                 request,
-                'Complete your athlete profile before registering, or register your team as a team manager.',
+                'Complete your participant profile before registering, or register your team as a team manager.',
             )
             return redirect('my_participant_profile')
 

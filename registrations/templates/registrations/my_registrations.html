@@ -1,6 +1,6 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}My Registrations - Scoring System{% endblock %}
+{% block title %}My Registrations - Competrack{% endblock %}
 {% block header_title %}My Registrations{% endblock %}
 
 {% block content %}
@@ -38,7 +38,7 @@
                 </div>
                 <p class="mt-1 text-sm text-slate-500">
                     {% if registration.team %}Team: <span class="font-semibold text-slate-700">{{ registration.team.name }}</span>{% endif %}
-                    {% if registration.participant %}Athlete: <span class="font-semibold text-slate-700">{{ registration.participant.name }}</span>{% endif %}
+                    {% if registration.participant %}Participant: <span class="font-semibold text-slate-700">{{ registration.participant.name }}</span>{% endif %}
                 </p>
             </div>
             <p class="shrink-0 text-xs text-slate-400">{{ registration.created_at|date:"M d, Y H:i" }}</p>

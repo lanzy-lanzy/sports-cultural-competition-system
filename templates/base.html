@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}JHCSC Competition Hub{% endblock %}</title>
+    <title>{% block title %}Competrack &middot; JHCSC Competition Platform{% endblock %}</title>
     {% load static %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -43,12 +43,12 @@
         <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col overflow-hidden bg-ink shadow-none transition-transform duration-150 lg:translate-x-0" aria-label="Application sidebar">
             
             <div class="relative flex h-[78px] items-center border-b border-white/10 px-5">
-                <a href="{% if not user.is_authenticated %}{% url 'landing_page' %}{% elif can_manage %}{% url 'dashboard' %}{% elif account_role == 'JUDGE' %}{% url 'judge_dashboard' %}{% else %}{% url 'portal_home' %}{% endif %}" class="flex min-w-0 items-center gap-3" aria-label="Competition Hub dashboard">
+                <a href="{% if not user.is_authenticated %}{% url 'landing_page' %}{% elif can_manage %}{% url 'dashboard' %}{% elif account_role == 'JUDGE' %}{% url 'judge_dashboard' %}{% else %}{% url 'portal_home' %}{% endif %}" class="flex min-w-0 items-center gap-3" aria-label="Competrack dashboard">
                     <span class="flex shrink-0 items-center -space-x-2">
                         <span class="relative z-10 flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1 shadow"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain"></span>
                         <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1 shadow"><img src="{% static 'images/it_logo.png' %}" alt="IT Department logo" class="h-full w-full object-contain"></span>
                     </span>
-                    <span class="min-w-0 leading-tight"><span class="block truncate font-display text-sm font-bold text-white">Competition Hub</span><span class="block text-[9px] font-semibold uppercase tracking-[0.17em] text-teal-300">JHCSC scoring platform</span></span>
+                    <span class="min-w-0 leading-tight"><span class="block truncate font-display text-sm font-bold text-white">Competrack</span><span class="block text-[9px] font-semibold uppercase tracking-[0.17em] text-teal-300">JHCSC competition platform</span></span>
                 </a>
                 <button type="button" onclick="closeSidebar()" class="ml-auto rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden" aria-label="Close sidebar">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -79,7 +79,7 @@
                     </a></li>
                     {% if account_role == 'PARTICIPANT' %}
                     <li><a href="{% url 'my_participant_profile' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all {% if active_nav == 'participants' %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/[.07] hover:text-white{% endif %}">
-                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'participants' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>Athlete Profile</span>{% if active_nav == 'participants' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-white"></span>{% endif %}
+                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'participants' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg><span>Participant Profile</span>{% if active_nav == 'participants' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-white"></span>{% endif %}
                     </a></li>
                     {% endif %}
                     {% if account_role == 'TEAM_MANAGER' %}
@@ -98,18 +98,15 @@
                         <svg class="h-5 w-5 shrink-0 {% if active_nav == 'registrations' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>My Registrations</span>
                     </a></li>
                     {% endif %}
-                    {% if account_role == 'PARTICIPANT' %}
-                    <li><a href="{% url 'my_eligibility' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all {% if active_nav == 'eligibility' %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/[.07] hover:text-white{% endif %}">
-                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'eligibility' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg><span>Eligibility</span>
-                    </a></li>
-                    {% endif %}
+                    {% if account_role != 'PARTICIPANT' %}
                     <li><a href="{% url 'announcement_public' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all {% if active_nav == 'announcements' %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/[.07] hover:text-white{% endif %}">
                         <svg class="h-5 w-5 shrink-0 {% if active_nav == 'announcements' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46"/></svg><span>Announcements</span>
                     </a></li>
+                    {% endif %}
                     <li><a href="{% url 'results_list' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-white/[.07] hover:text-white">
                         <svg class="h-5 w-5 shrink-0 text-slate-500 group-hover:text-teal-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg><span>Results</span>
                     </a></li>
-                    {% if account_role == 'PARTICIPANT' or account_role == 'TEAM_MANAGER' %}
+                    {% if account_role == 'TEAM_MANAGER' %}
                     <li><a href="{% url 'submit_protest' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-white/[.07] hover:text-white">
                         <svg class="h-5 w-5 shrink-0 text-slate-500 group-hover:text-teal-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg><span>Submit Protest</span>
                     </a></li>
@@ -133,7 +130,7 @@
                         <svg class="h-5 w-5 shrink-0 {% if active_nav == 'judges' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0l2.62 10.726a6.002 6.002 0 01-4.062 0L18.75 4.971z"/></svg><span>Judges</span>{% if active_nav == 'judges' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-white"></span>{% endif %}
                     </a></li>
                     <li><a href="{% url 'sports_hub' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all {% if active_nav == 'sports' %}bg-white/10 text-white{% else %}text-slate-300 hover:bg-white/[.07] hover:text-white{% endif %}">
-                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'sports' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg><span>Sports Hub</span>{% if active_nav == 'sports' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-white"></span>{% endif %}
+                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'sports' %}text-white{% else %}text-slate-500 group-hover:text-teal-300{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg><span>Sports</span>{% if active_nav == 'sports' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-white"></span>{% endif %}
                     </a></li>
                     <li><a href="{% url 'match_board' %}" class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-white/[.07] hover:text-white">
                         <svg class="h-5 w-5 shrink-0 text-slate-500 group-hover:text-teal-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg><span>Match Board</span>
@@ -195,7 +192,7 @@
                     <div class="flex min-w-0 items-center gap-3">
                         <button id="sidebar-toggle" onclick="toggleSidebar()" class="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-teal-200 hover:text-campus lg:hidden" aria-label="Open sidebar" aria-expanded="false"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg></button>
                         <div class="min-w-0">
-                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400"><span class="hidden sm:inline">JHCSC Competition Hub</span><span class="hidden text-slate-300 sm:inline">/</span><span class="truncate text-campus">{% block header_title %}{% endblock %}</span></div>
+                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400"><span class="hidden sm:inline">Competrack</span><span class="hidden text-slate-300 sm:inline">/</span><span class="truncate text-campus">{% block header_title %}{% endblock %}</span></div>
                             <p class="mt-1 hidden truncate font-display text-sm font-bold text-ink sm:block">Official competition workspace</p>
                         </div>
                     </div>

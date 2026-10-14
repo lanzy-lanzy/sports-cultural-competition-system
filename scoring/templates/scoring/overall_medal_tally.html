@@ -1,6 +1,6 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}Overall Medal Tally - Competition Hub{% endblock %}
+{% block title %}Overall Medal Tally - Competrack{% endblock %}
 {% block header_title %}Medal Tally{% endblock %}
 
 {% block content %}
@@ -135,7 +135,7 @@
 <div class="mt-6 rounded-2xl border border-teal-100 bg-teal-50/60 p-5">
     <p class="text-xs font-bold uppercase tracking-wider text-campus">Where the medals come from</p>
     <ul class="mt-2 space-y-1 text-sm text-slate-600">
-        <li><span class="font-semibold text-ink">Sport</span> &mdash; podium derived from completed matches: gold for the champion, silver for the runner-up, bronze for the third-placed team or athlete.</li>
+        <li><span class="font-semibold text-ink">Sport</span> &mdash; podium derived from completed matches: gold for the champion, silver for the runner-up, bronze for the third-placed team or participant.</li>
         <li><span class="font-semibold text-ink">Judged</span> &mdash; podium taken from the final weighted standings of a completed competition, unless medal awards were entered manually.</li>
         <li><span class="font-semibold text-ink">Award</span> &mdash; gold, silver, and bronze awards assigned through the awards page always take precedence.</li>
         <li>A competition or event that is still running contributes nothing, so no provisional champion is ever published.</li>
@@ -146,7 +146,7 @@
 <div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No medals to tally yet</p>
     <p class="mt-2 text-sm text-slate-500">Medals appear once a sport event finishes or a judged competition is completed.</p>
-    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to the sports hub</a>
+    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to Sports</a>
 </div>
 {% endif %}
 {% endblock %}

@@ -1,9 +1,9 @@
-﻿{% load scoring_filters %}
+{% load scoring_filters %}
 {% if page_obj.has_other_pages %}
 <div class="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-5 sm:flex-row">
     <p class="text-sm text-slate-500">
-        Showing <span class="font-semibold text-slate-900">{{ page_obj.start_index }}</span>–
-        <span class="font-semibold text-slate-900">{{ page_obj.end_index }}</span> of
+        Showing <span class="font-semibold text-slate-900">{{ page_obj.start_index }}</span
+        <span class="font-semibold text-slate-900">&ndash;{{ page_obj.end_index }}</span> of
         <span class="font-semibold text-slate-900">{{ page_obj.paginator.count }}</span>
     </p>
     <nav class="flex items-center gap-1.5" aria-label="Pagination">

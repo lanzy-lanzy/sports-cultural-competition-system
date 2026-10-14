@@ -9,7 +9,7 @@ class UserProfile(models.Model):
         SPORTS_COORDINATOR = 'SPORTS_COORDINATOR', 'Sports Coordinator'
         CULTURAL_COORDINATOR = 'CULTURAL_COORDINATOR', 'Cultural Event Coordinator'
         TEAM_MANAGER = 'TEAM_MANAGER', 'Team Manager / Coach'
-        PARTICIPANT = 'PARTICIPANT', 'Participant / Athlete'
+        PARTICIPANT = 'PARTICIPANT', 'Participant'
         JUDGE = 'JUDGE', 'Judge / Referee'
         SPECTATOR = 'SPECTATOR', 'Spectator'
 
@@ -19,6 +19,7 @@ class UserProfile(models.Model):
         related_name='account_profile',
     )
     role = models.CharField(max_length=30, choices=Role.choices, default=Role.SPECTATOR)
+    middle_name = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     profile_image = models.ImageField(upload_to='account_profiles/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

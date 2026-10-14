@@ -1,6 +1,6 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
-{% block title %}Register for an Event - Scoring System{% endblock %}
+{% block title %}Register for an Event - Competrack{% endblock %}
 {% block header_title %}Online Registration{% endblock %}
 
 {% block content %}
@@ -37,7 +37,7 @@
             <div>
                 <label for="{{ form.team.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation <span class="font-normal text-slate-400">(team managers)</span></label>
                 {{ form.team }}
-                <p class="mt-1 text-xs text-slate-400">Leave empty to register yourself as an individual athlete.</p>
+                <p class="mt-1 text-xs text-slate-400">Leave empty to register yourself as an individual participant.</p>
                 {% if form.team.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.team.errors.0 }}</p>{% endif %}
             </div>
 
