@@ -10,7 +10,7 @@ class UserProfile(models.Model):
         CULTURAL_COORDINATOR = 'CULTURAL_COORDINATOR', 'Cultural Event Coordinator'
         TEAM_MANAGER = 'TEAM_MANAGER', 'Team Manager / Coach'
         PARTICIPANT = 'PARTICIPANT', 'Participant'
-        JUDGE = 'JUDGE', 'Judge / Referee'
+        JUDGE = 'JUDGE', 'Judge'
         SPECTATOR = 'SPECTATOR', 'Spectator'
 
     user = models.OneToOneField(
