@@ -36,7 +36,7 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
     {% for result in competition_results %}
-    <div class="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
         <div class="relative overflow-hidden bg-cyan-600 p-5">
             <div class="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-white/10"></div>
             <div class="absolute -bottom-12 -left-12 h-24 w-24 rounded-full bg-black/10"></div>
@@ -120,10 +120,11 @@
                 {% endif %}
             {% endif %}
 
-            <a href="{% url 'competition_results_detail' result.competition.id %}" class="block w-full rounded-xl bg-campus px-6 py-3 text-center font-semibold text-white shadow transition-all duration-150 hover:brightness-105 hover:shadow-xl">
+            <a href="{% url 'competition_results_detail' result.competition.id %}" class="relative z-[2] block w-full rounded-xl bg-campus px-6 py-3 text-center font-semibold text-white shadow transition-all duration-150 hover:brightness-105 hover:shadow-xl">
                 View Details
             </a>
         </div>
+        <a href="{% url 'competition_results_detail' result.competition.id %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="View {{ result.competition.name }} results"></a>
     </div>
     {% endfor %}
 </div>

@@ -49,12 +49,12 @@
         {% if competitions %}
         <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {% for competition in competitions %}
-            <li class="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
+            <li class="relative flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
                 <div class="min-w-0">
-                    <p class="truncate font-semibold text-ink">{{ competition.name }}</p>
+                    <p class="truncate font-semibold text-ink"><a href="{% url 'competition_detail' competition.id %}" class="transition-colors hover:text-campus after:absolute after:inset-0 after:content-['']" aria-label="View {{ competition.name }} details">{{ competition.name }}</a></p>
                     <p class="mt-1 text-xs text-slate-500">{{ competition.start_date|date:'M j, Y' }} &middot; {{ competition.get_status_display }}</p>
                 </div>
-                <div class="flex shrink-0 items-center gap-2">
+                <div class="relative z-[1] flex shrink-0 items-center gap-2">
                     <a href="{% url 'competition_detail' competition.id %}" class="rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-bold text-ink transition hover:border-teal-200 hover:bg-mist">Details</a>
                     {% if competition.show_results %}<a href="{% url 'competition_results_detail' competition.id %}" class="rounded-lg bg-ink px-3.5 py-2 text-xs font-bold text-white transition hover:bg-campus">Results</a>{% endif %}
                 </div>
