@@ -71,6 +71,37 @@ class ParticipantViewTest(TestCase):
         pc = ParticipantCompetition.objects.get(participant=self.p1, competition=self.competition)
         self.assertEqual(pc.number, 1)
 
+    def test_roster_panel_renders_for_management(self):
+        resp = self.client.get(reverse('roster_panel', args=[self.competition.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Available participants')
+        self.assertContains(resp, self.p1.name)
+
+    def test_roster_assign_creates_numbered_assignment(self):
+        resp = self.client.post(reverse('roster_assign', args=[self.competition.id]), {
+            'participants': [self.p1.id],
+        })
+        self.assertEqual(resp.status_code, 200)
+        pc = ParticipantCompetition.objects.get(participant=self.p1, competition=self.competition)
+        self.assertEqual(pc.number, 1)
+
+    def test_roster_assign_is_idempotent(self):
+        url = reverse('roster_assign', args=[self.competition.id])
+        self.client.post(url, {'participants': [self.p1.id]})
+        self.client.post(url, {'participants': [self.p1.id]})
+        self.assertEqual(
+            ParticipantCompetition.objects.filter(participant=self.p1, competition=self.competition).count(),
+            1,
+        )
+
+    def test_roster_unassign_removes_assignment(self):
+        self.client.post(reverse('roster_assign', args=[self.competition.id]), {'participants': [self.p1.id]})
+        resp = self.client.post(reverse('roster_unassign', args=[self.competition.id, self.p1.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(
+            ParticipantCompetition.objects.filter(participant=self.p1, competition=self.competition).exists()
+        )
+
     def test_participant_account_can_maintain_own_participant_profile(self):
         participant_user = User.objects.create_user(
             'athlete', 'athlete@example.com', 'pass',

@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction, models
 from django.core.paginator import Paginator
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -9,6 +8,7 @@ from django.views.decorators.http import require_POST
 from competitions.models import Competition
 from .models import Participant, ParticipantCompetition
 from .forms import ParticipantForm
+from . import services
 from scoring.models import Score, CompetitionResult
 from accounts.access import management_required, role_required
 from accounts.models import UserProfile
@@ -189,46 +189,17 @@ def assign_participants(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
 
     if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                participant_ids = request.POST.getlist('participants')
-                if not participant_ids:
-                    messages.error(request, 'Please select at least one participant to assign.')
-                    return redirect('assign_participants', competition_id=competition_id)
-
-                participants = Participant.objects.filter(id__in=participant_ids)
-
-                highest_number = ParticipantCompetition.objects.filter(
-                    competition=competition
-                ).aggregate(models.Max('number'))['number__max'] or 0
-                next_number = highest_number + 1
-
-                assignments = []
-                for participant in participants:
-                    if not ParticipantCompetition.objects.filter(
-                        participant=participant,
-                        competition=competition
-                    ).exists():
-                        assignments.append(
-                            ParticipantCompetition(
-                                participant=participant,
-                                competition=competition,
-                                number=next_number
-                            )
-                        )
-                        next_number += 1
-
-                if assignments:
-                    ParticipantCompetition.objects.bulk_create(assignments)
-                    messages.success(request, f'{len(assignments)} participant(s) assigned successfully.')
-                else:
-                    messages.warning(request, 'Selected participants are already assigned to this competition.')
-
-                return redirect('manage_participants', competition_id=competition_id)
-
-        except Exception as e:
-            messages.error(request, f'Error assigning participants: {str(e)}')
+        participant_ids = request.POST.getlist('participants')
+        if not participant_ids:
+            messages.error(request, 'Please select at least one participant to assign.')
             return redirect('assign_participants', competition_id=competition_id)
+
+        assigned = services.assign_to_competition(competition, participant_ids)
+        if assigned:
+            messages.success(request, f'{assigned} participant(s) assigned successfully.')
+        else:
+            messages.warning(request, 'Selected participants are already assigned to this competition.')
+        return redirect('manage_participants', competition_id=competition_id)
 
     available_participants = Participant.objects.exclude(competitions=competition)
 
@@ -266,18 +237,91 @@ def assign_participants(request, competition_id):
 
 @management_required
 def remove_participant_from_competition(request, competition_id, participant_id):
-    try:
-        competition = Competition.objects.get(id=competition_id)
-        participant = Participant.objects.get(id=participant_id)
-
-        competition.participants.remove(participant)
-
-        messages.success(request, f'Successfully removed {participant.name} from {competition.name}')
-    except Competition.DoesNotExist:
-        messages.error(request, 'Competition not found.')
-    except Participant.DoesNotExist:
-        messages.error(request, 'Participant not found.')
-    except Exception as e:
-        messages.error(request, f'Error removing participant: {str(e)}')
-
+    competition = get_object_or_404(Competition, id=competition_id)
+    participant = get_object_or_404(Participant, id=participant_id)
+    services.unassign_from_competition(competition, [participant_id])
+    messages.success(request, f'Successfully removed {participant.name} from {competition.name}')
     return redirect('manage_participants', competition_id=competition_id)
+
+
+# ---------------------------------------------------------------------------
+# HTMX roster panel (inline assignment). Partials are returned for async
+# updates so managers stay in context; the legacy full-page views above remain
+# functional as a no-JS fallback.
+# ---------------------------------------------------------------------------
+
+ROSTERS_PER_PAGE = 12
+
+
+def _paginate(queryset, page_param, request, per_page=ROSTERS_PER_PAGE):
+    paginator = Paginator(queryset, per_page)
+    return paginator.get_page(request.GET.get(page_param))
+
+
+def _render_roster_panel(request, competition):
+    """Render the full roster panel (both columns) for a competition."""
+    assigned = services.assigned_rows(competition)
+    available = services.available_participants(competition)
+    return render(request, 'participants/participant_management/roster/panel.html', {
+        'competition': competition,
+        'assigned_page': _paginate(assigned, 'page_assigned', request),
+        'available_page': _paginate(available, 'page_available', request),
+        'assigned_query': request.GET.get('q_assigned', ''),
+        'available_query': request.GET.get('q_available', ''),
+    })
+
+
+@management_required
+def roster_panel(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    return _render_roster_panel(request, competition)
+
+
+@management_required
+def roster_assigned(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    query = request.GET.get('q', '')
+    rows = services.assigned_rows(competition, query)
+    return render(request, 'participants/participant_management/roster/assigned_list.html', {
+        'competition': competition,
+        'assigned_page': _paginate(rows, 'page', request),
+        'assigned_query': query,
+    })
+
+
+@management_required
+def roster_available(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    query = request.GET.get('q', '')
+    rows = services.available_participants(competition, query)
+    return render(request, 'participants/participant_management/roster/available_list.html', {
+        'competition': competition,
+        'available_page': _paginate(rows, 'page', request),
+        'available_query': query,
+    })
+
+
+@management_required
+@require_POST
+def roster_assign(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    participant_ids = request.POST.getlist('participants')
+    if not participant_ids:
+        messages.warning(request, 'Select at least one participant to assign.')
+    else:
+        assigned = services.assign_to_competition(competition, participant_ids)
+        if assigned:
+            messages.success(request, f'{assigned} participant(s) assigned.')
+        else:
+            messages.info(request, 'Those participants are already assigned.')
+    return _render_roster_panel(request, competition)
+
+
+@management_required
+@require_POST
+def roster_unassign(request, competition_id, participant_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    participant = get_object_or_404(Participant, id=participant_id)
+    services.unassign_from_competition(competition, [participant_id])
+    messages.success(request, f'Removed {participant.name} from the roster.')
+    return _render_roster_panel(request, competition)

@@ -13,4 +13,11 @@ urlpatterns = [
     path('competitions/<int:competition_id>/participants/assign/', views.assign_participants, name='assign_participants'),
     path('competitions/<int:competition_id>/participants/<int:participant_id>/remove/',
          views.remove_participant_from_competition, name='remove_participant_from_competition'),
+    # HTMX roster panel (inline assignment)
+    path('competitions/<int:competition_id>/participants/panel/', views.roster_panel, name='roster_panel'),
+    path('competitions/<int:competition_id>/participants/panel/assigned/', views.roster_assigned, name='roster_assigned'),
+    path('competitions/<int:competition_id>/participants/panel/available/', views.roster_available, name='roster_available'),
+    path('competitions/<int:competition_id>/participants/panel/assign/', views.roster_assign, name='roster_assign'),
+    path('competitions/<int:competition_id>/participants/panel/<int:participant_id>/unassign/',
+         views.roster_unassign, name='roster_unassign'),
 ]

@@ -9,255 +9,29 @@
         <h1 class="font-display text-2xl font-semibold text-slate-900">{{ competition.name }}</h1>
         <p class="mt-1 text-sm text-slate-500">Manage Competition Participants</p>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
         <a href="{% url 'participant_management' %}" class="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 transition-colors hover:text-cyan-800">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
             </svg>
             Back to Participant Management
         </a>
-        <button type="button" onclick="openModal('assign-participants-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-            </svg>
-            Assign Participants
-        </button>
+        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            Competition details
+        </a>
+        <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700" title="Full-page assignment view (no-JavaScript fallback)">
+            Advanced view
+        </a>
     </div>
 </div>
 
-<div class="rounded-2xl border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
-    <h2 class="mb-6 font-display text-xl font-semibold text-slate-900">Current Participants</h2>
-
-    {% if participants %}
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {% for participant in participants %}
-        <div class="relative flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-cyan-400 hover:shadow-md">
-            <div class="flex-shrink-0">
-                {% if participant.profile_image %}
-                <img class="h-10 w-10 rounded-full object-cover" src="{{ participant.profile_image.url }}" alt="{{ participant.name }}">
-                {% else %}
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-sm font-bold text-white">{{ participant.name|make_list|first }}</div>
-                {% endif %}
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-slate-900">{{ participant.name }}</p>
-                <p class="truncate text-sm text-slate-500">{{ participant.email }}</p>
-            </div>
-            <div class="flex-shrink-0">
-                <button type="button"
-                        data-url="{% url 'remove_participant_from_competition' competition.id participant.id %}"
-                        data-name="{{ participant.name }}"
-                        onclick="openRemoveParticipant(this)"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Remove
-                </button>
-            </div>
-        </div>
-        {% endfor %}
+<div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+    <div class="mb-4">
+        <h2 class="font-display text-xl font-semibold text-slate-900">Roster</h2>
+        <p class="mt-0.5 text-sm text-slate-500">Search, select, and assign participants. Changes save instantly without reloading the page.</p>
     </div>
-    {% else %}
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
-            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-            </svg>
-        </div>
-        <p class="font-medium text-slate-900">No participants assigned yet.</p>
-        <p class="mt-1 text-sm text-slate-500">Click "Assign Participants" to add participants to this competition.</p>
-    </div>
-    {% endif %}
-</div>
-
-<!-- ===== Assign Participants Modal ===== -->
-<div id="assign-participants-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('assign-participants-modal')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-            <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500 text-white">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="font-display text-lg font-semibold text-slate-900">Assign Participants</h2>
-                    <p class="text-xs text-slate-500">{{ competition.name }}</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeModal('assign-participants-modal')" class="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="overflow-y-auto px-6 py-5">
-            <form method="POST" action="{% url 'assign_participants' competition.id %}" class="space-y-5">
-                {% csrf_token %}
-
-                <div class="flex flex-col gap-3 md:flex-row">
-                    <div class="flex-1">
-                        <input type="text" id="assign-search" placeholder="Search participants..."
-                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
-                    </div>
-                    <div class="flex gap-2">
-                        <button type="button" id="assign-select-all" class="cursor-pointer rounded-lg border border-cyan-600/30 bg-white px-4 py-2.5 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-50">Select All</button>
-                        <button type="button" id="assign-clear-all" class="cursor-pointer rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">Clear All</button>
-                    </div>
-                </div>
-
-                <div id="assign-selection-summary" class="hidden rounded-xl bg-cyan-50 p-3">
-                    <p class="text-sm font-medium text-cyan-800"><span id="assign-selected-count">0</span> participant(s) selected</p>
-                </div>
-
-                {% if available_participants %}
-                <div class="space-y-5">
-                    {% regroup available_participants by gender as gender_groups %}
-                    {% for group in gender_groups %}
-                    <div class="assign-group" data-gender="{{ group.grouper }}">
-                        <h3 class="mb-3 flex items-center gap-2 font-display text-sm font-medium text-slate-900">
-                            <span>
-                                {% if group.grouper == 'male' %}Male
-                                {% elif group.grouper == 'female' %}Female
-                                {% elif group.grouper == 'other' %}Other
-                                {% else %}Prefer not to say{% endif %}
-                            </span>
-                            <span class="text-xs text-slate-400">({{ group.list|length }})</span>
-                        </h3>
-                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {% for participant in group.list %}
-                            <label class="assign-card flex cursor-pointer items-start rounded-xl border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md"
-                                   data-name="{{ participant.name|lower }}">
-                                <div class="flex h-5 items-center">
-                                    <input type="checkbox" name="participants" value="{{ participant.id }}"
-                                           class="assign-checkbox h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
-                                </div>
-                                <div class="ml-3 flex items-center">
-                                    {% if participant.profile_image %}
-                                    <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="mr-2 h-8 w-8 rounded-full object-cover">
-                                    {% else %}
-                                    <div class="mr-2 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 text-sm font-bold text-white">{{ participant.name|make_list|first }}</div>
-                                    {% endif %}
-                                    <div>
-                                        <p class="font-medium text-slate-900">{{ participant.name }}</p>
-                                        <p class="text-sm text-slate-500">{{ participant.email }}</p>
-                                    </div>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 py-10 text-center">
-                    <p class="text-sm text-slate-500">No available participants to assign.</p>
-                </div>
-                {% endif %}
-
-                <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('assign-participants-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Assign Selected Participants</button>
-                </div>
-            </form>
-        </div>
+    <div hx-get="{% url 'roster_panel' competition.id %}" hx-trigger="load" hx-swap="innerHTML">
+        <div class="py-12 text-center text-sm text-slate-400">Loading roster&hellip;</div>
     </div>
 </div>
-
-<!-- ===== Remove Participant Modal ===== -->
-<div id="remove-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('remove-participant-modal')"></div>
-    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-            <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <h3 class="text-center font-display text-lg font-semibold text-slate-900">Remove Participant</h3>
-        <p id="remove-participant-message" class="mt-2 text-center text-sm text-slate-500"></p>
-        <form method="POST" id="remove-participant-form">
-            {% csrf_token %}
-            <div class="mt-6 flex justify-center gap-3">
-                <button type="button" onclick="closeModal('remove-participant-modal')" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                <button type="submit" class="cursor-pointer rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Remove</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-    function openModal(id) {
-        const m = document.getElementById(id);
-        m.classList.remove('hidden');
-        m.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
-    }
-
-    function closeModal(id) {
-        const m = document.getElementById(id);
-        m.classList.add('hidden');
-        m.classList.remove('flex');
-        document.body.classList.remove('overflow-hidden');
-    }
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal.flex').forEach(function (m) {
-                closeModal(m.id);
-            });
-        }
-    });
-
-    function openRemoveParticipant(btn) {
-        document.getElementById('remove-participant-form').action = btn.dataset.url;
-        document.getElementById('remove-participant-message').textContent = 'Are you sure you want to remove "' + btn.dataset.name + '" from {{ competition.name }}?';
-        openModal('remove-participant-modal');
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('assign-search');
-        const selectAllBtn = document.getElementById('assign-select-all');
-        const clearAllBtn = document.getElementById('assign-clear-all');
-        const checkboxes = document.querySelectorAll('.assign-checkbox');
-        const summary = document.getElementById('assign-selection-summary');
-        const countSpan = document.getElementById('assign-selected-count');
-
-        function updateSummary() {
-            const count = document.querySelectorAll('.assign-checkbox:checked').length;
-            countSpan.textContent = count;
-            summary.classList.toggle('hidden', count === 0);
-        }
-
-        function filterCards() {
-            const term = searchInput.value.toLowerCase();
-            document.querySelectorAll('.assign-card').forEach(card => {
-                card.style.display = card.dataset.name.includes(term) ? '' : 'none';
-            });
-            document.querySelectorAll('.assign-group').forEach(group => {
-                const visible = Array.from(group.querySelectorAll('.assign-card')).filter(c => c.style.display !== 'none').length;
-                group.style.display = visible > 0 ? '' : 'none';
-            });
-        }
-
-        searchInput.addEventListener('input', filterCards);
-
-        selectAllBtn.addEventListener('click', function () {
-            const visible = Array.from(checkboxes).filter(cb => cb.closest('.assign-card').style.display !== 'none');
-            const allChecked = visible.every(cb => cb.checked);
-            visible.forEach(cb => cb.checked = !allChecked);
-            updateSummary();
-        });
-
-        clearAllBtn.addEventListener('click', function () {
-            checkboxes.forEach(cb => cb.checked = false);
-            updateSummary();
-        });
-
-        checkboxes.forEach(cb => cb.addEventListener('change', updateSummary));
-        updateSummary();
-    });
-</script>
 {% endblock %}

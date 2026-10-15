@@ -97,6 +97,12 @@ class ParticipantCompetition(models.Model):
     class Meta:
         db_table = 'competition_app_participantcompetition'
         unique_together = ['competition', 'number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['participant', 'competition'],
+                name='unique_participant_per_competition',
+            ),
+        ]
         ordering = ['number']
 
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE)

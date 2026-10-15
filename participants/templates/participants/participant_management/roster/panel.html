@@ -1,0 +1,88 @@
+{% load static %}
+{# Unified HTMX roster panel. Rendered inline (competition detail / manage page) #}
+{# and re-rendered in full on every assign/unassign so both columns stay in sync. #}
+<div id="roster-panel-{{ competition.id }}"
+     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+     class="space-y-4">
+
+    {# Async feedback flash: only shown for HTMX re-renders; full page loads render messages in base.html. #}
+    {% if request.htmx and messages %}
+    <div class="flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800 shadow-sm" aria-live="polite">
+        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-campus"></span>
+        <div class="space-y-0.5">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+
+        {# ---------------- Available participants ---------------- #}
+        <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                    <h3 class="font-display text-base font-semibold text-slate-900">Available participants</h3>
+                    <p class="text-xs text-slate-500">Not yet in this competition</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ available_page.paginator.count }}</span>
+            </div>
+
+            <div class="flex flex-1 flex-col gap-4 px-5 py-4">
+                <input type="search" name="q" placeholder="Search by name, ID, or email&hellip;" autocomplete="off"
+                       hx-get="{% url 'roster_available' competition.id %}"
+                       hx-target="#available-list-{{ competition.id }}"
+                       hx-swap="outerHTML"
+                       hx-trigger="keyup changed delay:300ms, search"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+
+                <form hx-post="{% url 'roster_assign' competition.id %}"
+                      hx-target="#roster-panel-{{ competition.id }}"
+                      hx-swap="outerHTML"
+                      class="flex flex-1 flex-col">
+                    {% csrf_token %}
+                    {% include 'participants/participant_management/roster/available_list.html' %}
+                    <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onclick="rosterToggleAll('{{ competition.id }}')"
+                                class="cursor-pointer rounded-lg border border-cyan-600/30 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-50">Select all shown</button>
+                        <button type="submit"
+                                class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            Assign selected
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        {# ---------------- Assigned roster ---------------- #}
+        <section class="flex flex-col rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                    <h3 class="font-display text-base font-semibold text-slate-900">Competition roster</h3>
+                    <p class="text-xs text-slate-500">Assigned participants</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">{{ assigned_page.paginator.count }}</span>
+            </div>
+
+            <div class="flex flex-1 flex-col gap-4 px-5 py-4">
+                <input type="search" name="q" placeholder="Search roster&hellip;" autocomplete="off"
+                       hx-get="{% url 'roster_assigned' competition.id %}"
+                       hx-target="#assigned-list-{{ competition.id }}"
+                       hx-swap="outerHTML"
+                       hx-trigger="keyup changed delay:300ms, search"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+
+                {% include 'participants/participant_management/roster/assigned_list.html' %}
+            </div>
+        </section>
+    </div>
+
+    <script>
+        (function () {
+            function selectAll(competitionId) {
+                var box = document.querySelectorAll('#available-list-' + competitionId + ' input[type=checkbox]');
+                var allChecked = Array.prototype.every.call(box, function (c) { return c.checked; });
+                box.forEach(function (c) { c.checked = !allChecked; });
+            }
+            window.rosterToggleAll = selectAll;
+        })();
+    </script>
+</div>
