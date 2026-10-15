@@ -25,6 +25,7 @@
 <!-- Stat cards -->
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-teal-200 hover:shadow-soft">
+        <a href="{% url 'competition_list' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="View all competitions"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -41,6 +42,7 @@
     </div>
 
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-emerald-200 hover:shadow-soft">
+        <a href="{% url 'competition_list' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="View active competitions"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -57,6 +59,7 @@
     </div>
 
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-violet-200 hover:shadow-soft">
+        <a href="{% url 'participant_list' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="View all participants"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -73,6 +76,7 @@
     </div>
 
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-amber-200 hover:shadow-soft">
+        <a href="{% url 'judge_management' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="Manage judges"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -89,6 +93,7 @@
     </div>
 
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-slate-300 hover:shadow-soft">
+        <a href="{% url 'team_list' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="View all teams"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -108,6 +113,7 @@
 <!-- Sport events & matches -->
 <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-cyan-200 hover:shadow-soft">
+        <a href="{% url 'sports_hub' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="Open sports hub"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -124,6 +130,7 @@
     </div>
 
     <div class="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all  hover:border-indigo-200 hover:shadow-soft">
+        <a href="{% url 'match_board' %}" class="absolute inset-0 z-[1] rounded-2xl" aria-label="Open match board"></a>
         
         <div class="flex items-center justify-between">
             <div>
@@ -212,7 +219,8 @@
         <h2 class="font-display text-lg font-semibold text-slate-900">Upcoming Competitions</h2>
         <div class="mt-4 space-y-3">
             {% for competition in upcoming_events %}
-            <div class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-200 hover:bg-cyan-50/40">
+            <div class="relative flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-200 hover:bg-cyan-50/40">
+                <a href="{% url 'competition_detail' competition.id %}" class="absolute inset-0 z-[1] rounded-xl" aria-label="View {{ competition.name }} details"></a>
                 <div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-campus text-white shadow">
                     <span class="font-display text-lg font-bold leading-none">{{ competition.start_date|date:"d" }}</span>
                     <span class="text-[10px] font-semibold uppercase tracking-wide">{{ competition.start_date|date:"M" }}</span>
@@ -294,7 +302,8 @@
         </div>
         <div class="mt-4 space-y-3">
             {% for match in upcoming_matches %}
-            <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-200 hover:bg-cyan-50/40">
+            <div class="relative rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-cyan-200 hover:bg-cyan-50/40">
+                <a href="{% url 'match_schedule' match.event_id %}" class="absolute inset-0 z-[1] rounded-xl" aria-label="View match schedule"></a>
                 <div class="flex items-center justify-between gap-3">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ match.label|default:match.event.name }}</p>
                     <span class="shrink-0 text-xs font-semibold text-slate-500">{{ match.scheduled_start|date:"M d, H:i"|default:"TBD" }}</span>
@@ -313,7 +322,8 @@
         <p class="mt-1 text-xs text-slate-400">Top of the standings in running competitions</p>
         <div class="mt-4 space-y-3">
             {% for entry in current_champions %}
-            <div class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+            <div class="relative flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+                <a href="{% url 'competition_detail' entry.competition.id %}" class="absolute inset-0 z-[1] rounded-xl" aria-label="View {{ entry.competition.name }} standings"></a>
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-lg font-bold text-yellow-700">1</div>
                 <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ entry.participant.name|default:"—" }}</p>
@@ -334,7 +344,8 @@
         </div>
         <div class="mt-4 space-y-3">
             {% for row in medal_standings %}
-            <div class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+            <div class="relative flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+                <a href="{% url 'overall_medal_tally' %}" class="absolute inset-0 z-[1] rounded-xl" aria-label="View full medal tally"></a>
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{{ row.rank }}</span>
                 <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-semibold text-slate-900">{{ row.name }}</p>
