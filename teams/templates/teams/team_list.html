@@ -12,13 +12,13 @@
 {% if teams %}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for team in teams %}
-    <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+    <article class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
         <div class="flex items-center gap-4 p-6">
             {% if team.logo %}<img src="{{ team.logo.url }}" alt="{{ team.name }} logo" class="h-16 w-16 rounded-2xl object-cover ring-1 ring-slate-200">{% else %}<div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-campus font-display text-xl font-bold text-white">{{ team.name|make_list|first|upper }}</div>{% endif %}
-            <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ team.code }}</p><h2 class="mt-1 truncate font-display text-lg font-bold text-ink">{{ team.name }}</h2><p class="mt-1 text-xs text-slate-500">{{ team.get_category_display }}</p></div>
+            <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ team.code }}</p><h2 class="mt-1 truncate font-display text-lg font-bold text-ink"><a href="{% url 'team_detail' team.id %}" class="transition-colors hover:text-campus after:absolute after:inset-0 after:content-['']" aria-label="Open {{ team.name }} workspace">{{ team.name }}</a></h2><p class="mt-1 text-xs text-slate-500">{{ team.get_category_display }}</p></div>
         </div>
         <div class="grid grid-cols-3 border-y border-slate-100 bg-slate-50/70 px-5 py-4 text-center"><div><p class="font-bold text-ink">{{ team.memberships.count }}</p><p class="text-[10px] uppercase text-slate-400">Members</p></div><div><p class="font-bold text-ink">{{ team.staff_assignments.count }}</p><p class="text-[10px] uppercase text-slate-400">Staff</p></div><div><span class="rounded-full px-2 py-1 text-[10px] font-bold {% if team.status == 'APPROVED' %}bg-emerald-100 text-emerald-700{% elif team.status == 'SUSPENDED' %}bg-rose-100 text-rose-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ team.get_status_display }}</span></div></div>
-        <div class="p-4"><a href="{% url 'team_detail' team.id %}" class="block rounded-xl bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open team workspace</a></div>
+        <div class="relative z-[1] p-4"><a href="{% url 'team_detail' team.id %}" class="block rounded-xl bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open team workspace</a></div>
     </article>
     {% endfor %}
 </div>

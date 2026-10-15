@@ -42,7 +42,7 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     {% for participant in page_obj %}
-    <div class="group rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div class="group relative rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
         <div class="flex items-center gap-4">
             {% if participant.profile_image %}
             <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-14 w-14 rounded-full border-2 border-cyan-100 object-cover">
@@ -50,7 +50,7 @@
             <div class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-xl font-bold text-white">{{ participant.name|make_list|first }}</div>
             {% endif %}
             <div class="min-w-0">
-                <h3 class="truncate font-display text-lg font-semibold text-slate-900">{{ participant.name }}</h3>
+                <h3 class="truncate font-display text-lg font-semibold text-slate-900"><a href="{% url 'participant_detail' participant.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="View {{ participant.name }} profile">{{ participant.name }}</a></h3>
                 <p class="text-sm text-slate-500">{{ participant.participant_id }}</p>
             </div>
         </div>
@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <div class="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
+        <div class="relative z-[1] mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
             <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
                 {% if participant.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
                 {% elif participant.status == 'WITHDRAWN' %}bg-rose-100 text-rose-700

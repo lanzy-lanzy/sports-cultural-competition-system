@@ -52,7 +52,7 @@
 
         <div class="flex flex-1 flex-col p-6">
             <div class="mb-3 flex items-start justify-between gap-3">
-                <h3 class="font-display text-lg font-semibold uppercase leading-snug tracking-tight text-slate-900">{{ competition.name }}</h3>
+                <h3 class="font-display text-lg font-semibold uppercase leading-snug tracking-tight text-slate-900"><a href="{% url 'competition_detail' competition.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="View {{ competition.name }} details">{{ competition.name }}</a></h3>
                 <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold
                     {% if competition.status == 'ACTIVE' %}border-emerald-200 bg-emerald-50 text-emerald-700
                     {% elif competition.status == 'DRAFT' %}border-slate-200 bg-slate-50 text-slate-600
@@ -86,7 +86,7 @@
             </div>
 
             <!-- Actions -->
-            <div class="mt-4 grid {% if can_manage %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
+            <div class="relative z-[1] mt-4 grid {% if can_manage %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
                 <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
                 {% if can_manage %}
                 <button type="button"
@@ -103,7 +103,7 @@
             </div>
 
             {% if can_manage %}
-            <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+            <div class="relative z-[1] mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                 <form method="POST" action="{% url 'toggle_competition_status' competition.id %}">
                     {% csrf_token %}
                     <button type="submit" class="cursor-pointer text-xs font-medium text-slate-500 transition-colors duration-200 hover:text-cyan-700">Toggle status</button>
