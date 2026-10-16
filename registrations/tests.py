@@ -137,6 +137,19 @@ class RegistrationTest(TestCase):
         self.assertNotIn('team', resp.context['form'].fields)
         self.assertNotContains(resp, 'name="team"')
 
+    def test_participant_never_sees_team_dropdown_even_if_assigned_as_team_staff(self):
+        # Even if a participant account appears in a team's staff list, the
+        # registration page keys off the account role: participants never get
+        # the team dropdown because their team comes from "My team".
+        team = Team.objects.create(
+            name='Wildcats', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        TeamStaff.objects.create(team=team, user=self.participant_user, role=TeamStaff.Role.COACH)
+        self.client.force_login(self.participant_user)
+        resp = self.client.get(reverse('register_for_event'))
+        self.assertNotIn('team', resp.context['form'].fields)
+
     def test_team_manager_registration_page_shows_team_dropdown(self):
         manager = User.objects.create_user('manager2', 'm2@example.com', 'pass')
         manager.account_profile.role = UserProfile.Role.TEAM_MANAGER

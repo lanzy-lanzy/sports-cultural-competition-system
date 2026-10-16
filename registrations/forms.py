@@ -2,6 +2,8 @@ from pathlib import Path
 
 from django import forms
 
+from accounts.access import get_user_role
+from accounts.models import UserProfile
 from competitions.models import Competition
 from sports.models import SportsEvent
 from teams.models import Team
@@ -37,15 +39,16 @@ class EventRegistrationForm(forms.Form):
         self.fields['sport_event'].queryset = SportsEvent.objects.filter(
             status__in=[SportsEvent.Status.PLANNED, SportsEvent.Status.SCHEDULED],
         ).select_related('sport_type').order_by('name')
-        if user is not None:
+
+        # The team dropdown is only for team managers, who register a whole team
+        # as one contestant. A participant's team comes from the "My team"
+        # selection on their profile, so the dropdown is never shown to them.
+        is_team_manager = user is not None and get_user_role(user) == UserProfile.Role.TEAM_MANAGER
+        if is_team_manager:
             self.fields['team'].queryset = Team.objects.filter(
                 staff_assignments__user=user,
             ).distinct().order_by('name')
-        # The team dropdown is only meaningful for a team manager registering a
-        # whole team as one contestant. A participant's team is set through the
-        # "My team" section, so hide the redundant dropdown when the user does
-        # not manage any team.
-        if not self.fields['team'].queryset.exists():
+        if not is_team_manager or not self.fields['team'].queryset.exists():
             self.fields.pop('team')
         for field in self.fields.values():
             if isinstance(field.widget, forms.Textarea):

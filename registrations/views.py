@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 
-from accounts.access import management_required, role_required
+from accounts.access import get_user_role, management_required, role_required
 from accounts.models import UserProfile
 from competitions.models import Competition
 from participants.models import Participant
@@ -48,7 +48,7 @@ def register_for_event(request):
     # A participant registers as an individual; their team affiliation already
     # comes from the "My team" selection, so surface it read-only for context.
     participant_team = None
-    if 'team' not in form.fields:
+    if get_user_role(request.user) == UserProfile.Role.PARTICIPANT:
         participant = Participant.objects.filter(user=request.user).first()
         if participant:
             membership = TeamMembership.objects.filter(
