@@ -41,6 +41,12 @@ class EventRegistrationForm(forms.Form):
             self.fields['team'].queryset = Team.objects.filter(
                 staff_assignments__user=user,
             ).distinct().order_by('name')
+        # The team dropdown is only meaningful for a team manager registering a
+        # whole team as one contestant. A participant's team is set through the
+        # "My team" section, so hide the redundant dropdown when the user does
+        # not manage any team.
+        if not self.fields['team'].queryset.exists():
+            self.fields.pop('team')
         for field in self.fields.values():
             if isinstance(field.widget, forms.Textarea):
                 field.widget.attrs['class'] = INPUT_CLASS.replace('h-12', 'min-h-24')

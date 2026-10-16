@@ -129,6 +129,28 @@ class RegistrationTest(TestCase):
         self.assertRedirects(resp, reverse('my_registrations'))
         self.assertTrue(EventRegistration.objects.filter(registrant=manager, team=team).exists())
 
+    def test_participant_registration_page_has_no_team_dropdown(self):
+        # A participant's team comes from "My team"; the redundant dropdown is hidden.
+        self.client.force_login(self.participant_user)
+        resp = self.client.get(reverse('register_for_event'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn('team', resp.context['form'].fields)
+        self.assertNotContains(resp, 'name="team"')
+
+    def test_team_manager_registration_page_shows_team_dropdown(self):
+        manager = User.objects.create_user('manager2', 'm2@example.com', 'pass')
+        manager.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        manager.account_profile.save(update_fields=['role', 'updated_at'])
+        team = Team.objects.create(
+            name='Bulldogs', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=manager,
+        )
+        TeamStaff.objects.create(team=team, user=manager, role=TeamStaff.Role.MANAGER)
+        self.client.force_login(manager)
+        resp = self.client.get(reverse('register_for_event'))
+        self.assertIn('team', resp.context['form'].fields)
+        self.assertContains(resp, 'name="team"')
+
     def test_start_review_moves_pending_to_under_review(self):
         registration = EventRegistration.objects.create(
             registrant=self.participant_user,

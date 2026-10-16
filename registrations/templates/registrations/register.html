@@ -34,12 +34,25 @@
                 {% if form.competition.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.competition.errors.0 }}</p>{% endif %}
             </div>
 
+            {% if form.fields.team %}
             <div>
-                <label for="{{ form.team.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation <span class="font-normal text-slate-400">(team managers)</span></label>
+                <label for="{{ form.team.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation</label>
                 {{ form.team }}
-                <p class="mt-1 text-xs text-slate-400">Leave empty to register yourself as an individual participant.</p>
+                <p class="mt-1 text-xs text-slate-400">You are registering on behalf of the selected team.</p>
                 {% if form.team.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.team.errors.0 }}</p>{% endif %}
             </div>
+            {% else %}
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation</label>
+                {% if participant_team %}
+                <div class="flex h-12 w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">{{ participant_team.name }}</div>
+                <p class="mt-1 text-xs text-slate-400">You are registering as a member of this team. To change your team, use <a href="{% url 'my_participant_profile' %}" class="font-semibold text-campus hover:underline">My team</a>.</p>
+                {% else %}
+                <div class="flex h-12 w-full items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 text-sm text-slate-400">No team selected</div>
+                <p class="mt-1 text-xs text-slate-400">You are registering as an individual. Optionally join a team in <a href="{% url 'my_participant_profile' %}" class="font-semibold text-campus hover:underline">My team</a>.</p>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <div>
                 <label for="{{ form.requirements_document.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Requirements document</label>

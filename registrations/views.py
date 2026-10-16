@@ -7,6 +7,7 @@ from accounts.access import management_required, role_required
 from accounts.models import UserProfile
 from competitions.models import Competition
 from participants.models import Participant
+from teams.models import TeamMembership
 
 from .forms import EventRegistrationForm
 from .models import EventRegistration
@@ -23,7 +24,7 @@ def register_for_event(request):
 
     if request.method == 'POST' and form.is_valid():
         participant = Participant.objects.filter(user=request.user).first()
-        team = form.cleaned_data['team']
+        team = form.cleaned_data.get('team')
 
         if team is None and participant is None:
             messages.error(
@@ -44,7 +45,21 @@ def register_for_event(request):
         messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
         return redirect('my_registrations')
 
-    return render(request, 'registrations/register.html', {'form': form})
+    # A participant registers as an individual; their team affiliation already
+    # comes from the "My team" selection, so surface it read-only for context.
+    participant_team = None
+    if 'team' not in form.fields:
+        participant = Participant.objects.filter(user=request.user).first()
+        if participant:
+            membership = TeamMembership.objects.filter(
+                participant=participant,
+            ).select_related('team').first()
+            participant_team = membership.team if membership else None
+
+    return render(request, 'registrations/register.html', {
+        'form': form,
+        'participant_team': participant_team,
+    })
 
 
 @role_required(UserProfile.Role.PARTICIPANT, UserProfile.Role.TEAM_MANAGER)
