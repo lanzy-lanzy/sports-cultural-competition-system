@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
+from teams.models import Team, TeamMembership
 from .models import Participant, ParticipantCompetition
 from .forms import ParticipantForm
 from . import services
@@ -104,14 +106,30 @@ def edit_participant(request, participant_id):
     })
 
 
-@role_required(UserProfile.Role.PARTICIPANT)
-def my_participant_profile(request):
-    participant = Participant.objects.filter(user=request.user).first()
-    if participant is None and request.user.email:
+def _get_or_link_participant(user):
+    """Return the participant record owned by ``user``.
+
+    A legacy participant row may pre-date account linking, so fall back to an
+    unlinked row that matches the account email. The link itself is created
+    when the profile form is saved.
+    """
+    participant = Participant.objects.filter(user=user).first()
+    if participant is None and user.email:
         participant = Participant.objects.filter(
             user__isnull=True,
-            email__iexact=request.user.email,
+            email__iexact=user.email,
         ).first()
+    return participant
+
+
+def _joinable_teams():
+    """Approved teams a participant may self-select into."""
+    return Team.objects.filter(status=Team.Status.APPROVED).order_by('name')
+
+
+@role_required(UserProfile.Role.PARTICIPANT)
+def my_participant_profile(request):
+    participant = _get_or_link_participant(request.user)
 
     initial = None
     if participant is None:
@@ -151,11 +169,104 @@ def my_participant_profile(request):
             participant=participant,
         ).select_related('competition').order_by('-competition__start_date')
 
+    current_membership = None
+    if participant:
+        current_membership = TeamMembership.objects.filter(
+            participant=participant,
+        ).select_related('team').first()
+
+    joinable_teams = [
+        team for team in _joinable_teams()
+        if not current_membership or team.id != current_membership.team_id
+    ]
+
     return render(request, 'participants/my_participant_profile.html', {
         'form': form,
         'participant': participant,
         'participant_competitions': history,
+        'team_membership': current_membership,
+        'joinable_teams': joinable_teams,
     })
+
+
+@role_required(UserProfile.Role.PARTICIPANT)
+@require_POST
+def select_my_team(request):
+    """Let a participant self-select the team they belong to.
+
+    Admins and team managers can still pull people onto a roster from the team
+    page; this is the participant-driven counterpart and reuses the same
+    TeamMembership record so both paths stay in sync.
+    """
+    participant = _get_or_link_participant(request.user)
+    if participant is None:
+        messages.error(request, 'Complete your participant profile before choosing a team.')
+        return redirect('my_participant_profile')
+
+    team_id = request.POST.get('team_id')
+    team = None
+    if team_id and str(team_id).isdigit():
+        team = Team.objects.filter(id=team_id, status=Team.Status.APPROVED).first()
+    if team is None:
+        messages.error(request, 'Select a team you can join.')
+        return redirect('my_participant_profile')
+
+    with transaction.atomic():
+        # A participant belongs to at most one team (OneToOne), so move the
+        # membership if they already had one.
+        TeamMembership.objects.filter(participant=participant).exclude(team=team).delete()
+        membership, created = TeamMembership.objects.get_or_create(
+            participant=participant,
+            defaults={'team': team},
+        )
+        if not created and membership.team_id != team.id:
+            membership.team = team
+            membership.save(update_fields=['team'])
+        participant.team_name = team.name
+        participant.save(update_fields=['team_name'])
+
+    from audit.models import record_action_from_request
+    record_action_from_request(
+        request,
+        'TEAM_MEMBERSHIP',
+        target=team,
+        details=f'{participant.name} selected team "{team.name}"',
+    )
+    messages.success(request, f'You have joined {team.name}.')
+    return redirect('my_participant_profile')
+
+
+@role_required(UserProfile.Role.PARTICIPANT)
+@require_POST
+def leave_my_team(request):
+    """Let a participant remove their own team selection."""
+    participant = _get_or_link_participant(request.user)
+    if participant is None:
+        messages.error(request, 'No participant profile found for your account.')
+        return redirect('my_participant_profile')
+
+    membership = TeamMembership.objects.filter(participant=participant).select_related('team').first()
+    if membership is None:
+        messages.info(request, 'You are not currently attached to a team.')
+        return redirect('my_participant_profile')
+
+    team_name = membership.team.name
+    team = membership.team
+    with transaction.atomic():
+        membership.delete()
+        if participant.team_name == team_name:
+            participant.team_name = ''
+            participant.save(update_fields=['team_name'])
+
+    from audit.models import record_action_from_request
+    record_action_from_request(
+        request,
+        'TEAM_MEMBERSHIP',
+        target=team,
+        details=f'{participant.name} left team "{team_name}"',
+    )
+    messages.success(request, f'You have left {team_name}.')
+    return redirect('my_participant_profile')
 
 
 @management_required

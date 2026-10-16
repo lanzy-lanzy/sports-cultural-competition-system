@@ -21,6 +21,7 @@ class AuditLog(models.Model):
         ANNOUNCEMENT_PUBLISH = 'ANNOUNCEMENT_PUBLISH', 'Announcement published'
         AWARD_CHANGE = 'AWARD_CHANGE', 'Award changed'
         TEAM_STATUS = 'TEAM_STATUS', 'Team status changed'
+        TEAM_MEMBERSHIP = 'TEAM_MEMBERSHIP', 'Team membership changed'
         PROTEST_REVIEW = 'PROTEST_REVIEW', 'Protest reviewed'
 
     user = models.ForeignKey(

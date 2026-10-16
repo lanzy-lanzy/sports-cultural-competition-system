@@ -7,9 +7,21 @@
 
     {# Async feedback flash: only shown for HTMX re-renders; full page loads render messages in base.html. #}
     {% if request.htmx and messages %}
-    <div class="flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800 shadow-sm" aria-live="polite">
-        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-campus"></span>
-        <div class="space-y-0.5">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>
+    <div class="space-y-2" aria-live="polite">
+        {% for message in messages %}
+        <div class="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm
+            {% if 'error' in message.tags or 'danger' in message.tags %}border-rose-200 bg-rose-50 text-rose-700
+            {% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800
+            {% elif 'info' in message.tags %}border-sky-200 bg-sky-50 text-sky-800
+            {% else %}border-emerald-200 bg-emerald-50 text-emerald-800{% endif %}">
+            <span class="mt-1 h-2 w-2 shrink-0 rounded-full
+                {% if 'error' in message.tags or 'danger' in message.tags %}bg-rose-500
+                {% elif 'warning' in message.tags %}bg-amber-500
+                {% elif 'info' in message.tags %}bg-sky-500
+                {% else %}bg-emerald-500{% endif %}"></span>
+            {{ message }}
+        </div>
+        {% endfor %}
     </div>
     {% endif %}
 

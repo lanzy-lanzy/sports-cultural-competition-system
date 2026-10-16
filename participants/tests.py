@@ -5,6 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from competitions.models import Competition
 from accounts.models import UserProfile
+from teams.models import Team, TeamMembership
 from .forms import ParticipantForm
 from .models import Participant, ParticipantCompetition
 
@@ -150,3 +151,87 @@ class ParticipantViewTest(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn('identification_document', form.errors)
+
+
+class ParticipantSelfTeamSelectionTest(TestCase):
+    def setUp(self):
+        self.creator = User.objects.create_user('mgr', 'mgr@example.com', 'pass')
+        self.creator.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        self.creator.account_profile.save(update_fields=['role', 'updated_at'])
+
+        self.athlete = User.objects.create_user(
+            'athlete', 'athlete@example.com', 'pass',
+            first_name='Alex', last_name='Athlete',
+        )
+        self.athlete.account_profile.role = UserProfile.Role.PARTICIPANT
+        self.athlete.account_profile.save(update_fields=['role', 'updated_at'])
+        self.participant = Participant.objects.create(
+            user=self.athlete, name='Alex Athlete', email='athlete@example.com',
+            phone='0917', age=20, status='ACTIVE',
+        )
+        self.approved_team = Team.objects.create(
+            name='Blue Warriors', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.creator,
+        )
+        self.pending_team = Team.objects.create(
+            name='Red Falcons', category=Team.Category.SPORTS,
+            status=Team.Status.PENDING, created_by=self.creator,
+        )
+
+    def _login_athlete(self):
+        self.client.force_login(self.athlete)
+
+    def test_profile_lists_only_approved_teams(self):
+        self._login_athlete()
+        resp = self.client.get(reverse('my_participant_profile'))
+        self.assertContains(resp, 'My team')
+        self.assertContains(resp, self.approved_team.name)
+        self.assertNotContains(resp, self.pending_team.name)
+
+    def test_participant_can_join_approved_team(self):
+        self._login_athlete()
+        resp = self.client.post(reverse('select_my_team'), {'team_id': self.approved_team.id})
+        self.assertRedirects(resp, reverse('my_participant_profile'))
+        membership = TeamMembership.objects.get(participant=self.participant)
+        self.assertEqual(membership.team, self.approved_team)
+        self.participant.refresh_from_db()
+        self.assertEqual(self.participant.team_name, self.approved_team.name)
+
+    def test_participant_cannot_join_pending_team(self):
+        self._login_athlete()
+        resp = self.client.post(reverse('select_my_team'), {'team_id': self.pending_team.id})
+        self.assertRedirects(resp, reverse('my_participant_profile'))
+        self.assertFalse(TeamMembership.objects.filter(participant=self.participant).exists())
+
+    def test_joining_new_team_moves_single_membership(self):
+        self._login_athlete()
+        other = Team.objects.create(
+            name='Green Tigers', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.creator,
+        )
+        self.client.post(reverse('select_my_team'), {'team_id': self.approved_team.id})
+        self.client.post(reverse('select_my_team'), {'team_id': other.id})
+        self.assertEqual(TeamMembership.objects.filter(participant=self.participant).count(), 1)
+        self.assertEqual(TeamMembership.objects.get(participant=self.participant).team, other)
+
+    def test_participant_can_leave_team(self):
+        self._login_athlete()
+        TeamMembership.objects.create(team=self.approved_team, participant=self.participant)
+        self.participant.team_name = self.approved_team.name
+        self.participant.save(update_fields=['team_name'])
+        resp = self.client.post(reverse('leave_my_team'))
+        self.assertRedirects(resp, reverse('my_participant_profile'))
+        self.assertFalse(TeamMembership.objects.filter(participant=self.participant).exists())
+        self.participant.refresh_from_db()
+        self.assertEqual(self.participant.team_name, '')
+
+    def test_join_requires_post_and_participant_role(self):
+        # A participant issuing GET is rejected by require_POST.
+        self._login_athlete()
+        self.assertEqual(self.client.get(reverse('select_my_team')).status_code, 405)
+        # A non-participant is rejected by the role guard.
+        self.client.force_login(self.creator)
+        self.assertEqual(
+            self.client.post(reverse('select_my_team'), {'team_id': self.approved_team.id}).status_code,
+            403,
+        )

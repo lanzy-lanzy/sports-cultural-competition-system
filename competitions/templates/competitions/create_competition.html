@@ -11,24 +11,6 @@
         <p class="mt-1 text-sm text-slate-500">Set up your competition details and rounds.</p>
     </div>
 
-    {% if messages %}
-    <div class="mb-6 space-y-2">
-        {% for message in messages %}
-        <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm
-            {% if message.tags == 'error' %}border-rose-200 bg-rose-50 text-rose-700{% else %}border-emerald-200 bg-emerald-50 text-emerald-700{% endif %}">
-            <svg class="h-5 w-5 shrink-0 {% if message.tags == 'error' %}text-rose-400{% else %}text-emerald-400{% endif %}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                {% if message.tags == 'error' %}
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                {% else %}
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                {% endif %}
-            </svg>
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     <form method="post" class="space-y-6">
         {% csrf_token %}
 
