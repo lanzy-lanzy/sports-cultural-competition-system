@@ -36,7 +36,7 @@
                     <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                     </svg>
-                    <input type="text" id="searchParticipant" placeholder="Search by name, email, phone..."
+                    <input type="text" id="searchParticipant" placeholder="Search by name, ID, phone..."
                            class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
                 </div>
             </div>
@@ -155,7 +155,7 @@
                 <label class="participant-card relative flex cursor-pointer items-start rounded-xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md"
                        data-participant
                        data-name="{{ participant.name|lower }}"
-                       data-email="{{ participant.email|lower }}"
+                       data-id="{{ participant.participant_id|lower }}"
                        data-phone="{{ participant.phone|default:''|lower }}"
                        data-gender="{{ participant.gender }}"
                        data-age="{{ participant.age|default:'' }}"
@@ -174,7 +174,7 @@
                             <div class="min-w-0 flex-1">
                                 <p class="truncate font-medium text-slate-900">{{ participant.name }}</p>
                                 <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-500">
-                                    {% if participant.email %}<span class="truncate">{{ participant.email }}</span>{% endif %}
+                                    <span class="truncate">{{ participant.participant_id }}</span>
                                     {% if participant.age %}
                                     <span class="flex items-center gap-1">
                                         <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -239,7 +239,7 @@
                     <tr class="participant-row border-b border-slate-100 transition-colors last:border-0 hover:bg-cyan-50/40"
                         data-participant
                         data-name="{{ participant.name|lower }}"
-                        data-email="{{ participant.email|lower }}"
+                        data-id="{{ participant.participant_id|lower }}"
                         data-phone="{{ participant.phone|default:''|lower }}"
                         data-gender="{{ participant.gender }}"
                         data-age="{{ participant.age|default:'' }}"
@@ -257,7 +257,7 @@
                                 {% endif %}
                                 <div class="min-w-0">
                                     <p class="font-medium text-slate-900">{{ participant.name }}</p>
-                                    {% if participant.email %}<p class="truncate text-xs text-slate-500">{{ participant.email }}</p>{% endif %}
+                                    <p class="truncate text-xs text-slate-500">{{ participant.participant_id }}</p>
                                 </div>
                             </div>
                         </td>
@@ -376,13 +376,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.querySelectorAll('[data-participant]').forEach(item => {
             const name = item.dataset.name;
-            const email = item.dataset.email || '';
+            const pid = item.dataset.id || '';
             const phone = item.dataset.phone || '';
             const gender = item.dataset.gender;
             const age = parseInt(item.dataset.age) || 0;
             const status = item.dataset.status;
 
-            let show = name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm);
+            let show = name.includes(searchTerm) || pid.includes(searchTerm) || phone.includes(searchTerm);
 
             if (selectedGender !== 'all') {
                 show = show && gender === selectedGender;

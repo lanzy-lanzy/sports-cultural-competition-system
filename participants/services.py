@@ -68,8 +68,8 @@ def assigned_rows(competition, query=''):
     if query:
         rows = rows.filter(
             models.Q(participant__name__icontains=query)
-            | models.Q(participant__email__icontains=query)
             | models.Q(participant__participant_id__icontains=query)
+            | models.Q(participant__identification_number__icontains=query)
         )
     return rows.order_by('number')
 
@@ -80,7 +80,7 @@ def available_participants(competition, query=''):
     if query:
         qs = qs.filter(
             models.Q(name__icontains=query)
-            | models.Q(email__icontains=query)
             | models.Q(participant_id__icontains=query)
+            | models.Q(identification_number__icontains=query)
         )
     return qs.order_by('name')

@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from competitions.models import Competition
 from accounts.models import UserProfile
@@ -24,45 +23,47 @@ class ParticipantViewTest(TestCase):
     def test_create_participant(self):
         resp = self.client.post(reverse('create_participant'), {
             'first_name': 'Bob', 'middle_name': 'C.', 'last_name': 'Doe',
-            'email': 'b@a.com', 'phone': '2',
+            'phone': '2', 'identification_number': 'S-200',
             'age': '25', 'gender': 'male', 'bio': 'x', 'achievements': 'y',
         })
         self.assertRedirects(resp, reverse('participant_list'))
-        participant = Participant.objects.get(email='b@a.com')
-        self.assertEqual(participant.name, 'Bob C. Doe')
+        participant = Participant.objects.get(name='Bob C. Doe')
+        self.assertEqual(participant.identification_number, 'S-200')
 
     def test_create_participant_assigns_identity_and_classification(self):
         resp = self.client.post(reverse('create_participant'), {
             'first_name': 'Junior', 'middle_name': 'M.', 'last_name': 'Sample',
-            'email': 'junior@example.com', 'phone': '2',
+            'phone': '2',
             'age': '16', 'gender': 'female', 'category': 'JUNIOR',
             'team_name': 'Blue Warriors', 'status': 'ACTIVE',
-            'identification_type': 'SCHOOL_ID', 'identification_number': 'S-100',
+            'identification_number': 'S-100',
         })
 
         self.assertRedirects(resp, reverse('participant_list'))
-        participant = Participant.objects.get(email='junior@example.com')
+        participant = Participant.objects.get(name='Junior M. Sample')
         self.assertEqual(participant.name, 'Junior M. Sample')
+        self.assertEqual(participant.identification_number, 'S-100')
         self.assertTrue(participant.participant_id.startswith('JHCSC-'))
         self.assertEqual(participant.age_classification, 'Youth')
         self.assertEqual(participant.category, Participant.Category.JUNIOR)
         self.assertEqual(participant.team_name, 'Blue Warriors')
 
-    def test_identification_type_only_offers_school_id(self):
-        form = ParticipantForm()
-        choices = [value for value, _ in form.fields['identification_type'].choices if value]
-        self.assertEqual(choices, [Participant.IdentificationType.SCHOOL_ID])
-
-    def test_identification_type_rejects_other_document_types(self):
+    def test_identification_number_is_captured_as_school_id(self):
         form = ParticipantForm(data={
             'first_name': 'Alex', 'last_name': 'Sample', 'phone': '0917',
-            'email': 'alex2@example.com', 'age': '20', 'gender': 'male',
+            'age': '20', 'gender': 'male',
             'category': 'OPEN', 'status': 'ACTIVE',
-            'identification_type': 'GOVERNMENT_ID',
+            'identification_number': 'S-300',
         })
 
-        self.assertFalse(form.is_valid())
-        self.assertIn('identification_type', form.errors)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['identification_number'], 'S-300')
+
+    def test_participant_form_has_no_email_or_document_fields(self):
+        form = ParticipantForm()
+        for field_name in ('email', 'identification_type', 'identification_document'):
+            self.assertNotIn(field_name, form.fields)
+        self.assertIn('identification_number', form.fields)
 
     def test_assign_participants_assigns_with_numbering(self):
         resp = self.client.post(reverse('assign_participants', args=[self.competition.id]), {
@@ -116,7 +117,7 @@ class ParticipantViewTest(TestCase):
             'first_name': 'Alex', 'middle_name': 'R.', 'last_name': 'Athlete',
             'phone': '0917',
             'age': '20', 'gender': 'prefer_not_to_say', 'category': 'OPEN',
-            'identification_type': '', 'identification_number': '',
+            'identification_number': 'S-500',
         })
 
         self.assertRedirects(response, reverse('my_participant_profile'))
@@ -136,19 +137,6 @@ class ParticipantViewTest(TestCase):
         spectator = User.objects.create_user('viewer', 'viewer@example.com', 'pass')
         self.client.force_login(spectator)
         self.assertEqual(self.client.get(reverse('my_participant_profile')).status_code, 403)
-
-    def test_identification_document_rejects_unsupported_file_type(self):
-        form = ParticipantForm(data={
-            'first_name': 'Alex', 'last_name': 'Athlete', 'email': 'alex@example.com',
-            'phone': '0917',
-            'age': '20', 'gender': 'male', 'category': 'OPEN', 'status': 'ACTIVE',
-            'identification_type': 'SCHOOL_ID',
-        }, files={
-            'identification_document': SimpleUploadedFile('malware.exe', b'not-a-document'),
-        })
-
-        self.assertFalse(form.is_valid())
-        self.assertIn('identification_document', form.errors)
 
 
 class ParticipantSelfTeamSelectionTest(TestCase):

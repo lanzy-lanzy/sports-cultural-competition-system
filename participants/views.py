@@ -59,7 +59,7 @@ def create_participant(request):
     return render(request, 'participants/participant_management/participant_form.html', {
         'form': form,
         'form_title': 'Register participant',
-        'form_description': 'Create a participant record, classification, and identification profile.',
+        'form_description': 'Create a participant record, classification, and School ID profile.',
         'submit_label': 'Register participant',
         'next_url': request.GET.get('next', ''),
     })

@@ -38,7 +38,7 @@
             </div>
 
             <div class="flex flex-1 flex-col gap-4 px-5 py-4">
-                <input type="search" name="q" placeholder="Search by name, ID, or email&hellip;" autocomplete="off"
+                <input type="search" name="q" placeholder="Search by name or ID&hellip;" autocomplete="off"
                        hx-get="{% url 'roster_available' competition.id %}"
                        hx-target="#available-list-{{ competition.id }}"
                        hx-swap="outerHTML"

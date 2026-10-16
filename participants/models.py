@@ -12,12 +12,6 @@ class Participant(models.Model):
         OPEN = 'OPEN', 'Open'
         SENIOR = 'SENIOR', 'Senior / Masters'
 
-    class IdentificationType(models.TextChoices):
-        SCHOOL_ID = 'SCHOOL_ID', 'School ID'
-        GOVERNMENT_ID = 'GOVERNMENT_ID', 'Government-issued ID'
-        BIRTH_CERTIFICATE = 'BIRTH_CERTIFICATE', 'Birth certificate'
-        OTHER = 'OTHER', 'Other identification'
-
     class Meta:
         db_table = 'competition_app_participant'
 
@@ -32,7 +26,7 @@ class Participant(models.Model):
     competitions = models.ManyToManyField(Competition, related_name='participants', through='ParticipantCompetition')
     name = models.CharField(max_length=200)
     profile_image = models.ImageField(upload_to='participant_profiles/', null=True, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(blank=True, null=True, unique=True)
     phone = models.CharField(max_length=20)
     age = models.PositiveIntegerField(null=True, blank=True)
     birth_date = models.DateField(null=True, blank=True)
@@ -53,16 +47,10 @@ class Participant(models.Model):
         ('ELIMINATED', 'Eliminated')
     ], default='ACTIVE')
     performance_metrics = models.TextField(blank=True)
-    identification_type = models.CharField(
-        max_length=30,
-        choices=IdentificationType.choices,
+    identification_number = models.CharField(
+        max_length=100,
         blank=True,
-    )
-    identification_number = models.CharField(max_length=100, blank=True)
-    identification_document = models.FileField(
-        upload_to='participant_documents/%Y/%m/',
-        null=True,
-        blank=True,
+        verbose_name='School ID number',
     )
 
     def __str__(self):

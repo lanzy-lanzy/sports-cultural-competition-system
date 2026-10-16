@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from django import forms
 
 from .models import Participant
@@ -20,15 +18,13 @@ FILE_INPUT_CLASS = (
     'file:text-xs file:font-bold file:text-white'
 )
 
-# Competition identification is verified against the participant's school record,
-# so School ID is the only selectable document type.
-ALLOWED_IDENTIFICATION_TYPES = [Participant.IdentificationType.SCHOOL_ID]
-
+# Competition identification is captured as a single School ID number; the type
+# selector and document upload were removed because School ID is the only accepted
+# form of identification in this system.
 NAME_FIELD_ORDER = (
-    'first_name', 'middle_name', 'last_name', 'profile_image', 'phone', 'email',
+    'first_name', 'middle_name', 'last_name', 'profile_image', 'phone',
     'birth_date', 'age', 'gender', 'category', 'team_name', 'status',
-    'identification_type', 'identification_number', 'identification_document',
-    'bio', 'achievements',
+    'identification_number', 'bio', 'achievements',
 )
 
 
@@ -40,9 +36,9 @@ class ParticipantForm(forms.ModelForm):
     class Meta:
         model = Participant
         fields = (
-            'name', 'email', 'phone', 'birth_date', 'age', 'gender', 'category',
+            'name', 'phone', 'birth_date', 'age', 'gender', 'category',
             'team_name', 'bio', 'achievements', 'status', 'profile_image',
-            'identification_type', 'identification_number', 'identification_document',
+            'identification_number',
         )
         widgets = {
             'birth_date': forms.DateInput(attrs={'type': 'date'}),
@@ -61,15 +57,9 @@ class ParticipantForm(forms.ModelForm):
             self.initial.update({'first_name': first, 'middle_name': middle, 'last_name': last})
         self.fields.pop('name')
 
-        self.fields['identification_type'] = forms.ChoiceField(
-            label='Identification type',
-            required=False,
-            choices=(
-                [('', 'Select identification type')]
-                + [(value, Participant.IdentificationType(value).label)
-                   for value in ALLOWED_IDENTIFICATION_TYPES]
-            ),
-            help_text='Only a School ID is accepted as competition identification.',
+        self.fields['identification_number'].label = 'School ID number'
+        self.fields['identification_number'].help_text = (
+            'The number printed on the participant\u2019s School ID.'
         )
 
         if self_service:
@@ -78,7 +68,7 @@ class ParticipantForm(forms.ModelForm):
             # through the "My team" join/leave section (which keeps team_name in
             # sync with the roster membership), so the free-text box is removed
             # here to avoid two competing inputs for the same value.
-            for field_name in ('status', 'email', 'bio', 'achievements', 'team_name'):
+            for field_name in ('status', 'bio', 'achievements', 'team_name'):
                 self.fields.pop(field_name, None)
 
         self.order_fields(
@@ -111,31 +101,6 @@ class ParticipantForm(forms.ModelForm):
             self.cleaned_data.get('last_name', ''),
         ]
         return ' '.join(part.strip() for part in parts if part and part.strip())
-
-    def clean_identification_type(self):
-        value = self.cleaned_data['identification_type']
-        if value and value not in ALLOWED_IDENTIFICATION_TYPES:
-            raise forms.ValidationError('Only a School ID can be used as identification.')
-        return value
-
-    def clean_identification_document(self):
-        document = self.cleaned_data.get('identification_document')
-        if not document:
-            return document
-        if document.size > 5 * 1024 * 1024:
-            raise forms.ValidationError('Identification documents must be 5 MB or smaller.')
-        allowed = {'.pdf', '.jpg', '.jpeg', '.png'}
-        if Path(document.name).suffix.lower() not in allowed:
-            raise forms.ValidationError('Upload a PDF, JPG, JPEG, or PNG document.')
-        return document
-
-    def clean(self):
-        cleaned_data = super().clean()
-        identification_type = cleaned_data.get('identification_type')
-        identification_document = cleaned_data.get('identification_document')
-        if identification_document and not identification_type:
-            self.add_error('identification_type', 'Upload your School ID to confirm your identity.')
-        return cleaned_data
 
     def save(self, commit=True):
         self.instance.name = self.composed_name()

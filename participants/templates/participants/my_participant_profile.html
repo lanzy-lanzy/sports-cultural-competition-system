@@ -30,7 +30,7 @@
                 {% endif %}{% endfor %}
             </div>
             {% for field in form %}{% if field.name != 'first_name' and field.name != 'middle_name' and field.name != 'last_name' %}
-            <div class="{% if field.name == 'profile_image' or field.name == 'identification_document' or field.name == 'identification_number' or field.name == 'identification_type' %}sm:col-span-2{% endif %}">
+            <div class="{% if field.name == 'profile_image' %}sm:col-span-2{% endif %}">
                 <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
                 {{ field }}
                 {% if field.help_text %}<p class="mt-1 text-xs text-slate-400">{{ field.help_text }}</p>{% endif %}

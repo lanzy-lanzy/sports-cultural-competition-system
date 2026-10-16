@@ -31,10 +31,10 @@
                         <div class="flex items-center gap-3">
                             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M6.75 6.75h.75v.75h-.75v-.75zM6.75 10.5h.75v.75h-.75v-.75zM6.75 14.25h.75v.75h-.75v-.75zM6 19.5h12A2.25 2.25 0 0020.25 17.25V6.75A2.25 2.25 0 0018 4.5H6a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 006 19.5z"/>
                                 </svg>
                             </div>
-                            <span class="break-all">{{ participant.email }}</span>
+                            <span>School ID: {{ participant.identification_number|default:"Not provided" }}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
@@ -74,9 +74,6 @@
                         <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Category</p><p class="mt-1 text-sm font-semibold text-ink">{{ participant.get_category_display }}</p></div>
                         <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3"><p class="text-xs font-bold uppercase tracking-wider text-slate-400">Team / delegation</p><p class="mt-1 text-sm font-semibold text-ink">{{ participant.team_name|default:'Not assigned' }}</p></div>
                     </div>
-                    {% if participant.identification_document %}
-                    <a href="{{ participant.identification_document.url }}" target="_blank" rel="noopener" class="mt-4 inline-flex items-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-bold text-campus hover:bg-teal-100">View {{ participant.get_identification_type_display|default:'identification document' }}</a>
-                    {% endif %}
                     {% if participant.achievements %}
                         <h3 class="mb-2 mt-6 font-display text-base font-semibold text-slate-900">Achievements</h3>
                         <p class="leading-relaxed text-slate-600">{{ participant.achievements }}</p>
