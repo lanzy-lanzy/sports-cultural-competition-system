@@ -11,53 +11,41 @@
         tailwind.config = {
             theme: { extend: {
                 colors: {
-                    ink: '#10263a', campus: '#087f78', aqua: '#1fb9ad', mist: '#eff8f6',
-                    cyan: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' },
-                    violet: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a' }
+                    ink: '#15251B',
+                    pine: '#116B3B',
+                    'pine-deep': '#0C5330',
+                    'pine-dark': '#0B3A20',
+                    moss: '#EAF2EB',
+                    paper: '#F5F7F4',
+                    campus: '#116B3B',
+                    mist: '#F5F7F4',
                 },
-                fontFamily: { sans: ['"Open Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'], display: ['Poppins', '"Open Sans"', 'sans-serif'] },
-                boxShadow: { soft: '0 8px 24px -16px rgba(16, 38, 58, .25)' },
+                fontFamily: {
+                    sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    display: ['"Source Serif 4"', 'Georgia', 'serif'],
+                },
             } },
         };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-[#f4f8f7] font-sans text-slate-700 antialiased selection:bg-teal-200 selection:text-ink">
-    <div class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
-        <main class="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft lg:min-h-[560px] lg:grid-cols-2">
-            <section class="hidden flex-col justify-between bg-ink px-12 py-14 text-white lg:flex" aria-label="About Competrack">
-                <a href="{% url 'landing_page' %}" class="flex items-center gap-3">
-                    <span class="flex items-center -space-x-2">
-                        <span class="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain"></span>
-                        <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5"><img src="{% static 'images/it_logo.png' %}" alt="Information Technology Department logo" class="h-full w-full object-contain"></span>
-                    </span>
-                    <span class="leading-tight"><span class="block font-display text-base font-bold">Competrack</span><span class="block text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-300">JHCSC competition platform</span></span>
-                </a>
+<body class="min-h-screen bg-paper font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
+    <div class="flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:px-6">
+        <div class="w-full max-w-md">
+            <main class="overflow-hidden rounded-sm border border-slate-200 border-t-[3px] border-t-pine bg-white shadow-sm">
 
-                <div class="max-w-sm">
-                    <h1 class="font-display text-3xl font-bold leading-snug tracking-[-0.02em]">One place for fair, transparent competition results.</h1>
-                    <p class="mt-5 text-sm leading-7 text-slate-300">Sign in to reach the workspace matched to your role &mdash; organizing competitions, judging events, or tracking your own participation.</p>
-                </div>
-
-                <p class="text-xs text-slate-500">J.H. Cerilles State College &middot; Information Technology Department</p>
-            </section>
-
-            <section class="flex flex-col justify-center px-6 py-10 sm:px-12 sm:py-14">
-                <div class="mb-9 flex items-center justify-between lg:mb-0">
-                    <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-campus">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back to home
+                <section class="px-7 py-10 sm:px-10">
+                    <a href="{% url 'landing_page' %}" class="mx-auto flex w-16 flex-col items-center gap-3" aria-label="Competrack home">
+                        <span class="flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 shadow-sm">
+                            <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
+                        </span>
                     </a>
-                    <div class="flex items-center -space-x-2 lg:hidden">
-                        <span class="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm"><img src="{% static 'images/jhcsc_logo.png' %}" alt="JHCSC logo" class="h-full w-full object-contain"></span>
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm"><img src="{% static 'images/it_logo.png' %}" alt="IT Department logo" class="h-full w-full object-contain"></span>
-                    </div>
-                </div>
 
-                <div class="mx-auto w-full max-w-sm">
-                    <h2 class="font-display text-3xl font-bold tracking-tight text-ink">Sign in</h2>
-                    <p class="mt-3 text-sm leading-6 text-slate-500">Use your Competrack account to continue.</p>
+                    <p class="mt-6 text-center text-[10px] font-semibold uppercase tracking-[0.24em] text-pine">J.H. Cerilles State College</p>
+                    <h1 class="mt-3 text-center font-display text-3xl font-semibold tracking-[-0.01em] text-ink">Sign in</h1>
+                    <p class="mt-3 text-center text-sm leading-6 text-slate-500">Use your Competrack account to continue.</p>
 
                     {% if messages %}
                     {% include 'partials/messages.html' %}
@@ -68,36 +56,39 @@
                         <input type="hidden" name="next" value="{{ next }}">
                         <div>
                             <label for="username" class="mb-2 block text-sm font-semibold text-ink">Username</label>
-                            <div class="relative">
-                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></span>
-                                <input type="text" id="username" name="username" required autofocus autocomplete="username" placeholder="Enter your username" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-12 pr-4 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
-                            </div>
+                            <input type="text" id="username" name="username" required autofocus autocomplete="username" placeholder="Enter your username" class="h-12 w-full rounded-sm border border-slate-300 bg-white px-3.5 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-pine focus:ring-2 focus:ring-pine/15">
                         </div>
                         <div>
                             <div class="mb-2 flex items-center justify-between gap-3">
                                 <label for="password" class="block text-sm font-semibold text-ink">Password</label>
-                                <a href="{% url 'password_reset' %}" class="text-xs font-semibold text-campus transition hover:text-aqua">Forgot password?</a>
+                                <a href="{% url 'password_reset' %}" class="text-xs font-semibold text-pine transition-colors hover:text-pine-deep">Forgot password?</a>
                             </div>
                             <div class="relative">
-                                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg></span>
-                                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-12 pr-12 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
-                                <button type="button" id="password-toggle" class="absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-campus" aria-label="Show password" aria-pressed="false">
+                                <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" class="h-12 w-full rounded-sm border border-slate-300 bg-white px-3.5 pr-12 text-sm text-ink outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-pine focus:ring-2 focus:ring-pine/15">
+                                <button type="button" id="password-toggle" class="absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-ink" aria-label="Show password" aria-pressed="false">
                                     <svg id="eye-open-icon" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .638C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <svg id="eye-closed-icon" class="hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.331 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.669 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
                                 </button>
                             </div>
                         </div>
 
-                        <button type="submit" class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-campus px-5 text-sm font-bold text-white transition hover:bg-ink focus:outline-none focus:ring-2 focus:ring-campus focus:ring-offset-2">
+                        <button type="submit" class="flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-pine px-5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">
                             Sign in
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                         </button>
                     </form>
+                </section>
 
-                    <p class="mt-7 text-center text-sm text-slate-500">New to Competrack? <a href="{% url 'register' %}" class="font-bold text-campus transition hover:text-aqua">Create an account</a></p>
-                </div>
-            </section>
-        </main>
+                <section class="flex flex-col gap-3 border-t border-slate-200 bg-paper px-7 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10">
+                    <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500 transition-colors hover:text-ink">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back to home
+                    </a>
+                    <p class="text-sm text-slate-500">New here? <a href="{% url 'register' %}" class="font-semibold text-pine transition-colors hover:text-pine-deep">Create an account</a></p>
+                </section>
+            </main>
+
+            <p class="mt-6 text-center text-xs text-slate-400">Dumingag Campus &middot; Est. 1954 &middot; Information Technology Department</p>
+        </div>
     </div>
 
     <script>

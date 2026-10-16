@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Score History - {{ competition.name }}{% endblock %}
 {% block header_title %}Score History{% endblock %}
@@ -14,7 +14,7 @@
 
 <div class="mb-6">
     <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select name="round" onchange="this.form.submit()" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
+        <select name="round" onchange="this.form.submit()" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
             <option value="">All rounds</option>
             {% for round in rounds %}
             <option value="{{ round.id }}" {% if selected_round == round.id|stringformat:'s' %}selected{% endif %}>{{ round.name }}</option>
@@ -24,7 +24,7 @@
 </div>
 
 {% if page_obj %}
-<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -42,12 +42,12 @@
             <tr class="border-b border-slate-100 last:border-0">
                 <td class="px-5 py-3 whitespace-nowrap text-slate-500">{{ log.created_at|date:"M d, Y H:i" }}</td>
                 <td class="px-5 py-3">
-                    <span class="font-semibold text-slate-800">{{ log.round.name|default:'—' }}</span>
+                    <span class="font-semibold text-slate-800">{{ log.round.name|default:'â€”' }}</span>
                     <p class="text-xs text-slate-400">{{ log.criterion.name|default:'deleted criterion' }}</p>
                     {% if log.details %}<p class="mt-0.5 max-w-[220px] truncate text-[10px] text-slate-400" title="{{ log.details }}">{{ log.details }}</p>{% endif %}
                 </td>
                 <td class="px-5 py-3 font-semibold text-slate-800">{{ log.participant.name }}</td>
-                <td class="px-5 py-3 text-slate-600">{{ log.judge.user.get_full_name|default:log.judge.user.username|default:'—' }}</td>
+                <td class="px-5 py-3 text-slate-600">{{ log.judge.user.get_full_name|default:log.judge.user.username|default:'â€”' }}</td>
                 <td class="px-5 py-3 text-center font-display font-bold text-slate-800">
                     {% if log.old_score == None %}new{% else %}{{ log.old_score }}{% endif %}
                     <span class="text-slate-400">&rarr;</span> {{ log.new_score }}
@@ -70,7 +70,7 @@
 </div>
 {% include 'partials/pagination.html' %}
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No score changes recorded</h3>
     <p class="mt-2 text-sm text-slate-500">Draft edits and submissions will appear here.</p>
 </div>

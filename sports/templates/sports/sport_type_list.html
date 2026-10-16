@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Sport Types - Competrack{% endblock %}
 {% block header_title %}Sports{% endblock %}
@@ -11,18 +11,18 @@
         <p class="mt-2 text-sm text-slate-500">Maintain the sports recognized by the system, from basketball to chess.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'sport_type_create' %}" class="inline-flex items-center justify-center rounded-xl bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add sport type</a>
-        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Manage venues</a>
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
+        <a href="{% url 'sport_type_create' %}" class="inline-flex items-center justify-center rounded-sm bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add sport type</a>
+        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Manage venues</a>
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
     </div>
 </div>
 
 {% if types %}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for sport in types %}
-    <article class="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+    <article class="flex flex-col overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
         <div class="flex items-center gap-4 p-6">
-            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-campus font-display text-lg font-bold text-white">{{ sport.name|make_list|first|upper }}</div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-sm bg-campus font-display text-lg font-bold text-white">{{ sport.name|make_list|first|upper }}</div>
             <div class="min-w-0">
                 <h2 class="truncate font-display text-lg font-bold text-ink">{{ sport.name }}</h2>
                 <p class="mt-1 text-xs text-slate-500">{% if sport.team_based %}Team sport{% else %}Individual sport{% endif %}</p>
@@ -33,13 +33,13 @@
             <span class="text-xs text-slate-400">{{ sport.events.count }} events</span>
         </div>
         <div class="p-4">
-            <a href="{% url 'sport_type_edit' sport.id %}" class="block rounded-xl bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit</a>
+            <a href="{% url 'sport_type_edit' sport.id %}" class="block rounded-sm bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit</a>
         </div>
     </article>
     {% endfor %}
 </div>
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No sport types yet</p>
     <p class="mt-2 text-sm text-slate-500">Add the sports that will be used to create events.</p>
 </div>

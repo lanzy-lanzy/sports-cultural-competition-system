@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Medal Tally - {{ competition.name }}{% endblock %}
 {% block header_title %}Medal Tally{% endblock %}
@@ -20,7 +20,7 @@
 <div class="mb-8 grid gap-4 md:grid-cols-3">
     {% for row in tally.rows %}
     {% if row.rank <= 3 %}
-    <div class="rounded-2xl border p-6 text-center shadow-sm {% if row.rank == 1 %}border-yellow-300 bg-yellow-50/70{% elif row.rank == 2 %}border-slate-300 bg-slate-50/80{% else %}border-amber-200 bg-orange-50/60{% endif %}">
+    <div class="rounded-sm border p-6 text-center shadow-sm {% if row.rank == 1 %}border-yellow-300 bg-yellow-50/70{% elif row.rank == 2 %}border-slate-300 bg-slate-50/80{% else %}border-amber-200 bg-orange-50/60{% endif %}">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
             {% if row.rank == 1 %}Overall Champion{% elif row.rank == 2 %}Runner-up{% else %}Third place{% endif %}
         </p>
@@ -36,7 +36,7 @@
     {% endfor %}
 </div>
 
-<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -71,10 +71,10 @@
     </table>
 </div>
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No medals awarded yet</p>
     <p class="mt-2 text-sm text-slate-500">Medals come from the podium of each completed sport event, from medal awards entered manually, or from the final standings of a completed competition.</p>
-    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to Sports</a>
+    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-sm bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to Sports</a>
 </div>
 {% endif %}
 {% endblock %}

@@ -9,12 +9,12 @@
     <nav class="flex items-center gap-1.5" aria-label="Pagination">
         {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}"
-           class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+           class="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-pine/40 hover:bg-moss/40 hover:text-pine-deep">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Prev
         </a>
         {% else %}
-        <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-300">
+        <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-sm border border-slate-100 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-300">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Prev
         </span>
@@ -24,21 +24,21 @@
             {% if num == '…' %}
             <span class="px-1 text-sm text-slate-400">…</span>
             {% elif num == page_obj.number %}
-            <span aria-current="page" class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-campus px-3 text-sm font-semibold text-white shadow-md shadow-cyan-500/30">{{ num }}</span>
+            <span aria-current="page" class="inline-flex h-8 min-w-8 items-center justify-center rounded-sm bg-pine px-3 text-sm font-semibold text-white">{{ num }}</span>
             {% else %}
             <a href="?page={{ num }}"
-               class="inline-flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700">{{ num }}</a>
+               class="inline-flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-sm border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:border-pine/40 hover:bg-moss/40 hover:text-pine-deep">{{ num }}</a>
             {% endif %}
         {% endfor %}
 
         {% if page_obj.has_next %}
         <a href="?page={{ page_obj.next_page_number }}"
-           class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+           class="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-pine/40 hover:bg-moss/40 hover:text-pine-deep">
             Next
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
         {% else %}
-        <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-300">
+        <span class="inline-flex cursor-not-allowed items-center gap-1 rounded-sm border border-slate-100 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-300">
             Next
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </span>

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}{{ form_title }} - Competrack{% endblock %}
 {% block header_title %}Announcements{% endblock %}
@@ -10,7 +10,7 @@
         <p class="mt-1 text-sm text-slate-500">Publishing notifies your selected audience and creates in-app notifications.</p>
     </div>
 
-    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
         <form method="post" class="space-y-5">
             {% csrf_token %}
             {% for field in form %}
@@ -22,8 +22,8 @@
             </div>
             {% endfor %}
             <div class="flex justify-end gap-3 border-t border-slate-100 pt-5">
-                <a href="{% url 'announcement_list' %}" class="inline-flex cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</a>
-                <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+                <a href="{% url 'announcement_list' %}" class="inline-flex cursor-pointer items-center rounded-sm border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</a>
+                <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
                     Save announcement
                 </button>
             </div>

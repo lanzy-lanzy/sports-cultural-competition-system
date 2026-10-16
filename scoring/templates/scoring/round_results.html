@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load competition_tags %}
 
 {% block title %}Round Results - {{ round.name }}{% endblock %}
@@ -30,7 +30,7 @@
             {% if submitted_count %}
             <form method="post" action="{% url 'verify_round_scores' round.id %}">
                 {% csrf_token %}
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-sm bg-emerald-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-emerald-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Verify {{ submitted_count }} score{{ submitted_count|pluralize }}
                 </button>
@@ -39,16 +39,16 @@
             {% if verified_count %}
             <form method="post" action="{% url 'unverify_round_scores' round.id %}">
                 {% csrf_token %}
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100">
                     Clear verification ({{ verified_count }})
                 </button>
             </form>
             {% endif %}
-            <a href="{% url 'score_history' competition.id %}?round={{ round.id }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            <a href="{% url 'score_history' competition.id %}?round={{ round.id }}" class="inline-flex items-center gap-2 rounded-sm border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                 Change history
             </a>
         {% endif %}
-        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white/70 px-4 py-2 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-slate-50">
+        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-sm border border-slate-300 bg-white/70 px-4 py-2 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-slate-50">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
             </svg>
@@ -59,9 +59,9 @@
 
 <!-- Statistics Cards -->
 <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
-    <div class="rounded-2xl border-l-4 border-cyan-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border-l-4 border-cyan-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+            <div class="flex h-12 w-12 items-center justify-center rounded-sm bg-cyan-100 text-cyan-600">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
                 </svg>
@@ -72,9 +72,9 @@
             </div>
         </div>
     </div>
-    <div class="rounded-2xl border-l-4 border-blue-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border-l-4 border-blue-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+            <div class="flex h-12 w-12 items-center justify-center rounded-sm bg-blue-100 text-blue-600">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
                 </svg>
@@ -85,9 +85,9 @@
             </div>
         </div>
     </div>
-    <div class="rounded-2xl border-l-4 border-rose-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border-l-4 border-rose-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+            <div class="flex h-12 w-12 items-center justify-center rounded-sm bg-rose-100 text-rose-600">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181"/>
                 </svg>
@@ -98,9 +98,9 @@
             </div>
         </div>
     </div>
-    <div class="rounded-2xl border-l-4 border-violet-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border-l-4 border-violet-500 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+            <div class="flex h-12 w-12 items-center justify-center rounded-sm bg-violet-100 text-violet-600">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                 </svg>
@@ -114,7 +114,7 @@
 </div>
 
 <!-- Results Table -->
-<div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+<div class="overflow-hidden rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
     {% if results %}
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
@@ -125,7 +125,7 @@
                     {% for criterion in criteria %}
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                         <div>{{ criterion.name }}</div>
-                        <div class="mt-1 text-xs font-normal normal-case text-slate-400">(max: {{ criterion.max_score }}{% if criterion.weight_percentage %} · {{ criterion.weight_percentage }}%{% endif %})</div>
+                        <div class="mt-1 text-xs font-normal normal-case text-slate-400">(max: {{ criterion.max_score }}{% if criterion.weight_percentage %} Â· {{ criterion.weight_percentage }}%{% endif %})</div>
                     </th>
                     {% endfor %}
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Total Score</th>
@@ -188,7 +188,7 @@
     </div>
     {% else %}
     <div class="flex flex-col items-center justify-center py-12 text-center">
-        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-sm bg-slate-100 text-slate-400">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>

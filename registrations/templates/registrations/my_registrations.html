@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}My Registrations - Competrack{% endblock %}
 {% block header_title %}My Registrations{% endblock %}
@@ -9,7 +9,7 @@
         <h1 class="font-display text-2xl font-semibold text-slate-900">My Registrations</h1>
         <p class="mt-1 text-sm text-slate-500">Track the approval status of your competition and event registrations.</p>
     </div>
-    <a href="{% url 'register_for_event' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+    <a href="{% url 'register_for_event' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
         New registration
     </a>
@@ -18,7 +18,7 @@
 {% if registrations %}
 <div class="space-y-4">
     {% for registration in registrations %}
-    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -45,7 +45,7 @@
         </div>
 
         {% if registration.notes %}
-        <p class="mt-3 whitespace-pre-line rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{{ registration.notes }}</p>
+        <p class="mt-3 whitespace-pre-line rounded-sm bg-slate-50 px-4 py-3 text-sm text-slate-600">{{ registration.notes }}</p>
         {% endif %}
 
         <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
@@ -62,10 +62,10 @@
     {% endfor %}
 </div>
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No registrations yet</h3>
     <p class="mt-2 text-sm text-slate-500">Register yourself or your team for a competition to get started.</p>
-    <a href="{% url 'register_for_event' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">Register now</a>
+    <a href="{% url 'register_for_event' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">Register now</a>
 </div>
 {% endif %}
 {% endblock %}

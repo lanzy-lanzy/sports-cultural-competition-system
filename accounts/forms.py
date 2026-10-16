@@ -13,6 +13,13 @@ INPUT_CLASS = (
     'focus:bg-white focus:ring-4 focus:ring-teal-100'
 )
 
+# Formal brand style for the public registration flow only (accounts/templates/accounts/register.html).
+REG_INPUT_CLASS = (
+    'h-12 w-full rounded-sm border border-slate-300 bg-white px-3.5 '
+    'text-sm text-ink placeholder:text-slate-400 outline-none transition '
+    'hover:border-slate-400 focus:border-pine focus:ring-2 focus:ring-pine/15'
+)
+
 FILE_INPUT_CLASS = (
     'h-12 w-full rounded-xl border border-slate-600 bg-white/5 px-3 text-xs '
     'text-slate-300 outline-none transition file:mr-3 file:rounded-lg file:border-0 '
@@ -24,7 +31,6 @@ class RegistrationForm(UserCreationForm):
     first_name = forms.CharField(max_length=100)
     middle_name = forms.CharField(max_length=100, required=False)
     last_name = forms.CharField(max_length=100)
-    email = forms.EmailField()
     phone = forms.CharField(max_length=30)
     role = forms.ChoiceField(
         choices=[
@@ -37,7 +43,7 @@ class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
-            'first_name', 'middle_name', 'last_name', 'username', 'email',
+            'first_name', 'middle_name', 'last_name', 'username',
             'phone', 'role', 'password1', 'password2',
         )
 
@@ -48,13 +54,7 @@ class RegistrationForm(UserCreationForm):
             if isinstance(field.widget, forms.FileInput):
                 field.widget.attrs['class'] = FILE_INPUT_CLASS
             else:
-                field.widget.attrs['class'] = INPUT_CLASS
-
-    def clean_email(self):
-        email = self.cleaned_data['email'].strip().lower()
-        if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError('An account with this email address already exists.')
-        return email
+                field.widget.attrs['class'] = REG_INPUT_CLASS
 
     def clean_role(self):
         role = self.cleaned_data['role']
@@ -67,7 +67,7 @@ class RegistrationForm(UserCreationForm):
         user = super().save(commit=False)
         user.first_name = self.cleaned_data['first_name'].strip()
         user.last_name = self.cleaned_data['last_name'].strip()
-        user.email = self.cleaned_data['email']
+        user.email = ''
         if commit:
             user.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)

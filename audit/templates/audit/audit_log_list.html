@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Audit Trail - Competrack{% endblock %}
 {% block header_title %}Security{% endblock %}
@@ -11,25 +11,25 @@
     </div>
     <form method="post" action="{% url 'clear_audit_logs' %}" onsubmit="return confirm('Clear the entire audit log? This cannot be undone.')">
         {% csrf_token %}
-        <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Clear log</button>
+        <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Clear log</button>
     </form>
 </div>
 
-<div class="mb-6 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
+<div class="mb-6 rounded-sm border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
     <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search user or details..." class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100 sm:flex-1">
-        <select name="action" onchange="this.form.submit()" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-56">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search user or details..." class="w-full rounded-sm border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100 sm:flex-1">
+        <select name="action" onchange="this.form.submit()" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-56">
             <option value="">All actions</option>
             {% for value, label in actions %}
             <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <button type="submit" class="cursor-pointer rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Search</button>
+        <button type="submit" class="cursor-pointer rounded-sm bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Search</button>
     </form>
 </div>
 
 {% if page_obj %}
-<div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+<div class="overflow-hidden rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
     <table class="w-full text-left text-sm">
         <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <tr>
@@ -50,10 +50,10 @@
                     <span class="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">{{ log.get_action_display }}</span>
                 </td>
                 <td class="px-5 py-3 text-slate-600">
-                    {% if log.target_label %}<span class="font-medium text-slate-700">{{ log.target_label }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}
+                    {% if log.target_label %}<span class="font-medium text-slate-700">{{ log.target_label }}</span>{% else %}<span class="text-slate-400">â€”</span>{% endif %}
                 </td>
                 <td class="hidden max-w-xs truncate px-5 py-3 text-slate-500 lg:table-cell">{{ log.details }}</td>
-                <td class="hidden px-5 py-3 font-mono text-xs text-slate-400 xl:table-cell">{{ log.ip_address|default:'—' }}</td>
+                <td class="hidden px-5 py-3 font-mono text-xs text-slate-400 xl:table-cell">{{ log.ip_address|default:'â€”' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -61,7 +61,7 @@
 </div>
 {% include 'partials/pagination.html' %}
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No activity logged</h3>
     <p class="mt-2 text-sm text-slate-500">Actions such as score submissions, reviews, and status changes will appear here.</p>
 </div>

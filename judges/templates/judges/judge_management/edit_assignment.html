@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Edit Judge Assignment - {{ competition.name }}{% endblock %}
 {% block header_title %}Edit Judge Assignment{% endblock %}
@@ -17,7 +17,7 @@
     </a>
 </div>
 
-<div class="rounded-2xl border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
+<div class="rounded-sm border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
     <div class="mb-8 flex items-center">
         {% if assignment.judge.profile_image %}
         <img src="{{ assignment.judge.profile_image.url }}" class="mr-4 h-16 w-16 rounded-full border-2 border-cyan-100 object-cover">
@@ -59,7 +59,7 @@
             <h3 class="mb-4 font-display text-lg font-medium text-slate-900">Assigned Rounds</h3>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {% for round in competition_rounds %}
-                <label class="relative flex cursor-pointer items-start rounded-xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
+                <label class="relative flex cursor-pointer items-start rounded-sm border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
                     <div class="flex h-5 items-center">
                         <input type="checkbox" name="rounds" value="{{ round.id }}" {% if round in assignment.rounds.all %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
                     </div>
@@ -80,7 +80,7 @@
 
         <!-- Submit Buttons -->
         <div class="flex justify-end border-t border-slate-200 pt-6">
-            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
                 Save Changes
             </button>
         </div>

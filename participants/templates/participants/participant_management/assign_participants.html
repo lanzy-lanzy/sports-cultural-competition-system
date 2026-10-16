@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Assign Participants - {{ competition.name }}{% endblock %}
 {% block header_title %}Assign Participants{% endblock %}
@@ -10,7 +10,7 @@
         <p class="mt-1 text-sm text-slate-500">{{ competition.name|title }}</p>
     </div>
     <div class="flex items-center gap-3">
-        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-semibold text-cyan-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-cyan-50">
+        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="inline-flex items-center justify-center gap-2 rounded-sm border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-semibold text-cyan-700 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-cyan-50">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
@@ -29,7 +29,7 @@
     {% csrf_token %}
 
     <!-- ===== Toolbar: Search, Filters, View Toggle ===== -->
-    <div class="rounded-2xl border border-slate-200/80 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
+    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div class="flex-1">
                 <div class="relative">
@@ -37,20 +37,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                     </svg>
                     <input type="text" id="searchParticipant" placeholder="Search by name, ID, phone..."
-                           class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                           class="w-full rounded-sm border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
                 <!-- View Toggle -->
-                <div class="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1" role="group" aria-label="View mode">
-                    <button type="button" id="viewCardsBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="true">
+                <div class="inline-flex rounded-sm border border-slate-200 bg-slate-100 p-1" role="group" aria-label="View mode">
+                    <button type="button" id="viewCardsBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="true">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h4v4H6V6zm8 0h4v4h-4V6zm-8 8h4v4H6v-4zm8 0h4v4h-4v-4z"/>
                         </svg>
                         Cards
                     </button>
-                    <button type="button" id="viewTableBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="false">
+                    <button type="button" id="viewTableBtn" class="view-toggle inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-2 text-sm font-semibold transition-all" aria-pressed="false">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"/>
                         </svg>
@@ -58,13 +58,13 @@
                     </button>
                 </div>
 
-                <button type="button" id="selectAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-50">
+                <button type="button" id="selectAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-cyan-600/30 bg-white/70 px-4 py-2.5 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-50">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     Select All
                 </button>
-                <button type="button" id="clearAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                <button type="button" id="clearAll" class="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-slate-300 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -74,10 +74,10 @@
         </div>
 
         <!-- Filters -->
-        <div class="mt-4 flex flex-wrap items-end gap-4 rounded-xl bg-slate-50 p-4">
+        <div class="mt-4 flex flex-wrap items-end gap-4 rounded-sm bg-slate-50 p-4">
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Gender</label>
-                <select id="genderFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                <select id="genderFilter" class="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
                     <option value="all">All Genders</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -88,7 +88,7 @@
             {% if age_ranges %}
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Age Range</label>
-                <select id="ageFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                <select id="ageFilter" class="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
                     <option value="all">All Ages</option>
                     {% for range in age_ranges %}
                     <option value="{{ range.start }}-{{ range.end }}">{{ range.start }}-{{ range.end }}</option>
@@ -98,7 +98,7 @@
             {% endif %}
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                <select id="statusFilter" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                <select id="statusFilter" class="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
                     <option value="all">All Statuses</option>
                     <option value="ACTIVE">Active</option>
                     <option value="WITHDRAWN">Withdrawn</option>
@@ -113,9 +113,9 @@
 
     <!-- ===== Sticky Selection Summary ===== -->
     <div id="selectionBar" class="sticky bottom-4 z-20 hidden">
-        <div class="flex items-center justify-between gap-4 rounded-2xl border border-cyan-200 bg-white/95 p-4 shadow-xl shadow-cyan-500/10 backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-4 rounded-sm border border-cyan-200 bg-white/95 p-4 shadow-xl shadow-cyan-500/10 backdrop-blur-xl">
             <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500 text-white">
+                <span class="flex h-10 w-10 items-center justify-center rounded-sm bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -125,7 +125,7 @@
                     <p class="text-xs text-slate-500">Ready to assign to {{ competition.name|title }}</p>
                 </div>
             </div>
-            <button type="submit" form="assignForm" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-campus px-6 py-3 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
+            <button type="submit" form="assignForm" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-campus px-6 py-3 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
                 Assign Selected Participants
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
@@ -152,7 +152,7 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {% for participant in participants %}
-                <label class="participant-card relative flex cursor-pointer items-start rounded-xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md"
+                <label class="participant-card relative flex cursor-pointer items-start rounded-sm border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-cyan-400 hover:shadow-md"
                        data-participant
                        data-name="{{ participant.name|lower }}"
                        data-id="{{ participant.participant_id|lower }}"
@@ -210,7 +210,7 @@
     </div>
 
     <!-- ===== Table View ===== -->
-    <div id="tableView" class="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+    <div id="tableView" class="hidden overflow-hidden rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
         <div class="overflow-x-auto app-scrollbar">
             <table class="w-full text-left text-sm">
                 <thead>
@@ -262,8 +262,8 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ participant.get_gender_display }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ participant.age|default:'—' }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ participant.phone|default:'—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.age|default:'â€”' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.phone|default:'â€”' }}</td>
                         <td class="px-4 py-3">
                             {% if participant.status == 'ACTIVE' %}
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
@@ -285,15 +285,15 @@
     </div>
     {% else %}
     <!-- Empty state -->
-    <div class="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white/70 py-16 text-center shadow-sm backdrop-blur-sm">
-        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
+    <div class="flex flex-col items-center justify-center rounded-sm border border-slate-200/80 bg-white/70 py-16 text-center shadow-sm backdrop-blur-sm">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-cyan-50 text-cyan-600">
             <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
             </svg>
         </div>
         <p class="font-medium text-slate-900">No available participants</p>
         <p class="mt-1 text-sm text-slate-500">All registered participants are already assigned, or create a new one to add.</p>
-        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+        <a href="{% url 'create_participant' %}?next={{ request.path|urlencode }}" class="mt-4 inline-flex items-center gap-2 rounded-sm bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
             Add New Participant
         </a>
     </div>

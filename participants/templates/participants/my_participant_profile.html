@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Participant Profile - Competrack{% endblock %}
 {% block header_title %}Participant Profile{% endblock %}
@@ -16,10 +16,10 @@
         </div>
     </section>
 
-    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
         {% csrf_token %}
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
-            {% if form.non_field_errors %}<div class="sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+            {% if form.non_field_errors %}<div class="sm:col-span-2 rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
             <div class="sm:col-span-2 grid gap-5 sm:grid-cols-3">
                 {% for field in form %}{% if field.name == 'first_name' or field.name == 'middle_name' or field.name == 'last_name' %}
                 <div>
@@ -40,11 +40,11 @@
         </div>
         <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-5 sm:px-8">
             <span class="text-xs text-slate-500">Age classification: <strong class="text-ink">{% if participant %}{{ participant.age_classification }}{% else %}Complete your profile{% endif %}</strong></span>
-            <button type="submit" class="rounded-xl bg-campus px-6 py-3 text-sm font-bold text-white shadow">Save participant profile</button>
+            <button type="submit" class="rounded-sm bg-campus px-6 py-3 text-sm font-bold text-white shadow">Save participant profile</button>
         </div>
     </form>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-5">
             <h2 class="font-display text-xl font-bold text-ink">My team</h2>
             <p class="mt-1 text-sm text-slate-500">Pick the team or delegation you belong to. You can change this yourself at any time; organizers and team managers can also add you to a roster.</p>
@@ -52,7 +52,7 @@
         {% if participant %}
         <div class="space-y-5 px-6 py-6">
             {% if team_membership %}
-            <div class="flex flex-col justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 sm:flex-row sm:items-center">
+            <div class="flex flex-col justify-between gap-3 rounded-sm border border-emerald-200 bg-emerald-50 px-5 py-4 sm:flex-row sm:items-center">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-wide text-emerald-600">Current team</p>
                     <p class="mt-1 font-display text-lg font-bold text-ink">{{ team_membership.team.name }}</p>
@@ -60,11 +60,11 @@
                 </div>
                 <form method="post" action="{% url 'leave_my_team' %}" onsubmit="return confirm('Leave {{ team_membership.team.name }}?');">
                     {% csrf_token %}
-                    <button type="submit" class="cursor-pointer rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Leave team</button>
+                    <button type="submit" class="cursor-pointer rounded-sm border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Leave team</button>
                 </form>
             </div>
             {% else %}
-            <p class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">You have not selected a team yet.</p>
+            <p class="rounded-sm border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">You have not selected a team yet.</p>
             {% endif %}
 
             {% if joinable_teams %}
@@ -72,14 +72,14 @@
                 {% csrf_token %}
                 <div class="flex-1">
                     <label for="team-select" class="mb-1.5 block text-sm font-bold text-ink">Select a team</label>
-                    <select id="team-select" name="team_id" required class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
+                    <select id="team-select" name="team_id" required class="h-12 w-full rounded-sm border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
                         <option value="" selected disabled>Choose a team / delegation&hellip;</option>
                         {% for team in joinable_teams %}
                         <option value="{{ team.id }}">{{ team.name }} &middot; {{ team.get_category_display }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" id="team-select-submit" class="cursor-pointer rounded-xl bg-campus px-6 py-3 text-sm font-bold text-white shadow transition hover:brightness-105">Join team</button>
+                <button type="submit" id="team-select-submit" class="cursor-pointer rounded-sm bg-campus px-6 py-3 text-sm font-bold text-white shadow transition hover:brightness-105">Join team</button>
             </form>
             {% else %}
             <p class="text-sm text-slate-400">No other approved teams are available to join right now.</p>
@@ -90,7 +90,7 @@
         {% endif %}
     </section>
 
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-5"><h2 class="font-display text-xl font-bold text-ink">Participation history</h2><p class="mt-1 text-sm text-slate-500">Competitions connected to your participant record.</p></div>
         {% if participant_competitions %}
         <div class="divide-y divide-slate-100">

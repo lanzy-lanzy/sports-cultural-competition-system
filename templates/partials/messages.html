@@ -1,7 +1,7 @@
 {# Shared message alerts. Colors are synced to the Django message level tag: success=green, error/danger=red, warning=amber, info=blue. #}
 <div class="mb-6 space-y-2" aria-live="polite">
     {% for message in messages %}
-    <div class="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm
+    <div class="flex items-start gap-3 rounded-sm border px-4 py-3 text-sm shadow-sm
         {% if 'error' in message.tags or 'danger' in message.tags %}border-rose-200 bg-rose-50 text-rose-700
         {% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800
         {% elif 'info' in message.tags %}border-sky-200 bg-sky-50 text-sky-800

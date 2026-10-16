@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Sports - Competrack{% endblock %}
 {% block header_title %}Sports{% endblock %}
@@ -11,29 +11,29 @@
         <p class="mt-2 text-sm text-slate-500">Every sport, venue, event, and match in one place. Start here to run the day.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'match_board' %}" class="inline-flex items-center justify-center rounded-xl bg-campus px-5 py-3 text-sm font-bold text-white shadow">Match board</a>
-        <a href="{% url 'sport_type_list' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Sport types</a>
-        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Venues</a>
+        <a href="{% url 'match_board' %}" class="inline-flex items-center justify-center rounded-sm bg-campus px-5 py-3 text-sm font-bold text-white shadow">Match board</a>
+        <a href="{% url 'sport_type_list' %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Sport types</a>
+        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Venues</a>
     </div>
 </div>
 
 <div class="mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <a href="{% url 'sport_type_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
+    <a href="{% url 'sport_type_list' %}" class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sport types</p>
         <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.sport_types }}</p>
         <p class="mt-1 text-xs text-slate-500">Active sports recognised by the system</p>
     </a>
-    <a href="{% url 'venue_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
+    <a href="{% url 'venue_list' %}" class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Venues</p>
         <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.venues }}</p>
         <p class="mt-1 text-xs text-slate-500">Facilities available for scheduling</p>
     </a>
-    <a href="{% url 'match_board' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
+    <a href="{% url 'match_board' %}" class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm transition hover:border-teal-200">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matches</p>
         <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.matches }}</p>
         <p class="mt-1 text-xs text-slate-500">{{ stats.completed }} completed, {{ stats.awaiting }} awaiting a result</p>
     </a>
-    <a href="{% url 'match_board' %}?status=SCHEDULED" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition {% if stats.overdue %}border-amber-300 hover:border-amber-400{% else %}hover:border-teal-200{% endif %}">
+    <a href="{% url 'match_board' %}?status=SCHEDULED" class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm transition {% if stats.overdue %}border-amber-300 hover:border-amber-400{% else %}hover:border-teal-200{% endif %}">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Needs a result</p>
         <p class="mt-1 font-display text-2xl font-bold {% if stats.overdue %}text-amber-600{% else %}text-ink{% endif %}">{{ stats.overdue }}</p>
         <p class="mt-1 text-xs text-slate-500">Matches past their slot with no score</p>
@@ -41,24 +41,24 @@
 </div>
 
 {% if stats.overdue %}
-<section class="mb-7 rounded-2xl border border-amber-200 bg-amber-50/70 p-6 shadow-sm">
+<section class="mb-7 rounded-sm border border-amber-200 bg-amber-50/70 p-6 shadow-sm">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="font-display text-lg font-bold text-amber-900">Past their slot, no result recorded</h2>
             <p class="mt-0.5 text-sm text-amber-700">These matches already started. Record the score so standings stay accurate.</p>
         </div>
-        <a href="{% url 'match_board' %}?status=SCHEDULED" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100">View all on the board</a>
+        <a href="{% url 'match_board' %}?status=SCHEDULED" class="rounded-sm border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-100">View all on the board</a>
     </div>
     <ul class="space-y-2">
         {% for match in overdue %}
-        <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-4 py-3">
+        <li class="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-amber-200 bg-white px-4 py-3">
             <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-slate-800">{{ match.event.name }} &middot; {{ match.label }}</p>
                 <p class="truncate text-xs text-slate-500">{{ match.contestants_display }} &middot; {{ match.venue|default:'No venue' }}</p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
                 <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-bold text-rose-700">{{ match.scheduled_start|date:'M j, H:i' }}</span>
-                <a href="{% url 'match_schedule' match.event_id %}" class="rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Record</a>
+                <a href="{% url 'match_schedule' match.event_id %}" class="rounded-sm bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Record</a>
             </div>
         </li>
         {% endfor %}
@@ -72,7 +72,7 @@
         {% if competition_rows %}
         <div class="space-y-4">
             {% for row in competition_rows %}
-            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <article class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
                 <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 p-6">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
@@ -86,8 +86,8 @@
                         </p>
                     </div>
                     <div class="flex shrink-0 flex-wrap gap-2">
-                        <a href="{% url 'competition_sport_events' row.competition.id %}" class="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-campus">Manage events</a>
-                        <a href="{% url 'match_board' %}?competition={{ row.competition.id }}" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-teal-200">Schedule</a>
+                        <a href="{% url 'competition_sport_events' row.competition.id %}" class="rounded-sm bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-campus">Manage events</a>
+                        <a href="{% url 'match_board' %}?competition={{ row.competition.id }}" class="rounded-sm border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-teal-200">Schedule</a>
                     </div>
                 </div>
 
@@ -99,7 +99,7 @@
 
                 <div class="grid gap-3 p-5 sm:grid-cols-2">
                     {% for event in row.events %}
-                    <div class="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold text-slate-800">{{ event.name }}</p>
@@ -112,10 +112,10 @@
                             {% if event.venue %}&middot; {{ event.venue }}{% endif %}
                         </p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            <a href="{% url 'sport_event_detail' event.id %}" class="rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Open</a>
-                            <a href="{% url 'match_schedule' event.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Schedule</a>
-                            <a href="{% url 'event_bracket' event.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Bracket</a>
-                            <a href="{% url 'event_standings' event.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Standings</a>
+                            <a href="{% url 'sport_event_detail' event.id %}" class="rounded-sm bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Open</a>
+                            <a href="{% url 'match_schedule' event.id %}" class="rounded-sm border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Schedule</a>
+                            <a href="{% url 'event_bracket' event.id %}" class="rounded-sm border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Bracket</a>
+                            <a href="{% url 'event_standings' event.id %}" class="rounded-sm border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Standings</a>
                         </div>
                     </div>
                     {% endfor %}
@@ -124,21 +124,21 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+        <div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
             <p class="font-display text-lg font-bold text-ink">No sport events yet</p>
             <p class="mt-2 text-sm text-slate-500">Open a competition, then add sport events to build the schedule.</p>
-            <a href="{% url 'competition_list' %}" class="mt-4 inline-block rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to competitions</a>
+            <a href="{% url 'competition_list' %}" class="mt-4 inline-block rounded-sm bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to competitions</a>
         </div>
         {% endif %}
     </section>
 
     <section>
         <h2 class="mb-3 font-display text-xl font-bold text-ink">Next up</h2>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             {% if upcoming %}
             <ol class="space-y-3">
                 {% for match in upcoming %}
-                <li class="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                <li class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <p class="truncate text-sm font-semibold text-slate-800">{{ match.event.name }}</p>
@@ -156,28 +156,28 @@
                 </li>
                 {% endfor %}
             </ol>
-            <a href="{% url 'match_board' %}" class="mt-4 block rounded-xl bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open the match board</a>
+            <a href="{% url 'match_board' %}" class="mt-4 block rounded-sm bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open the match board</a>
             {% else %}
             <p class="py-6 text-center text-sm text-slate-400">Nothing on the schedule right now.</p>
             {% endif %}
         </div>
 
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mt-6 rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="font-display text-base font-bold text-ink">Shortcuts</h3>
             <div class="mt-3 space-y-2">
-                <a href="{% url 'sport_type_list' %}" class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
+                <a href="{% url 'sport_type_list' %}" class="flex items-center justify-between rounded-sm border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
                     Sport types <span class="text-xs text-slate-400">{{ stats.sport_types }}</span>
                 </a>
-                <a href="{% url 'venue_list' %}" class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
+                <a href="{% url 'venue_list' %}" class="flex items-center justify-between rounded-sm border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
                     Venues and facilities <span class="text-xs text-slate-400">{{ stats.venues }}</span>
                 </a>
-                <a href="{% url 'match_board' %}" class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
+                <a href="{% url 'match_board' %}" class="flex items-center justify-between rounded-sm border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
                     Full match schedule <span class="text-xs text-slate-400">{{ stats.matches }}</span>
                 </a>
-                <a href="{% url 'overall_medal_tally' %}" class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
+                <a href="{% url 'overall_medal_tally' %}" class="flex items-center justify-between rounded-sm border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
                     Overall medal tally <span class="text-xs text-slate-400">sports + competitions</span>
                 </a>
-                <a href="{% url 'export_schedule_csv' %}" class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
+                <a href="{% url 'export_schedule_csv' %}" class="flex items-center justify-between rounded-sm border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-teal-200 hover:text-campus">
                     Export schedule (CSV) <span class="text-xs text-slate-400">&darr;</span>
                 </a>
             </div>

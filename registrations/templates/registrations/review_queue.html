@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Registration Review - Competrack{% endblock %}
 {% block header_title %}Online Registration{% endblock %}
@@ -19,7 +19,7 @@
 
 <div class="mb-6">
     <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select name="competition" onchange="this.form.submit()" class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
+        <select name="competition" onchange="this.form.submit()" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
             <option value="">All competitions</option>
             {% for competition in competitions %}
             <option value="{{ competition.id }}" {% if selected_competition == competition.id %}selected{% endif %}>{{ competition.name }}</option>
@@ -31,10 +31,10 @@
 {% if page_obj %}
 <div class="space-y-4">
     {% for registration in page_obj %}
-    <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+    <div class="overflow-hidden rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
         <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center">
             <div class="flex items-center gap-3">
-                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500 text-white font-display text-sm font-bold">
+                <span class="flex h-11 w-11 items-center justify-center rounded-sm bg-cyan-500 text-white font-display text-sm font-bold">
                     {{ registration.contestant_name|make_list|first|upper }}
                 </span>
                 <div>
@@ -68,20 +68,20 @@
                 {% endif %}
             </p>
             {% if registration.notes %}
-            <p class="mt-2 whitespace-pre-line rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{{ registration.notes }}</p>
+            <p class="mt-2 whitespace-pre-line rounded-sm bg-slate-50 px-4 py-3 text-sm text-slate-600">{{ registration.notes }}</p>
             {% endif %}
         </div>
 
         {% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}
         <form method="post" action="{% url 'registration_review' registration.id %}" class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center">
             {% csrf_token %}
-            <input type="text" name="admin_notes" placeholder="Review notes (optional)" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 shadow-sm sm:flex-1">
+            <input type="text" name="admin_notes" placeholder="Review notes (optional)" class="w-full rounded-sm border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 shadow-sm sm:flex-1">
             <div class="flex shrink-0 gap-2">
                 {% if registration.status == 'PENDING' %}
-                <button type="submit" name="action" value="review" class="cursor-pointer rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-700">Start Review</button>
+                <button type="submit" name="action" value="review" class="cursor-pointer rounded-sm bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-700">Start Review</button>
                 {% endif %}
-                <button type="submit" name="action" value="approve" class="cursor-pointer rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700">Approve</button>
-                <button type="submit" name="action" value="reject" class="cursor-pointer rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-rose-700">Reject</button>
+                <button type="submit" name="action" value="approve" class="cursor-pointer rounded-sm bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700">Approve</button>
+                <button type="submit" name="action" value="reject" class="cursor-pointer rounded-sm bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-rose-700">Reject</button>
             </div>
         </form>
         {% endif %}
@@ -90,7 +90,7 @@
 </div>
 {% include 'partials/pagination.html' %}
 {% else %}
-<div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No registrations</h3>
     <p class="mt-2 text-sm text-slate-500">Self-service registrations appear here for review.</p>
 </div>

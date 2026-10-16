@@ -9,8 +9,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
-from judges.models import Judge
-from participants.models import Participant
+from judges.models import Judge, JudgeAssignment
+from participants.models import Participant, ParticipantCompetition
+from scoring.models import Score
+from scoring.services import COUNTED_STATUSES, calculate_participant_total_score
 
 from .access import (
     MANAGEMENT_ROLES,
@@ -23,8 +25,97 @@ from .forms import ProfileForm, RegistrationForm, UserAccessForm
 from .models import UserProfile
 
 
+def _scorecard_for(competition, round_obj, is_live):
+    """Bundle real round data (entries, judges, ranked scores) for the landing score sheet."""
+    entries = list(competition.participants.all())
+    criteria = list(round_obj.criteria.all())
+
+    counted_scores = Score.objects.filter(criterion__round=round_obj, status__in=COUNTED_STATUSES)
+    judges_total = (
+        JudgeAssignment.objects
+        .filter(competition=competition, status='ACTIVE', rounds=round_obj)
+        .count()
+    )
+    judges_done = counted_scores.values('judge_id').distinct().count()
+    judges_total = judges_total or judges_done
+
+    expected = max(len(entries) * len(criteria) * judges_total, 1)
+    completion = min(int(100 * counted_scores.count() / expected), 100) if counted_scores.exists() else 0
+
+    number_map = {
+        item.participant_id: item.number
+        for item in ParticipantCompetition.objects.filter(competition=competition)
+    }
+
+    ranked = sorted(
+        (
+            (participant, calculate_participant_total_score(participant, round_obj, include_draft=False))
+            for participant in entries
+        ),
+        key=lambda pair: pair[1],
+        reverse=True,
+    )
+
+    leaderboard = []
+    current_rank = 1
+    previous_score = None
+    for index, (participant, total) in enumerate(ranked, start=1):
+        if total <= 0 or len(leaderboard) == 3:
+            break
+        if total != previous_score:
+            current_rank = index
+        previous_score = total
+        number = number_map.get(participant.id)
+        leaderboard.append({
+            'rank': '%02d' % current_rank,
+            'name': participant.name,
+            'number': '%02d' % number if number else '',
+            'score': total,
+        })
+
+    return {
+        'competition_name': competition.name,
+        'round_name': round_obj.name,
+        'round_label': 'Round %d of %d' % (round_obj.order, competition.rounds.count()),
+        'entries': len(entries),
+        'criteria': len(criteria),
+        'judges_done': judges_done,
+        'judges_total': judges_total,
+        'percent': completion,
+        'status_label': 'LIVE' if is_live else 'FINAL',
+        'has_scores': counted_scores.exists(),
+        'leaderboard': leaderboard,
+    }
+
+
+def landing_scorecard():
+    """Pick the most presentable round with real data: live scoring, then final results."""
+    competitions = list(Competition.objects.order_by('-start_date', '-id'))
+    active = [c for c in competitions if c.status == 'ACTIVE']
+
+    # 1) Live scoring: the most recent active competition with an ongoing, scored round.
+    for competition in active:
+        round_obj = competition.rounds.filter(status='ONGOING').order_by('order').first()
+        if round_obj and Score.objects.filter(criterion__round=round_obj, status__in=COUNTED_STATUSES).exists():
+            return _scorecard_for(competition, round_obj, is_live=True)
+
+    # 2) Latest completed round with certified scores, presented as final results.
+    for competition in competitions:
+        round_obj = competition.rounds.filter(status='COMPLETED').order_by('-order').first()
+        if round_obj and Score.objects.filter(criterion__round=round_obj, status__in=COUNTED_STATUSES).exists():
+            return _scorecard_for(competition, round_obj, is_live=False)
+
+    # 3) A just-started round (real counts, no certified scores yet).
+    for competition in active:
+        round_obj = competition.rounds.filter(status='ONGOING').order_by('order').first()
+        if round_obj:
+            return _scorecard_for(competition, round_obj, is_live=True)
+
+    return None
+
+
 def landing_page(request):
-    return render(request, 'accounts/landing_page.html')
+    return render(request, 'accounts/landing_page.html', {'scorecard': landing_scorecard()})
 
 
 def login_view(request):

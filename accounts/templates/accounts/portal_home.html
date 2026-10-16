@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}My Portal - Competrack{% endblock %}
 {% block header_title %}My Portal{% endblock %}
@@ -12,29 +12,29 @@
     </section>
 
     {% if account_role == 'PARTICIPANT' and not participant_has_profile %}
-    <a href="{% url 'my_participant_profile' %}" class="flex flex-col justify-between gap-2 rounded-xl border border-teal-200 bg-teal-50/70 px-5 py-4 transition hover:border-campus sm:flex-row sm:items-center">
+    <a href="{% url 'my_participant_profile' %}" class="flex flex-col justify-between gap-2 rounded-sm border border-teal-200 bg-teal-50/70 px-5 py-4 transition hover:border-campus sm:flex-row sm:items-center">
         <div><p class="text-sm font-bold text-ink">Complete your participant profile</p><p class="mt-1 text-sm text-slate-600">Confirm your name, classification, and School ID so organizers can verify your entry.</p></div>
         <span class="shrink-0 text-sm font-bold text-campus">Open profile &rarr;</span>
     </a>
     {% endif %}
 
     <nav class="grid gap-3 sm:grid-cols-3" aria-label="Portal shortcuts">
-        <a href="{% url 'competition_list' %}" class="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
+        <a href="{% url 'competition_list' %}" class="rounded-sm border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
             <p class="text-sm font-bold text-ink">Competitions</p>
             <p class="mt-1 text-xs leading-5 text-slate-500">Browse scheduled and ongoing events.</p>
         </a>
         {% if account_role == 'PARTICIPANT' or account_role == 'TEAM_MANAGER' %}
-        <a href="{% url 'my_registrations' %}" class="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
+        <a href="{% url 'my_registrations' %}" class="rounded-sm border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
             <p class="text-sm font-bold text-ink">My registrations</p>
             <p class="mt-1 text-xs leading-5 text-slate-500">Track entries and their approval status.</p>
         </a>
         {% else %}
-        <a href="{% url 'announcement_public' %}" class="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
+        <a href="{% url 'announcement_public' %}" class="rounded-sm border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
             <p class="text-sm font-bold text-ink">Announcements</p>
             <p class="mt-1 text-xs leading-5 text-slate-500">Notices from the organizing team.</p>
         </a>
         {% endif %}
-        <a href="{% url 'results_list' %}" class="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
+        <a href="{% url 'results_list' %}" class="rounded-sm border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-teal-200 hover:bg-mist">
             <p class="text-sm font-bold text-ink">Published results</p>
             <p class="mt-1 text-xs leading-5 text-slate-500">Official standings once a round is closed.</p>
         </a>
@@ -47,7 +47,7 @@
         </div>
 
         {% if competitions %}
-        <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <ul class="divide-y divide-slate-100 overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
             {% for competition in competitions %}
             <li class="relative flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
                 <div class="min-w-0">
@@ -55,14 +55,14 @@
                     <p class="mt-1 text-xs text-slate-500">{{ competition.start_date|date:'M j, Y' }} &middot; {{ competition.get_status_display }}</p>
                 </div>
                 <div class="relative z-[1] flex shrink-0 items-center gap-2">
-                    <a href="{% url 'competition_detail' competition.id %}" class="rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-bold text-ink transition hover:border-teal-200 hover:bg-mist">Details</a>
-                    {% if competition.show_results %}<a href="{% url 'competition_results_detail' competition.id %}" class="rounded-lg bg-ink px-3.5 py-2 text-xs font-bold text-white transition hover:bg-campus">Results</a>{% endif %}
+                    <a href="{% url 'competition_detail' competition.id %}" class="rounded-sm border border-slate-200 px-3.5 py-2 text-xs font-bold text-ink transition hover:border-teal-200 hover:bg-mist">Details</a>
+                    {% if competition.show_results %}<a href="{% url 'competition_results_detail' competition.id %}" class="rounded-sm bg-ink px-3.5 py-2 text-xs font-bold text-white transition hover:bg-campus">Results</a>{% endif %}
                 </div>
             </li>
             {% endfor %}
         </ul>
         {% else %}
-        <div class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center">
+        <div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center">
             <p class="font-display text-base font-bold text-ink">No current competitions</p>
             <p class="mt-2 text-sm text-slate-500">Active and completed competitions will appear here once published.</p>
         </div>
