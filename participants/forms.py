@@ -74,8 +74,11 @@ class ParticipantForm(forms.ModelForm):
 
         if self_service:
             # Participants maintain identity and classification only; contact and
-            # narrative fields are managed by administrators.
-            for field_name in ('status', 'email', 'bio', 'achievements'):
+            # narrative fields are managed by administrators. The team is chosen
+            # through the "My team" join/leave section (which keeps team_name in
+            # sync with the roster membership), so the free-text box is removed
+            # here to avoid two competing inputs for the same value.
+            for field_name in ('status', 'email', 'bio', 'achievements', 'team_name'):
                 self.fields.pop(field_name, None)
 
         self.order_fields(

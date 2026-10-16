@@ -116,7 +116,6 @@ class ParticipantViewTest(TestCase):
             'first_name': 'Alex', 'middle_name': 'R.', 'last_name': 'Athlete',
             'phone': '0917',
             'age': '20', 'gender': 'prefer_not_to_say', 'category': 'OPEN',
-            'team_name': 'College Delegation',
             'identification_type': '', 'identification_number': '',
         })
 
@@ -124,12 +123,11 @@ class ParticipantViewTest(TestCase):
         participant = Participant.objects.get(user=participant_user)
         self.assertEqual(participant.name, 'Alex R. Athlete')
         self.assertEqual(participant.email, 'athlete@example.com')
-        self.assertEqual(participant.team_name, 'College Delegation')
         self.assertEqual(participant.age_classification, 'Adult')
 
     def test_participant_self_service_profile_hides_admin_fields(self):
         form = ParticipantForm(self_service=True)
-        for field_name in ('email', 'bio', 'achievements', 'status'):
+        for field_name in ('email', 'bio', 'achievements', 'status', 'team_name'):
             self.assertNotIn(field_name, form.fields)
         self.assertNotIn('name', form.fields)
         self.assertIn('first_name', form.fields)
