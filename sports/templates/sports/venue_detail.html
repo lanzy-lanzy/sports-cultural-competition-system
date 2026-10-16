@@ -17,13 +17,13 @@
 </div>
 
 {% if venue.description %}
-<p class="mb-6 rounded-sm border border-slate-200 bg-white p-4 text-sm text-slate-600">{{ venue.description }}</p>
+<p class="mb-6 rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600">{{ venue.description }}</p>
 {% endif %}
 
 <div class="mb-8">
     <h2 class="mb-3 font-display text-xl font-bold text-ink">Upcoming schedule</h2>
     {% if upcoming %}
-    <div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
         <table class="w-full text-left text-sm">
             <thead>
                 <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -50,7 +50,7 @@
         </table>
     </div>
     {% else %}
-    <div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
+    <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
         <p class="font-display text-base font-bold text-ink">No scheduled matches</p>
         <p class="mt-1 text-sm text-slate-500">This venue has no upcoming matches.</p>
     </div>
@@ -60,7 +60,7 @@
 <div class="mb-8">
     <h2 class="mb-3 font-display text-xl font-bold text-ink">Completed matches</h2>
     {% if completed %}
-    <div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
         <table class="w-full text-left text-sm">
             <thead>
                 <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -83,7 +83,7 @@
         </table>
     </div>
     {% else %}
-    <div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
+    <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
         <p class="text-sm text-slate-500">No completed matches yet.</p>
     </div>
     {% endif %}
@@ -94,14 +94,14 @@
     {% if events %}
     <div class="flex flex-wrap gap-3">
         {% for event in events %}
-        <a href="{% url 'sport_event_detail' event.id %}" class="rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-campus">
+        <a href="{% url 'sport_event_detail' event.id %}" class="rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-campus">
             {{ event.name }}
             <span class="ml-2 text-xs font-normal text-slate-400">{{ event.start_date|date:'M j' }}{% if event.end_date %} &ndash; {{ event.end_date|date:'M j' }}{% endif %}</span>
         </a>
         {% endfor %}
     </div>
     {% else %}
-    <div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
+    <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-10 text-center">
         <p class="text-sm text-slate-500">No events are assigned to this venue.</p>
     </div>
     {% endif %}

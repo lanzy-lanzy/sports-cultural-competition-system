@@ -19,14 +19,14 @@
     <h2 class="mb-4 font-display text-xl font-bold text-ink">Group stage</h2>
     <div class="grid gap-5 md:grid-cols-2">
         {% for group_name, group_matches in groups.items %}
-        <div class="rounded-sm border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="mb-3 flex items-center justify-between font-display text-lg font-bold text-ink">
                 Group {{ group_name }}
                 <span class="rounded-full bg-campus/10 px-2.5 py-1 text-[10px] font-bold text-campus">{{ group_matches|length }} matches</span>
             </h3>
             <ul class="space-y-2">
                 {% for match in group_matches %}
-                <li class="rounded-sm border p-3 {% if match.status == 'COMPLETED' %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200 bg-slate-50/60{% endif %}">
+                <li class="rounded-md border p-3 {% if match.status == 'COMPLETED' %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200 bg-slate-50/60{% endif %}">
                     {% for entry in match.entries.all %}
                     <div class="flex items-center justify-between gap-2 py-0.5">
                         <span class="flex items-center gap-1.5 text-sm {% if entry.is_winner %}font-bold text-emerald-700{% else %}text-slate-600{% endif %}">
@@ -59,7 +59,7 @@
                 {% else %}Knockout round {{ forloop.counter }}{% endif %}
             </p>
             {% for match in round_matches %}
-            <div class="rounded-sm border p-3 shadow-sm {% if match.status == 'COMPLETED' %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200 bg-white{% endif %}">
+            <div class="rounded-md border p-3 shadow-sm {% if match.status == 'COMPLETED' %}border-emerald-200 bg-emerald-50/50{% else %}border-slate-200 bg-white{% endif %}">
                 {% for entry in match.entries.all %}
                 <div class="flex items-center justify-between gap-2 py-1">
                     <span class="flex items-center gap-1.5 text-sm {% if entry.is_winner %}font-bold text-emerald-700{% else %}text-slate-600{% endif %}">
@@ -79,10 +79,10 @@
 </section>
 {% endif %}
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No bracket generated</p>
     <p class="mt-2 text-sm text-slate-500">Add confirmed entries and generate the bracket from the event page.</p>
-    <a href="{% url 'sport_event_detail' event.id %}" class="mt-4 inline-block rounded-sm bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Back to event</a>
+    <a href="{% url 'sport_event_detail' event.id %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Back to event</a>
 </div>
 {% endif %}
 {% endblock %}

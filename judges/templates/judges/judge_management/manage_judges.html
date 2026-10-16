@@ -9,7 +9,7 @@
         <h1 class="font-display text-2xl font-semibold text-slate-900">Manage Judges</h1>
         <p class="mt-1 text-sm text-slate-500">{{ competition.name }}</p>
     </div>
-    <button type="button" onclick="openModal('assign-judges-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+    <button type="button" onclick="openModal('assign-judges-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
         </svg>
@@ -17,7 +17,7 @@
     </button>
 </div>
 
-<div class="rounded-sm border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
+<div class="rounded-md border border-slate-200/80 bg-white/70 p-8 shadow-sm backdrop-blur-sm">
     <h2 class="mb-6 flex items-center gap-2 font-display text-xl font-semibold text-slate-900">
         <svg class="h-6 w-6 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -26,7 +26,7 @@
     </h2>
 
     {% if assignments %}
-    <div class="overflow-x-auto rounded-sm">
+    <div class="overflow-x-auto rounded-md">
         <table class="min-w-full divide-y divide-slate-200">
             <thead>
                 <tr>
@@ -97,15 +97,15 @@
         </table>
     </div>
     {% else %}
-    <div class="flex flex-col items-center justify-center rounded-sm border-2 border-dashed border-slate-200 bg-slate-50/60 py-16 text-center">
-        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-sm bg-cyan-50 text-cyan-600">
+    <div class="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-slate-200 bg-slate-50/60 py-16 text-center">
+        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-cyan-50 text-cyan-600">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
         </div>
         <h3 class="font-display text-lg font-medium text-slate-900">No judges assigned</h3>
         <p class="mt-2 max-w-sm text-slate-500">Get started by assigning judges to this competition.</p>
-        <button type="button" onclick="openModal('assign-judges-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+        <button type="button" onclick="openModal('assign-judges-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
@@ -120,10 +120,10 @@
 <!-- ===== Assign Judges Modal ===== -->
 <div id="assign-judges-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('assign-judges-modal')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-sm bg-white shadow-lg">
+    <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-cyan-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-md bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
@@ -133,7 +133,7 @@
                     <p class="text-xs text-slate-500">{{ competition.name }}</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('assign-judges-modal')" class="cursor-pointer rounded-sm p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('assign-judges-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -147,7 +147,7 @@
                     <h3 class="mb-3 font-display text-sm font-semibold text-slate-900">Select Judges</h3>
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         {% for judge in available_judges %}
-                        <label class="relative flex cursor-pointer items-start rounded-sm border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
+                        <label class="relative flex cursor-pointer items-start rounded-md border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
                             <div class="flex h-5 items-center">
                                 <input type="checkbox" name="judges" value="{{ judge.id }}" class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
                             </div>
@@ -173,7 +173,7 @@
                     <h3 class="mb-3 font-display text-sm font-semibold text-slate-900">Select Rounds</h3>
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         {% for round in competition_rounds %}
-                        <label class="relative flex cursor-pointer items-start rounded-sm border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
+                        <label class="relative flex cursor-pointer items-start rounded-md border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
                             <div class="flex h-5 items-center">
                                 <input type="checkbox" name="rounds" value="{{ round.id }}" class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
                             </div>
@@ -187,8 +187,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('assign-judges-modal')" class="cursor-pointer rounded-sm border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Assign Selected Judges</button>
+                    <button type="button" onclick="closeModal('assign-judges-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Assign Selected Judges</button>
                 </div>
             </form>
         </div>
@@ -199,10 +199,10 @@
 {% for assignment in assignments %}
 <div id="edit-assignment-{{ assignment.id }}" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('edit-assignment-{{ assignment.id }}')"></div>
-    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-sm bg-white shadow-lg">
+    <div class="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-md bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-cyan-500 text-white">
+                <div class="flex h-9 w-9 items-center justify-center rounded-md bg-cyan-500 text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                     </svg>
@@ -212,7 +212,7 @@
                     <p class="text-xs text-slate-500">{{ assignment.judge.user.get_full_name }}</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('edit-assignment-{{ assignment.id }}')" class="cursor-pointer rounded-sm p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('edit-assignment-{{ assignment.id }}')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -246,7 +246,7 @@
                     <h3 class="mb-3 font-display text-sm font-semibold text-slate-900">Assigned Rounds</h3>
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         {% for round in competition_rounds %}
-                        <label class="relative flex cursor-pointer items-start rounded-sm border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
+                        <label class="relative flex cursor-pointer items-start rounded-md border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-md">
                             <div class="flex h-5 items-center">
                                 <input type="checkbox" name="rounds" value="{{ round.id }}" {% if round in assignment.rounds.all %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
                             </div>
@@ -260,8 +260,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('edit-assignment-{{ assignment.id }}')" class="cursor-pointer rounded-sm border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Save Changes</button>
+                    <button type="button" onclick="closeModal('edit-assignment-{{ assignment.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -272,7 +272,7 @@
 <!-- ===== Delete Assignment Modal ===== -->
 <div id="delete-assignment-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('delete-assignment-modal')"></div>
-    <div class="relative w-full max-w-md rounded-sm bg-white p-6 shadow-lg">
+    <div class="relative w-full max-w-md rounded-md bg-white p-6 shadow-lg">
         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -283,8 +283,8 @@
         <form method="POST" id="delete-assignment-form">
             {% csrf_token %}
             <div class="mt-6 flex justify-center gap-3">
-                <button type="button" onclick="closeModal('delete-assignment-modal')" class="cursor-pointer rounded-sm border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                <button type="submit" class="cursor-pointer rounded-sm bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Remove</button>
+                <button type="button" onclick="closeModal('delete-assignment-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Remove</button>
             </div>
         </form>
     </div>

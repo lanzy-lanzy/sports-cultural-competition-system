@@ -10,13 +10,13 @@
         <p class="mt-1 text-sm text-slate-500">Customize your account preferences.</p>
     </div>
 
-    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+    <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
         <form method="post" class="space-y-6">
             {% csrf_token %}
             <div>
                 <h3 class="font-display text-lg font-semibold text-slate-900">Account Settings</h3>
                 <div class="mt-5 space-y-5">
-                    <div class="flex items-center justify-between rounded-sm border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                    <div class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-4 py-3.5">
                         <div>
                             <p class="text-sm font-medium text-slate-800">Email Notifications</p>
                             <p class="text-xs text-slate-500">Receive updates about your competitions and results.</p>
@@ -29,7 +29,7 @@
                     </div>
                     <div>
                         <label for="theme" class="mb-1.5 block text-sm font-medium text-slate-700">Theme Preference</label>
-                        <select id="theme" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <select id="theme" class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                             <option>Light</option>
                             <option>Dark</option>
                             <option>System</option>
@@ -40,7 +40,7 @@
 
             <div class="flex justify-end border-t border-slate-100 pt-5">
                 <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+                        class="inline-flex items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
                     </svg>

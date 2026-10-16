@@ -11,18 +11,18 @@
         <p class="mt-2 text-sm text-slate-500">Assign locations, capacities, and availability to matches and events.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'venue_create' %}" class="inline-flex items-center justify-center rounded-sm bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add venue</a>
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
+        <a href="{% url 'venue_create' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add venue</a>
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
     </div>
 </div>
 
 {% if venues %}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for venue in venues %}
-    <article class="flex flex-col overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+    <article class="flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
         <div class="p-6">
             <div class="flex items-center gap-3">
-                <div class="flex h-11 w-11 items-center justify-center rounded-sm bg-campus text-white">
+                <div class="flex h-11 w-11 items-center justify-center rounded-md bg-campus text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
                 </div>
                 <div class="min-w-0">
@@ -37,13 +37,13 @@
             <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if venue.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">{{ venue.is_active|yesno:'ACTIVE,INACTIVE' }}</span>
         </div>
         <div class="p-4">
-            <a href="{% url 'venue_edit' venue.id %}" class="block rounded-sm bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit venue</a>
+            <a href="{% url 'venue_edit' venue.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit venue</a>
         </div>
     </article>
     {% endfor %}
 </div>
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No venues yet</p>
     <p class="mt-2 text-sm text-slate-500">Add venues to schedule matches and events.</p>
 </div>

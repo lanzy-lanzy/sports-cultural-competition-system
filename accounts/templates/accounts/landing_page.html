@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -65,7 +65,7 @@
                 </div>
 
                 <div class="flex shrink-0 items-center gap-3">
-                    <a href="{% url 'login' %}" class="inline-flex items-center rounded-sm bg-pine px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">Sign in</a>
+                    <a href="{% url 'login' %}" class="inline-flex items-center rounded-md bg-pine px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">Sign in</a>
                 </div>
             </nav>
         </header>
@@ -81,10 +81,10 @@
                     <p class="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
 
                     <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-sm bg-pine px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-pine px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">
                             Sign in to Competrack
                         </a>
-                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-sm border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-slate-400 hover:bg-paper">
+                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-slate-400 hover:bg-paper">
                             Explore the platform
                         </a>
                     </div>
@@ -108,7 +108,7 @@
                 <div class="mt-16 lg:col-span-5 lg:mt-0">
                     <div class="mx-auto max-w-md">
                         {% if scorecard %}
-                        <div class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+                        <div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-3 bg-pine-dark px-5 py-4">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white p-0.5">
                                     <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
@@ -175,7 +175,7 @@
                             </div>
                         </div>
                         {% else %}
-                        <div class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+                        <div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-3 bg-pine-dark px-5 py-4">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white p-0.5">
                                     <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
@@ -203,7 +203,7 @@
                         <p class="mt-5 leading-7 text-slate-600">From setup to the final announcement, each step stays organized, accurate, and easy to follow.</p>
                     </div>
 
-                    <div class="mt-14 grid gap-px overflow-hidden rounded-sm border border-slate-200 bg-slate-200 md:grid-cols-3">
+                    <div class="mt-14 grid gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 md:grid-cols-3">
                         <article class="bg-white p-8">
                             <p class="font-display text-sm font-semibold text-pine tabular-nums">01</p>
                             <h3 class="mt-4 text-lg font-semibold text-ink">For administrators</h3>
@@ -265,8 +265,8 @@
                         <p class="mt-4 leading-7 text-white/70">Sign in to manage an event, or register for a judge account to start scoring.</p>
                     </div>
                     <div class="flex w-full max-w-sm flex-col gap-3 sm:flex-row lg:w-auto lg:max-w-none">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss">Sign in to Competrack</a>
-                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">Register as judge</a>
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss">Sign in to Competrack</a>
+                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">Register as judge</a>
                     </div>
                 </div>
             </section>

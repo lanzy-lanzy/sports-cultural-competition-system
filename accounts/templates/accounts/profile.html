@@ -10,18 +10,18 @@
         <span class="self-start rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-campus">{{ profile.get_role_display }}</span>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-soft">
+    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
         {% csrf_token %}
         <div class="grid lg:grid-cols-[260px_1fr]">
             <aside class="bg-ink p-7 text-center text-white">
-                {% if profile_image_url %}<img src="{{ profile_image_url }}" alt="Profile photo" class="mx-auto h-28 w-28 rounded-sm object-cover ring-4 ring-teal-300/20">{% else %}<div class="mx-auto flex h-28 w-28 items-center justify-center rounded-sm bg-campus font-display text-4xl font-bold">{{ user.username|make_list|first|upper }}</div>{% endif %}
+                {% if profile_image_url %}<img src="{{ profile_image_url }}" alt="Profile photo" class="mx-auto h-28 w-28 rounded-md object-cover ring-4 ring-teal-300/20">{% else %}<div class="mx-auto flex h-28 w-28 items-center justify-center rounded-md bg-campus font-display text-4xl font-bold">{{ user.username|make_list|first|upper }}</div>{% endif %}
                 <p class="mt-5 font-display text-lg font-bold">{{ user.get_full_name|default:user.username }}</p>
                 <p class="mt-1 text-xs uppercase tracking-wider text-slate-400">{{ profile.get_role_display }}</p>
                 <label for="{{ form.profile_image.id_for_label }}" class="mt-6 block text-left text-xs font-bold uppercase tracking-wider text-teal-300">Profile photo</label>
                 <div class="mt-2 text-left text-xs text-slate-300">{{ form.profile_image }}</div>
             </aside>
             <div class="p-6 sm:p-8">
-                {% if form.non_field_errors %}<div class="mb-5 rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+                {% if form.non_field_errors %}<div class="mb-5 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
                 <div class="grid gap-5 sm:grid-cols-2">
                     {% for field in form %}{% if field.name != 'profile_image' %}
                     <div class="{% if field.name == 'middle_name' or field.name == 'email' %}sm:col-span-2{% endif %}">
@@ -32,7 +32,7 @@
                 </div>
                 <div class="mt-7 flex items-center justify-between border-t border-slate-100 pt-5">
                     <a href="{% url 'password_reset' %}" class="text-sm font-bold text-campus hover:text-teal-700">Reset password</a>
-                    <button type="submit" class="rounded-sm bg-campus px-6 py-3 text-sm font-bold text-white shadow">Save profile</button>
+                    <button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow">Save profile</button>
                 </div>
             </div>
         </div>

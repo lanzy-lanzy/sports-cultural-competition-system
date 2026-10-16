@@ -9,7 +9,7 @@
     {% if request.htmx and messages %}
     <div class="space-y-2" aria-live="polite">
         {% for message in messages %}
-        <div class="flex items-start gap-3 rounded-sm border px-4 py-3 text-sm shadow-sm
+        <div class="flex items-start gap-3 rounded-md border px-4 py-3 text-sm shadow-sm
             {% if 'error' in message.tags or 'danger' in message.tags %}border-rose-200 bg-rose-50 text-rose-700
             {% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800
             {% elif 'info' in message.tags %}border-sky-200 bg-sky-50 text-sky-800
@@ -28,7 +28,7 @@
     <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
         {# ---------------- Available participants ---------------- #}
-        <section class="flex flex-col rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+        <section class="flex flex-col rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                     <h3 class="font-display text-base font-semibold text-slate-900">Available participants</h3>
@@ -43,7 +43,7 @@
                        hx-target="#available-list-{{ competition.id }}"
                        hx-swap="outerHTML"
                        hx-trigger="keyup changed delay:300ms, search"
-                       class="w-full rounded-sm border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                       class="w-full rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
 
                 <form hx-post="{% url 'roster_assign' competition.id %}"
                       hx-target="#roster-panel-{{ competition.id }}"
@@ -53,9 +53,9 @@
                     {% include 'participants/participant_management/roster/available_list.html' %}
                     <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onclick="rosterToggleAll('{{ competition.id }}')"
-                                class="cursor-pointer rounded-sm border border-cyan-600/30 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-50">Select all shown</button>
+                                class="cursor-pointer rounded-md border border-cyan-600/30 bg-white px-3 py-2 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-50">Select all shown</button>
                         <button type="submit"
-                                class="inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+                                class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                             Assign selected
                         </button>
@@ -65,7 +65,7 @@
         </section>
 
         {# ---------------- Assigned roster ---------------- #}
-        <section class="flex flex-col rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+        <section class="flex flex-col rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                     <h3 class="font-display text-base font-semibold text-slate-900">Competition roster</h3>
@@ -80,7 +80,7 @@
                        hx-target="#assigned-list-{{ competition.id }}"
                        hx-swap="outerHTML"
                        hx-trigger="keyup changed delay:300ms, search"
-                       class="w-full rounded-sm border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
+                       class="w-full rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30">
 
                 {% include 'participants/participant_management/roster/assigned_list.html' %}
             </div>

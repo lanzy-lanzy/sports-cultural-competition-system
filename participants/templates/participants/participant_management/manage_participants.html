@@ -16,16 +16,16 @@
             </svg>
             Back to Participant Management
         </a>
-        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
             Competition details
         </a>
-        <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700" title="Full-page assignment view (no-JavaScript fallback)">
+        <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700" title="Full-page assignment view (no-JavaScript fallback)">
             Advanced view
         </a>
     </div>
 </div>
 
-<div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+<div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
     <div class="mb-4">
         <h2 class="font-display text-xl font-semibold text-slate-900">Roster</h2>
         <p class="mt-0.5 text-sm text-slate-500">Search, select, and assign participants. Changes save instantly without reloading the page.</p>

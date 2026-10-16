@@ -23,7 +23,7 @@
         <div class="mb-16 grid grid-cols-3 gap-4">
             <!-- Second Place -->
             <div class="translate-y-8">
-                <div class="rounded-t-sm bg-cyan-300 p-6 text-center">
+                <div class="rounded-t-md bg-cyan-300 p-6 text-center">
                     <div class="mb-2 font-display text-3xl font-bold">2nd</div>
                     <div class="participant-card hidden">
                         {% if second_place.participant.profile_image %}
@@ -40,7 +40,7 @@
 
             <!-- First Place -->
             <div class="-translate-y-8">
-                <div class="rounded-t-sm bg-yellow-300 p-8 text-center">
+                <div class="rounded-t-md bg-yellow-300 p-8 text-center">
                     <div class="mb-4 font-display text-4xl font-bold text-yellow-900">1st</div>
                     <div class="participant-card hidden">
                         {% if first_place.participant.profile_image %}
@@ -57,7 +57,7 @@
 
             <!-- Third Place -->
             <div class="translate-y-16">
-                <div class="rounded-t-sm bg-amber-600 p-4 text-center">
+                <div class="rounded-t-md bg-amber-600 p-4 text-center">
                     <div class="mb-2 font-display text-2xl font-bold text-white">3rd</div>
                     <div class="participant-card hidden">
                         {% if third_place.participant.profile_image %}
@@ -74,7 +74,7 @@
         </div>
 
         <!-- Full Rankings Table -->
-        <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+        <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead>
@@ -111,7 +111,7 @@
             <h2 class="mb-6 font-display text-2xl font-bold text-slate-900">Judging Panel</h2>
             <div class="grid grid-cols-2 gap-6 md:grid-cols-4">
                 {% for judge in judges %}
-                <div class="judge-card hidden rounded-sm border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
+                <div class="judge-card hidden rounded-md border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
                     {% if judge.profile_image %}
                     <img src="{{ judge.profile_image.url }}" alt="{{ judge.user.get_full_name }}" class="mx-auto mb-3 h-20 w-20 rounded-full object-cover">
                     {% else %}

@@ -21,7 +21,7 @@
 
 <div class="mb-6">
     <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select name="competition" onchange="this.form.submit()" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
+        <select name="competition" onchange="this.form.submit()" class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
             <option value="">All competitions</option>
             {% for competition in competitions %}
             <option value="{{ competition.id }}" {% if selected_competition == competition.id %}selected{% endif %}>{{ competition.name }}</option>
@@ -31,7 +31,7 @@
 </div>
 
 {% if page_obj %}
-<div class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+<div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50/80">
@@ -76,12 +76,12 @@
                         <form method="post" action="{% url 'eligibility_review' record.id %}" class="inline-flex items-center gap-1.5">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="approve">
-                            <button type="submit" class="cursor-pointer rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">Approve</button>
+                            <button type="submit" class="cursor-pointer rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">Approve</button>
                         </form>
                         <form method="post" action="{% url 'eligibility_review' record.id %}" class="inline-flex items-center gap-1.5">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="reject">
-                            <button type="submit" class="cursor-pointer rounded-sm border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100">Reject</button>
+                            <button type="submit" class="cursor-pointer rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100">Reject</button>
                         </form>
                         {% else %}
                         <span class="text-xs text-slate-400">Reviewed {{ record.reviewed_at|date:"M d, Y" }}</span>
@@ -95,7 +95,7 @@
 </div>
 {% include 'partials/pagination.html' %}
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No eligibility records</h3>
     <p class="mt-2 text-sm text-slate-500">Records appear here once participants submit them.</p>
 </div>

@@ -14,7 +14,7 @@
 
 <div class="mb-6">
     <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select name="round" onchange="this.form.submit()" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
+        <select name="round" onchange="this.form.submit()" class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm sm:w-72">
             <option value="">All rounds</option>
             {% for round in rounds %}
             <option value="{{ round.id }}" {% if selected_round == round.id|stringformat:'s' %}selected{% endif %}>{{ round.name }}</option>
@@ -24,7 +24,7 @@
 </div>
 
 {% if page_obj %}
-<div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
+<div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -70,7 +70,7 @@
 </div>
 {% include 'partials/pagination.html' %}
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No score changes recorded</h3>
     <p class="mt-2 text-sm text-slate-500">Draft edits and submissions will appear here.</p>
 </div>

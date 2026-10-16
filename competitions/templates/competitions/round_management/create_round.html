@@ -11,37 +11,37 @@
         const criteriaCount = container.children.length;
 
         const criteriaDiv = document.createElement('div');
-        criteriaDiv.className = 'criteria-item rounded-sm border border-slate-200 bg-white p-4 shadow-sm';
+        criteriaDiv.className = 'criteria-item rounded-md border border-slate-200 bg-white p-4 shadow-sm';
 
         criteriaDiv.innerHTML = `
             <div class="grid grid-cols-12 gap-4 items-start">
                 <div class="col-span-4">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Criteria Name</label>
                     <input type="text" name="criterion_names[]" required
-                           class="w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+                           class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
                            placeholder="Enter criteria name">
                 </div>
                 <div class="col-span-3">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Max Score</label>
                     <input type="number" name="criterion_max_scores[]" required min="0" step="0.1" value="100"
-                           class="w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+                           class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
                            placeholder="Enter max score">
                 </div>
                 <div class="col-span-3">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Weight % <span class="text-xs font-normal text-slate-400">(0 = plain sum)</span></label>
                     <input type="number" name="criterion_weights[]" min="0" max="100" step="0.5" value="0"
-                           class="w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                           class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div class="col-span-2 pt-7">
                     <button type="button" onclick="this.parentElement.parentElement.remove(); validateForm();"
-                            class="w-full rounded-sm bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100">
+                            class="w-full rounded-md bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-100">
                         Remove
                     </button>
                 </div>
                 <div class="col-span-12">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                     <textarea name="criterion_descriptions[]" rows="2"
-                              class="w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+                              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"
                               placeholder="Enter criteria description (optional)"></textarea>
                 </div>
             </div>
@@ -79,7 +79,7 @@
             <h1 class="font-display text-2xl font-semibold text-slate-900">Create New Round</h1>
             <p class="mt-1 text-sm text-slate-500">{{ competition.name }}</p>
         </div>
-        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
+        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
             </svg>
@@ -87,7 +87,7 @@
         </a>
     </div>
 
-    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+    <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
         <form method="post" class="space-y-6" onsubmit="return validateForm()">
             {% csrf_token %}
 
@@ -95,25 +95,25 @@
                 <div>
                     <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Round Name</label>
                     <input type="text" id="name" name="name" required placeholder="Enter round name"
-                           class="w-full rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div>
                     <label for="order" class="mb-1.5 block text-sm font-medium text-slate-700">Order</label>
                     <input type="number" id="order" name="order" required min="1" placeholder="Enter round order"
-                           class="w-full rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div>
                     <label for="weight_percentage" class="mb-1.5 block text-sm font-medium text-slate-700">Weight Percentage</label>
                     <div class="relative">
                         <input type="number" id="weight_percentage" name="weight_percentage" required min="0" max="100" step="0.01" placeholder="Enter weight"
-                               class="w-full rounded-sm border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                               class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                         <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-slate-500">%</span>
                     </div>
                 </div>
                 <div>
                     <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
                     <select id="status" name="status"
-                            class="w-full cursor-pointer rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                         <option value="PENDING">Pending</option>
                         <option value="ONGOING">Ongoing</option>
                         <option value="COMPLETED">Completed</option>
@@ -124,14 +124,14 @@
             <div>
                 <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                 <textarea id="description" name="description" rows="4" placeholder="Enter round description"
-                          class="w-full rounded-sm border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"></textarea>
+                          class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"></textarea>
             </div>
 
             <div>
                 <div class="mb-3 flex items-center justify-between">
                     <h2 class="font-display text-base font-semibold text-slate-900">Criteria</h2>
                     <button type="button" onclick="addCriteria()"
-                            class="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
+                            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
@@ -145,7 +145,7 @@
 
             <div class="flex justify-end">
                 <button type="submit" disabled title="Add at least one criterion"
-                        class="inline-flex items-center gap-2 rounded-sm bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
+                        class="inline-flex items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>

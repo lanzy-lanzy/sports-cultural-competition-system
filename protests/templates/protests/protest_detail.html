@@ -13,7 +13,7 @@
 
 <div class="grid gap-6 lg:grid-cols-3">
     <div class="space-y-6 lg:col-span-2">
-        <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+        <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
             <div class="flex flex-wrap items-center gap-2">
                 <h1 class="font-display text-2xl font-semibold text-slate-900">{{ protest.title }}</h1>
                 <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
@@ -30,9 +30,9 @@
                 <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Submitted</dt><dd class="mt-0.5 text-slate-600">{{ protest.submitted_at|date:"M d, Y H:i" }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Reviewed by</dt><dd class="mt-0.5 text-slate-600">{{ protest.reviewed_by.get_full_name|default:protest.reviewed_by.username|default:'â€”' }}</dd></div>
             </dl>
-            <p class="mt-5 whitespace-pre-line rounded-sm bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700">{{ protest.description }}</p>
+            <p class="mt-5 whitespace-pre-line rounded-md bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700">{{ protest.description }}</p>
             {% if protest.supporting_document %}
-            <a href="{{ protest.supporting_document.url }}" target="_blank" class="mt-4 inline-flex items-center gap-2 rounded-sm border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
+            <a href="{{ protest.supporting_document.url }}" target="_blank" class="mt-4 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                 View supporting document
             </a>
@@ -40,7 +40,7 @@
         </div>
 
         {% if protest.decision %}
-        <div class="rounded-sm border border-emerald-200 bg-emerald-50/60 p-6">
+        <div class="rounded-md border border-emerald-200 bg-emerald-50/60 p-6">
             <h2 class="font-display text-lg font-semibold text-emerald-900">Decision</h2>
             <p class="mt-2 whitespace-pre-line text-sm text-emerald-800">{{ protest.decision }}</p>
             {% if protest.reviewed_at %}
@@ -50,13 +50,13 @@
         {% endif %}
     </div>
 
-    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <h2 class="font-display text-lg font-semibold text-slate-900">Review action</h2>
         <form method="post" action="{% url 'protest_review' protest.id %}" class="mt-4 space-y-4">
             {% csrf_token %}
             <div>
                 <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
-                <select name="status" id="status" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
+                <select name="status" id="status" class="w-full cursor-pointer rounded-md border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
                     {% for value, label in statuses %}
                     <option value="{{ value }}" {% if protest.status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -64,18 +64,18 @@
             </div>
             <div>
                 <label for="decision" class="mb-1.5 block text-sm font-medium text-slate-700">Decision / resolution</label>
-                <textarea name="decision" id="decision" rows="4" class="min-h-28 w-full rounded-sm border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100" placeholder="Explain the committee's resolution or reason for rejection.">{{ protest.decision }}</textarea>
+                <textarea name="decision" id="decision" rows="4" class="min-h-28 w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100" placeholder="Explain the committee's resolution or reason for rejection.">{{ protest.decision }}</textarea>
             </div>
             <div>
                 <label for="reviewers" class="mb-1.5 block text-sm font-medium text-slate-700">Reviewing committee</label>
-                <select name="reviewers" id="reviewers" multiple size="5" class="w-full cursor-pointer rounded-sm border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
+                <select name="reviewers" id="reviewers" multiple size="5" class="w-full cursor-pointer rounded-md border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
                     {% for member in committee_members %}
                     <option value="{{ member.id }}" {% if member in protest.reviewers.all %}selected{% endif %}>{{ member.get_full_name|default:member.username }}</option>
                     {% endfor %}
                 </select>
                 <p class="mt-1 text-xs text-slate-400">Hold Ctrl/Cmd to select multiple committee members.</p>
             </div>
-            <button type="submit" class="w-full cursor-pointer rounded-sm bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Save review</button>
+            <button type="submit" class="w-full cursor-pointer rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Save review</button>
         </form>
     </div>
 </div>

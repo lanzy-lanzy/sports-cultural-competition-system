@@ -14,7 +14,7 @@
 </div>
 
 {% if standings %}
-<div class="overflow-x-auto rounded-sm border border-slate-200 bg-white shadow-sm">
+<div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -76,7 +76,7 @@
     {% if standings.0.total_points is not None %}Points: 3 for a win, 1 for a draw, 0 for a loss.{% else %}Ranked by elimination round reached; the winner of the final is champion.{% endif %}
 </p>
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No standings available</p>
     <p class="mt-2 text-sm text-slate-500">Standings are computed from completed matches.</p>
 </div>

@@ -11,16 +11,16 @@
     </div>
     <div class="flex items-center gap-3">
         <!-- View toggle -->
-        <div class="flex items-center gap-1 rounded-sm border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
+        <div class="flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
             <button type="button" id="view-grid-btn" onclick="setView('grid')"
-                    class="inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                 </svg>
                 <span class="hidden sm:inline">Cards</span>
             </button>
             <button type="button" id="view-table-btn" onclick="setView('table')"
-                    class="inline-flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                 </svg>
@@ -35,7 +35,7 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
     {% for competition in page_obj %}
-    <div class="group relative rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div class="group relative rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
         <div class="mb-4 flex items-center justify-between">
             <h3 class="font-display text-xl font-semibold text-slate-900"><a href="{% url 'manage_judges' competition.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="Manage judges for {{ competition.name }}">{{ competition.name }}</a></h3>
             <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
@@ -68,7 +68,7 @@
         </div>
 
         <div class="relative z-[1] flex justify-end">
-            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-sm bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
+            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 hover:shadow-xl">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                 </svg>
@@ -77,8 +77,8 @@
         </div>
     </div>
     {% empty %}
-    <div class="col-span-full flex flex-col items-center justify-center rounded-sm border border-dashed border-slate-300 bg-white/50 py-16 text-center backdrop-blur-sm">
-        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-cyan-100 text-cyan-600">
+    <div class="col-span-full flex flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/50 py-16 text-center backdrop-blur-sm">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-cyan-100 text-cyan-600">
             <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.327-4.302A7.942 7.942 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
@@ -90,7 +90,7 @@
 </div>
 
 <!-- ===== Table view ===== -->
-<div id="table-view" class="hidden overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+<div id="table-view" class="hidden overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50/80">
@@ -130,7 +130,7 @@
                         <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">{{ competition.rounds.count }}</span>
                     </td>
                     <td class="whitespace-nowrap px-6 py-4 text-right">
-                        <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center gap-1.5 rounded-sm border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-colors hover:border-cyan-300 hover:bg-cyan-100">
+                        <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center gap-1.5 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-colors hover:border-cyan-300 hover:bg-cyan-100">
                             Manage Judges
                         </a>
                     </td>
@@ -144,8 +144,8 @@
 {% include 'partials/pagination.html' %}
 
 {% else %}
-<div class="flex flex-col items-center justify-center rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center backdrop-blur-sm">
-    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-cyan-100 text-cyan-600">
+<div class="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center backdrop-blur-sm">
+    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-cyan-100 text-cyan-600">
         <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.327-4.302A7.942 7.942 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
         </svg>

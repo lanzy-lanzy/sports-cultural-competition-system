@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,7 +33,7 @@
 </head>
 <body class="min-h-screen bg-paper font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
     <main class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
-        <div class="grid w-full max-w-5xl overflow-hidden rounded-sm border border-slate-200 border-t-[3px] border-t-pine bg-white shadow-sm lg:min-h-[640px] lg:grid-cols-[.85fr_1.15fr]">
+        <div class="grid w-full max-w-5xl overflow-hidden rounded-md border border-slate-200 border-t-[3px] border-t-pine bg-white shadow-sm lg:min-h-[640px] lg:grid-cols-[.85fr_1.15fr]">
 
             <section class="hidden flex-col justify-between bg-pine-dark px-10 py-12 text-white lg:flex" aria-label="About registration">
                 <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-3" aria-label="Competrack home">
@@ -84,7 +84,7 @@
                     <h2 class="mt-3 font-display text-3xl font-semibold tracking-[-0.01em] text-ink">Create your account</h2>
                     <p class="mt-3 text-sm leading-6 text-slate-500">Use your full school name so organizers can verify your entry.</p>
 
-                    {% if form.non_field_errors %}<div class="mt-6 rounded-sm border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+                    {% if form.non_field_errors %}<div class="mt-6 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
 
                     <form method="post" class="mt-8 space-y-7" novalidate>
                         {% csrf_token %}
@@ -163,7 +163,7 @@
 
                         <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row">
                             <p class="text-sm text-slate-500">Already registered? <a href="{% url 'login' %}" class="font-semibold text-pine transition-colors hover:text-pine-deep">Sign in</a></p>
-                            <button type="submit" class="h-12 w-full rounded-sm bg-pine px-6 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2 sm:w-auto">Create account</button>
+                            <button type="submit" class="h-12 w-full rounded-md bg-pine px-6 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2 sm:w-auto">Create account</button>
                         </div>
                     </form>
                 </div>

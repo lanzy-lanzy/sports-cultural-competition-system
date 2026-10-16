@@ -10,10 +10,10 @@
         <h1 class="mt-1 font-display text-3xl font-bold tracking-tight text-ink">User access control</h1>
         <p class="mt-2 text-sm text-slate-500">Assign roles and activate or suspend accounts. Your own access is protected.</p>
     </div>
-    <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-sm bg-campus px-4 py-3 text-sm font-bold text-white shadow">Register account</a>
+    <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-4 py-3 text-sm font-bold text-white shadow">Register account</a>
 </div>
 
-<div class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+<div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50/80">
@@ -31,7 +31,7 @@
                     <td class="px-5 py-4" colspan="3">
                         <form method="post" action="{% url 'update_user_access' item.id %}?page={{ page_obj.number }}" class="grid min-w-[560px] grid-cols-[minmax(220px,1fr)_auto_auto] items-center gap-4">
                             {% csrf_token %}
-                            <select name="role" class="h-11 rounded-sm border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-campus focus:ring-4 focus:ring-teal-100" {% if item == user %}disabled{% endif %}>
+                            <select name="role" class="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-campus focus:ring-4 focus:ring-teal-100" {% if item == user %}disabled{% endif %}>
                                 {% for role_value, role_label in role_choices %}
                                 <option value="{{ role_value }}" {% if item.account_profile.role == role_value %}selected{% endif %}>{{ role_label }}</option>
                                 {% endfor %}
@@ -39,7 +39,7 @@
                             <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
                                 <input type="checkbox" name="is_active" class="h-5 w-5 rounded border-slate-300 text-campus focus:ring-campus" {% if item.is_active %}checked{% endif %} {% if item == user %}disabled{% endif %}> Active
                             </label>
-                            <button type="submit" class="rounded-sm bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-campus disabled:cursor-not-allowed disabled:opacity-40" {% if item == user %}disabled{% endif %}>Save access</button>
+                            <button type="submit" class="rounded-md bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-campus disabled:cursor-not-allowed disabled:opacity-40" {% if item == user %}disabled{% endif %}>Save access</button>
                         </form>
                     </td>
                 </tr>
@@ -53,9 +53,9 @@
 
 {% if page_obj.has_other_pages %}
 <nav class="mt-5 flex justify-end gap-2" aria-label="User pages">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">Previous</a>{% endif %}
-    <span class="rounded-sm bg-ink px-3 py-2 text-sm font-bold text-white">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">Next</a>{% endif %}
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">Previous</a>{% endif %}
+    <span class="rounded-md bg-ink px-3 py-2 text-sm font-bold text-white">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">Next</a>{% endif %}
 </nav>
 {% endif %}
 {% endblock %}

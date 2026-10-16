@@ -5,7 +5,7 @@
 
 {% block content %}
 <!-- Header card -->
-<div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+<div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
     <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <div>
             <h1 class="font-display text-2xl font-semibold text-slate-900">{{ competition.name }}</h1>
@@ -13,44 +13,44 @@
         </div>
         <div class="flex flex-wrap gap-2.5">
             {% if can_manage %}
-            <a href="{% url 'manage_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'manage_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
                 Participants
             </a>
-            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'manage_judges' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971z"/></svg>
                 Judges
             </a>
-            <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-sm bg-campus px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">
+            <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-md bg-campus px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                 Rounds
             </a>
-            <a href="{% url 'award_list' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'award_list' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125H8.625c-.621 0-1.125.504-1.125 1.125v3.375M5.25 4.236V2.721A48.46 48.46 0 0112 2.25c2.291 0 4.545.16 6.75.47v1.516A6.75 6.75 0 0112 10.986 6.75 6.75 0 015.25 4.236z"/></svg>
                 Awards
             </a>
-            <a href="{% url 'medal_tally' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'medal_tally' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
                 Medal Tally
             </a>
-            <a href="{% url 'scoreboard' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'scoreboard' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
                 Scoreboard
             </a>
-            <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+            <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
                 <svg class="h-4 w-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
                 Sport Events
             </a>
             {% elif competition.show_results %}
-            <a href="{% url 'competition_results_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-sm bg-campus px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">View published results</a>
-            <a href="{% url 'medal_tally' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">Medal Tally</a>
-            <a href="{% url 'scoreboard' competition.id %}" class="inline-flex items-center gap-2 rounded-sm border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">Scoreboard</a>
+            <a href="{% url 'competition_results_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-md bg-campus px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-cyan-500/20 transition-all hover:brightness-105">View published results</a>
+            <a href="{% url 'medal_tally' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">Medal Tally</a>
+            <a href="{% url 'scoreboard' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">Scoreboard</a>
             {% endif %}
         </div>
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
+        <div class="rounded-md border border-slate-100 bg-slate-50/60 p-4">
             <div class="text-xs font-medium uppercase tracking-wider text-slate-500">Status</div>
             <span class="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
                 {% if competition.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700
@@ -65,11 +65,11 @@
                 {{ competition.get_status_display }}
             </span>
         </div>
-        <div class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
+        <div class="rounded-md border border-slate-100 bg-slate-50/60 p-4">
             <div class="text-xs font-medium uppercase tracking-wider text-slate-500">Start Date</div>
             <div class="mt-2 font-semibold text-slate-900">{{ competition.start_date|date:"M d, Y" }}</div>
         </div>
-        <div class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
+        <div class="rounded-md border border-slate-100 bg-slate-50/60 p-4">
             <div class="text-xs font-medium uppercase tracking-wider text-slate-500">End Date</div>
             <div class="mt-2 font-semibold text-slate-900">{{ competition.end_date|date:"M d, Y" }}</div>
         </div>
@@ -78,13 +78,13 @@
 
 {% if can_manage %}
 <!-- Participants (inline HTMX roster) -->
-<div class="mt-6 rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+<div class="mt-6 rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
     <div class="mb-4 flex items-center justify-between gap-4">
         <div>
             <h2 class="font-display text-lg font-semibold text-slate-900">Participants</h2>
             <p class="mt-0.5 text-sm text-slate-500">Assign or remove participants without leaving this page.</p>
         </div>
-        <a href="{% url 'manage_participants' competition.id %}" class="hidden shrink-0 items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-cyan-300 hover:text-cyan-700 sm:inline-flex">
+        <a href="{% url 'manage_participants' competition.id %}" class="hidden shrink-0 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-cyan-300 hover:text-cyan-700 sm:inline-flex">
             Full view
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
         </a>
@@ -96,7 +96,7 @@
 {% endif %}
 
 <!-- Rounds -->
-<div class="mt-6 overflow-hidden rounded-sm border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+<div class="mt-6 overflow-hidden rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
         <div>
             <h2 class="font-display text-lg font-semibold text-slate-900">Competition Rounds</h2>
@@ -138,7 +138,7 @@
             <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Scoring Criteria</h4>
             <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {% for criterion in round.criteria.all %}
-                <div class="rounded-sm border border-slate-100 bg-slate-50/60 p-4">
+                <div class="rounded-md border border-slate-100 bg-slate-50/60 p-4">
                     <div class="font-medium text-slate-900">{{ criterion.name }}</div>
                     <p class="mt-1 text-sm text-slate-500">{{ criterion.description }}</p>
                     <div class="mt-2 text-xs font-medium text-cyan-700">Max Score: {{ criterion.max_score }}</div>

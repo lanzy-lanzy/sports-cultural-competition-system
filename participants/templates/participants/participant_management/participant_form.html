@@ -14,7 +14,7 @@
         <a href="{% url 'participant_list' %}" class="text-sm font-bold text-campus hover:text-aqua">Back to participants</a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-soft">
+    <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
         {% csrf_token %}
         {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
         <div class="border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8">
@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
-            {% if form.non_field_errors %}<div class="sm:col-span-2 rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+            {% if form.non_field_errors %}<div class="sm:col-span-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
             <div class="sm:col-span-2 grid gap-5 sm:grid-cols-3">
                 {% for field in form %}{% if field.name == 'first_name' or field.name == 'middle_name' or field.name == 'last_name' %}
                 <div>
@@ -47,7 +47,7 @@
             {% endif %}
         </div>
         <div class="flex justify-end border-t border-slate-100 bg-slate-50/60 px-6 py-5 sm:px-8">
-            <button type="submit" class="rounded-sm bg-campus px-6 py-3 text-sm font-bold text-white shadow">{{ submit_label }}</button>
+            <button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow">{{ submit_label }}</button>
         </div>
     </form>
 </div>

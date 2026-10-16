@@ -9,7 +9,7 @@
         <h1 class="font-display text-2xl font-semibold text-slate-900">My Protests</h1>
         <p class="mt-1 text-sm text-slate-500">Track the status of the protests and appeals you submitted.</p>
     </div>
-    <a href="{% url 'submit_protest' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+    <a href="{% url 'submit_protest' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
         Submit protest
     </a>
@@ -18,7 +18,7 @@
 {% if protests %}
 <div class="space-y-4">
     {% for protest in protests %}
-    <div class="rounded-sm border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
+    <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -42,7 +42,7 @@
             <p class="shrink-0 text-xs text-slate-400">{{ protest.submitted_at|date:"M d, Y H:i" }}</p>
         </div>
         {% if protest.decision %}
-        <div class="mt-3 rounded-sm bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div class="mt-3 rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-600">
             <span class="font-semibold text-slate-700">Decision:</span> {{ protest.decision }}
         </div>
         {% endif %}
@@ -53,10 +53,10 @@
     {% endfor %}
 </div>
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/50 py-20 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No protests submitted</h3>
     <p class="mt-2 text-sm text-slate-500">If you believe a decision was unfair, you can file a protest.</p>
-    <a href="{% url 'submit_protest' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-sm bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">Submit a protest</a>
+    <a href="{% url 'submit_protest' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">Submit a protest</a>
 </div>
 {% endif %}
 {% endblock %}

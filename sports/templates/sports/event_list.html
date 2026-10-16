@@ -11,18 +11,18 @@
         <p class="mt-2 text-sm text-slate-500">{{ competition.name|title }}</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'create_sport_event' competition.id %}" class="inline-flex items-center justify-center rounded-sm bg-campus px-5 py-3 text-sm font-bold text-white shadow">Create sport event</a>
-        <a href="{% url 'match_board' %}?competition={{ competition.id }}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Match board</a>
-        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center justify-center rounded-sm border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Competition</a>
+        <a href="{% url 'create_sport_event' competition.id %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Create sport event</a>
+        <a href="{% url 'match_board' %}?competition={{ competition.id }}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Match board</a>
+        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Competition</a>
     </div>
 </div>
 
 {% if events %}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for event in events %}
-    <article class="relative flex flex-col overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+    <article class="relative flex flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
         <div class="flex items-center gap-4 p-6">
-            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-campus font-display text-lg font-bold text-white">{{ event.name|make_list|first|upper }}</div>
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-campus font-display text-lg font-bold text-white">{{ event.name|make_list|first|upper }}</div>
             <div class="min-w-0">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ event.sport_type.name }} &middot; {{ event.get_gender_display }}</p>
                 <h2 class="mt-1 truncate font-display text-lg font-bold text-ink"><a href="{% url 'sport_event_detail' event.id %}" class="transition-colors hover:text-campus after:absolute after:inset-0 after:content-['']" aria-label="Open {{ event.name }}">{{ event.name }}</a></h2>
@@ -34,12 +34,12 @@
             <div><p class="font-bold text-ink">{{ event.match_count }}</p><p class="text-[10px] uppercase text-slate-400">Matches</p></div>
             <div><p class="font-bold text-ink">{{ event.completed_count }}</p><p class="text-[10px] uppercase text-slate-400">Done</p></div>
         </div>
-        <div class="relative z-[1] p-4"><a href="{% url 'sport_event_detail' event.id %}" class="block rounded-sm bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open event</a></div>
+        <div class="relative z-[1] p-4"><a href="{% url 'sport_event_detail' event.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open event</a></div>
     </article>
     {% endfor %}
 </div>
 {% else %}
-<div class="rounded-sm border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No sport events yet</p>
     <p class="mt-2 text-sm text-slate-500">Create a sport event for this competition to begin scheduling matches.</p>
 </div>
