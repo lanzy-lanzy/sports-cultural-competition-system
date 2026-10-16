@@ -18,7 +18,6 @@ from .services import approve_registration, reject_registration, start_review
 def register_for_event(request):
     form = EventRegistrationForm(
         request.POST or None,
-        request.FILES or None,
         user=request.user,
     )
 
@@ -39,8 +38,6 @@ def register_for_event(request):
             sport_event=form.cleaned_data['sport_event'],
             team=team,
             participant=participant,
-            requirements_document=form.cleaned_data.get('requirements_document'),
-            notes=form.cleaned_data['notes'],
         )
         messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
         return redirect('my_registrations')

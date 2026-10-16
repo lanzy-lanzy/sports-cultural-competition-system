@@ -46,7 +46,6 @@ class RegistrationTest(TestCase):
         resp = self.client.post(reverse('register_for_event'), {
             'target_type': 'sport_event',
             'sport_event': self.sport_event.id,
-            'notes': 'Ready to play.',
         })
         self.assertRedirects(resp, reverse('my_registrations'))
         registration = EventRegistration.objects.get(registrant=self.participant_user)
@@ -149,6 +148,16 @@ class RegistrationTest(TestCase):
         self.client.force_login(self.participant_user)
         resp = self.client.get(reverse('register_for_event'))
         self.assertNotIn('team', resp.context['form'].fields)
+
+    def test_registration_page_has_no_requirements_document_or_notes(self):
+        # The register form only captures the event (and team for managers);
+        # document uploads and free-text notes were removed from the flow.
+        self.client.force_login(self.participant_user)
+        resp = self.client.get(reverse('register_for_event'))
+        for field_name in ('requirements_document', 'notes'):
+            self.assertNotIn(field_name, resp.context['form'].fields)
+        self.assertNotContains(resp, 'name="requirements_document"')
+        self.assertNotContains(resp, 'name="notes"')
 
     def test_team_manager_registration_page_shows_team_dropdown(self):
         manager = User.objects.create_user('manager2', 'm2@example.com', 'pass')
