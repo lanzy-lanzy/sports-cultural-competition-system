@@ -42,12 +42,12 @@
             <tr class="border-b border-slate-100 last:border-0">
                 <td class="px-5 py-3 whitespace-nowrap text-slate-500">{{ log.created_at|date:"M d, Y H:i" }}</td>
                 <td class="px-5 py-3">
-                    <span class="font-semibold text-slate-800">{{ log.round.name|default:'â€”' }}</span>
+                    <span class="font-semibold text-slate-800">{{ log.round.name|default:'—' }}</span>
                     <p class="text-xs text-slate-400">{{ log.criterion.name|default:'deleted criterion' }}</p>
                     {% if log.details %}<p class="mt-0.5 max-w-[220px] truncate text-[10px] text-slate-400" title="{{ log.details }}">{{ log.details }}</p>{% endif %}
                 </td>
                 <td class="px-5 py-3 font-semibold text-slate-800">{{ log.participant.name }}</td>
-                <td class="px-5 py-3 text-slate-600">{{ log.judge.user.get_full_name|default:log.judge.user.username|default:'â€”' }}</td>
+                <td class="px-5 py-3 text-slate-600">{{ log.judge.user.get_full_name|default:log.judge.user.username|default:'—' }}</td>
                 <td class="px-5 py-3 text-center font-display font-bold text-slate-800">
                     {% if log.old_score == None %}new{% else %}{{ log.old_score }}{% endif %}
                     <span class="text-slate-400">&rarr;</span> {{ log.new_score }}

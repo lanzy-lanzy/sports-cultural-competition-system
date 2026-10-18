@@ -315,7 +315,7 @@
                 <a href="{% url 'competition_detail' entry.competition.id %}" class="absolute inset-0 z-[1] rounded-md" aria-label="View {{ entry.competition.name }} standings"></a>
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 font-display text-sm font-semibold text-amber-700">1</div>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold text-ink">{{ entry.participant.name|default:"â€”" }}</p>
+                    <p class="truncate text-sm font-semibold text-ink">{{ entry.participant.name|default:"—" }}</p>
                     <p class="truncate text-xs text-slate-500">{{ entry.competition.name }}</p>
                 </div>
                 <span class="shrink-0 text-sm font-semibold tabular-nums text-pine-deep">{{ entry.score }}</span>

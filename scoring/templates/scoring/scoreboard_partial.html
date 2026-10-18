@@ -52,7 +52,7 @@
                                 <div class="space-y-0.5">
                                     {% for entry in match.entries.all %}
                                     <span class="font-display text-base font-bold {% if entry.is_winner %}text-emerald-700{% else %}text-slate-600{% endif %}">
-                                        {{ entry.score|default:'â€“' }}
+                                        {{ entry.score|default:'–' }}
                                     </span>
                                     {% endfor %}
                                 </div>

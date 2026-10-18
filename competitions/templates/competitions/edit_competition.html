@@ -63,7 +63,7 @@
                     <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Cultural Event Type</label>
                     <select id="cultural_event_type" name="cultural_event_type"
                             class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        <option value="" {% if not competition.cultural_event_type %}selected{% endif %}>â€” None â€”</option>
+                        <option value="" {% if not competition.cultural_event_type %}selected{% endif %}>— None —</option>
                         <option value="DANCE" {% if competition.cultural_event_type == 'DANCE' %}selected{% endif %}>Dance</option>
                         <option value="SINGING" {% if competition.cultural_event_type == 'SINGING' %}selected{% endif %}>Singing</option>
                         <option value="CULTURAL_PRESENTATION" {% if competition.cultural_event_type == 'CULTURAL_PRESENTATION' %}selected{% endif %}>Cultural Presentation</option>

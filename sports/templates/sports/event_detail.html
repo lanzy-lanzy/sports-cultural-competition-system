@@ -21,7 +21,7 @@
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Confirmed entries</p><p class="mt-1 font-display text-2xl font-bold text-ink">{{ event.confirmed_count }}{% if event.max_teams %}<span class="text-sm font-normal text-slate-400"> / {{ event.max_teams }}</span>{% endif %}</p></div>
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matches</p><p class="mt-1 font-display text-2xl font-bold text-ink">{{ matches.count }}</p></div>
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Venue</p><p class="mt-1 truncate font-display text-lg font-bold text-ink">{{ event.venue|default:'Not assigned' }}</p></div>
-    <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dates</p><p class="mt-1 font-display text-lg font-bold text-ink">{% if event.start_date %}{{ event.start_date|date:'M j' }}{% if event.end_date %} â€“ {{ event.end_date|date:'M j' }}{% endif %}{% else %}TBD{% endif %}</p></div>
+    <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dates</p><p class="mt-1 font-display text-lg font-bold text-ink">{% if event.start_date %}{{ event.start_date|date:'M j' }}{% if event.end_date %} – {{ event.end_date|date:'M j' }}{% endif %}{% else %}TBD{% endif %}</p></div>
 </div>
 
 {% if event.rules %}
@@ -62,7 +62,7 @@
             {% for entry in entries %}
             <li class="flex items-center justify-between gap-3 rounded-md border border-slate-100 bg-slate-50/60 px-4 py-3">
                 <div class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-campus text-xs font-bold text-white">{{ entry.seed|default:'â€“' }}</span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-campus text-xs font-bold text-white">{{ entry.seed|default:'–' }}</span>
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-slate-800">{{ entry.display_name }}</p>
                         <p class="text-[10px] text-slate-400">{% if entry.team %}Team{% else %}Participant{% endif %} &middot; {{ entry.get_status_display }}</p>

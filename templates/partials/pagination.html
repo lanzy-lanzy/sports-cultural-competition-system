@@ -21,8 +21,8 @@
         {% endif %}
 
         {% for num in page_obj|elided_pages %}
-            {% if num == 'â€¦' %}
-            <span class="px-1 text-sm text-slate-400">â€¦</span>
+            {% if num == '…' %}
+            <span class="px-1 text-sm text-slate-400">…</span>
             {% elif num == page_obj.number %}
             <span aria-current="page" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-pine px-3 text-sm font-semibold text-white">{{ num }}</span>
             {% else %}

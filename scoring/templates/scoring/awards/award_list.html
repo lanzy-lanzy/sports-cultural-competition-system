@@ -6,7 +6,7 @@
 {% block content %}
 <div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
     <div>
-        <h1 class="font-display text-2xl font-semibold text-slate-900">Awards â€” {{ competition.name }}</h1>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Awards — {{ competition.name }}</h1>
         <p class="mt-1 text-sm text-slate-500">Define medals, MVP, and certificates, then assign recipients and generate certificates.</p>
     </div>
     <a href="{% url 'create_award' competition.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">

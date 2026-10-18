@@ -262,8 +262,8 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ participant.get_gender_display }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ participant.age|default:'â€”' }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ participant.phone|default:'â€”' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.age|default:'—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ participant.phone|default:'—' }}</td>
                         <td class="px-4 py-3">
                             {% if participant.status == 'ACTIVE' %}
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">

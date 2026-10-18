@@ -50,10 +50,10 @@
                     <span class="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">{{ log.get_action_display }}</span>
                 </td>
                 <td class="px-5 py-3 text-slate-600">
-                    {% if log.target_label %}<span class="font-medium text-slate-700">{{ log.target_label }}</span>{% else %}<span class="text-slate-400">â€”</span>{% endif %}
+                    {% if log.target_label %}<span class="font-medium text-slate-700">{{ log.target_label }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}
                 </td>
                 <td class="hidden max-w-xs truncate px-5 py-3 text-slate-500 lg:table-cell">{{ log.details }}</td>
-                <td class="hidden px-5 py-3 font-mono text-xs text-slate-400 xl:table-cell">{{ log.ip_address|default:'â€”' }}</td>
+                <td class="hidden px-5 py-3 font-mono text-xs text-slate-400 xl:table-cell">{{ log.ip_address|default:'—' }}</td>
             </tr>
             {% endfor %}
         </tbody>

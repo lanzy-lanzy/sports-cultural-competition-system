@@ -125,7 +125,7 @@
                     {% for criterion in criteria %}
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
                         <div>{{ criterion.name }}</div>
-                        <div class="mt-1 text-xs font-normal normal-case text-slate-400">(max: {{ criterion.max_score }}{% if criterion.weight_percentage %} Â· {{ criterion.weight_percentage }}%{% endif %})</div>
+                        <div class="mt-1 text-xs font-normal normal-case text-slate-400">(max: {{ criterion.max_score }}{% if criterion.weight_percentage %} · {{ criterion.weight_percentage }}%{% endif %})</div>
                     </th>
                     {% endfor %}
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Total Score</th>

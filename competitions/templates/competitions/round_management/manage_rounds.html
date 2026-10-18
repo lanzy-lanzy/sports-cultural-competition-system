@@ -49,7 +49,7 @@
 
 <div class="overflow-hidden rounded-md border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur-sm">
     <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><h2 class="font-display text-base font-semibold text-ink">Round sequence</h2><p class="mt-0.5 text-xs text-slate-500">Pending <span class="px-1 text-slate-300">â†’</span> Ongoing <span class="px-1 text-slate-300">â†’</span> Completed</p></div>
+        <div><h2 class="font-display text-base font-semibold text-ink">Round sequence</h2><p class="mt-0.5 text-xs text-slate-500">Pending <span class="px-1 text-slate-300">→</span> Ongoing <span class="px-1 text-slate-300">→</span> Completed</p></div>
         <div class="inline-flex items-center gap-2 self-start rounded-md bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500"><svg class="h-4 w-4 text-campus" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>The colored button is the next status action</div>
     </div>
     {% if rounds %}
@@ -438,7 +438,7 @@
 
         document.getElementById('status-round-form').action = btn.dataset.url;
         document.getElementById('status-round-icon').innerHTML = selected.icon;
-        document.getElementById('status-round-title').textContent = selected.verb + ' â€œ' + btn.dataset.name + 'â€?';
+        document.getElementById('status-round-title').textContent = selected.verb + ' “' + btn.dataset.name + '”?';
         document.getElementById('status-round-message').textContent = btn.dataset.message;
         document.getElementById('status-current').textContent = selected.current;
         document.getElementById('status-next').textContent = btn.dataset.nextStatus;

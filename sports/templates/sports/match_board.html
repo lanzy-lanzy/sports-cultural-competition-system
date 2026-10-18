@@ -185,7 +185,7 @@
 (function () {
     var form = document.getElementById('board-filters');
     if (!form) { return; }
-    // Apply filters the moment a dropdown or date changes â€” no Apply click needed.
+    // Apply filters the moment a dropdown or date changes — no Apply click needed.
     form.addEventListener('change', function (event) {
         if (event.target.matches('select, input[type="date"]')) { form.requestSubmit(); }
     });

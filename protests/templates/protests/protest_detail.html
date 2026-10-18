@@ -28,7 +28,7 @@
                 <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Submitted by</dt><dd class="mt-0.5 font-semibold text-slate-800">{{ protest.submitter_name }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Against</dt><dd class="mt-0.5 font-semibold text-slate-800">{{ protest.target_name }}</dd></div>
                 <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Submitted</dt><dd class="mt-0.5 text-slate-600">{{ protest.submitted_at|date:"M d, Y H:i" }}</dd></div>
-                <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Reviewed by</dt><dd class="mt-0.5 text-slate-600">{{ protest.reviewed_by.get_full_name|default:protest.reviewed_by.username|default:'â€”' }}</dd></div>
+                <div><dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">Reviewed by</dt><dd class="mt-0.5 text-slate-600">{{ protest.reviewed_by.get_full_name|default:protest.reviewed_by.username|default:'—' }}</dd></div>
             </dl>
             <p class="mt-5 whitespace-pre-line rounded-md bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700">{{ protest.description }}</p>
             {% if protest.supporting_document %}

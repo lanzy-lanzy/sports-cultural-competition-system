@@ -45,8 +45,8 @@
                     </div>
                     {% endfor %}
                 </td>
-                <td class="px-5 py-4 text-slate-500">{{ match.venue|default:'â€”' }}</td>
-                <td class="px-5 py-4 text-slate-500">{% if match.scheduled_start %}{{ match.scheduled_start|date:'M j, Y H:i' }}{% else %}â€”{% endif %}</td>
+                <td class="px-5 py-4 text-slate-500">{{ match.venue|default:'—' }}</td>
+                <td class="px-5 py-4 text-slate-500">{% if match.scheduled_start %}{{ match.scheduled_start|date:'M j, Y H:i' }}{% else %}—{% endif %}</td>
                 <td class="px-5 py-4">
                     <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif match.status == 'ONGOING' %}bg-cyan-100 text-cyan-700{% elif match.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% elif match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ match.get_status_display }}</td>
                 <td class="px-5 py-4">
@@ -59,7 +59,7 @@
                                 data-label="{{ match.label }}"
                                 data-contestants="{{ match.contestants_display }}"
                                 data-venue="{{ match.venue|default:'Venue to be assigned' }}"
-                                data-start="{% if match.scheduled_start %}{{ match.scheduled_start|date:'D, M j, Y Â· H:i' }}{% else %}Not scheduled{% endif %}"
+                                data-start="{% if match.scheduled_start %}{{ match.scheduled_start|date:'D, M j, Y · H:i' }}{% else %}Not scheduled{% endif %}"
                                 data-side1="{% for entry in match.entries.all %}{% if entry.side == 1 %}{{ entry.display_name }}{% endif %}{% endfor %}"
                                 data-side2="{% for entry in match.entries.all %}{% if entry.side == 2 %}{{ entry.display_name }}{% endif %}{% endfor %}"
                                 class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Record result</button>
@@ -146,7 +146,7 @@
         lastFocused = trigger;
         form.action = trigger.dataset.url;
         title.textContent = trigger.dataset.label || 'Match';
-        meta.textContent = (trigger.dataset.contestants || '') + ' Â· ' + (trigger.dataset.venue || '') + ' Â· ' + (trigger.dataset.start || '');
+        meta.textContent = (trigger.dataset.contestants || '') + ' · ' + (trigger.dataset.venue || '') + ' · ' + (trigger.dataset.start || '');
         label1.textContent = trigger.dataset.side1 || 'Contestant 1';
         label2.textContent = trigger.dataset.side2 || 'Contestant 2';
         score1.value = '';
