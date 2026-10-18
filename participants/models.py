@@ -50,6 +50,7 @@ class Participant(models.Model):
     identification_number = models.CharField(
         max_length=100,
         blank=True,
+        default='',
         verbose_name='School ID number',
     )
 
