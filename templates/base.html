@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Competrack &middot; JHCSC Competition Platform{% endblock %}</title>
-    {% load static %}
+    {% load static static_version %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // JHCSC brand system: deep forest ink, pine green, moss/paper tints.
@@ -36,9 +36,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/liquid-glass.css' %}">
+    <link rel="stylesheet" href="{% static_v 'css/liquid-glass.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    {% load static %}<script src="{% static 'js/ui.js' %}"></script>
+    <script src="{% static_v 'js/ui.js' %}"></script>
     <style>
         .app-canvas { background-color: #F5F7F4; }
         .app-scrollbar::-webkit-scrollbar { width: 5px; }
