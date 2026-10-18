@@ -36,6 +36,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/liquid-glass.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     {% load static %}<script src="{% static 'js/ui.js' %}"></script>
     <style>
@@ -51,7 +52,7 @@
     <div class="flex min-h-screen">
         <div id="sidebar-backdrop" onclick="closeSidebar()" class="fixed inset-0 z-40 hidden bg-ink/60 lg:hidden"></div>
 
-        <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col overflow-hidden border-r border-slate-200 bg-white transition-transform duration-150 lg:translate-x-0" aria-label="Application sidebar">
+        <aside id="app-sidebar" class="lg-sidebar fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col overflow-hidden transition-transform duration-150 lg:translate-x-0" aria-label="Application sidebar">
 
             <div class="relative flex h-[78px] items-center border-b border-slate-200 px-5">
                 <a href="{% if not user.is_authenticated %}{% url 'landing_page' %}{% elif can_manage %}{% url 'dashboard' %}{% elif account_role == 'JUDGE' %}{% url 'judge_dashboard' %}{% else %}{% url 'portal_home' %}{% endif %}" class="flex min-w-0 items-center gap-3" aria-label="Competrack dashboard">
