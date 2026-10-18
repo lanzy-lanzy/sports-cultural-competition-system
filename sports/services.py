@@ -357,6 +357,23 @@ def generate_bracket(event):
         raise ValueError(f'Bracket generation is not supported for {event.get_format_display()}.')
 
 
+def maybe_auto_generate_bracket(event):
+    """Generate a bracket automatically once the event is ready.
+
+    Used when registrations are approved so matches appear without a manual
+    click. A no-op when matches already exist (protects recorded results) or
+    when the event cannot generate a bracket yet (too few entries, unsupported
+    format...). Returns True when a bracket was generated.
+    """
+    if event.matches.exists():
+        return False
+    try:
+        generate_bracket(event)
+        return True
+    except ValueError:
+        return False
+
+
 def _entry_matches_query(event, entry, group=None, knockout_only=False):
     from django.db.models import Q
 

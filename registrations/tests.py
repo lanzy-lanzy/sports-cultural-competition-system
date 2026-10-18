@@ -81,6 +81,85 @@ class RegistrationTest(TestCase):
         self.assertEqual(registration.status, EventRegistration.Status.APPROVED)
         self.assertTrue(self.sport_event.entries.filter(participant=self.participant, status='CONFIRMED').exists())
 
+    def test_approval_with_too_few_entries_does_not_generate_matches(self):
+        registration = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+        )
+        self.client.force_login(self.admin)
+        self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'approve'})
+        self.assertEqual(self.sport_event.matches.count(), 0)
+
+    def test_approval_generates_matches_when_ready(self):
+        other_user = User.objects.create_user('athlete2', 'athlete2@example.com', 'pass')
+        other_participant = Participant.objects.create(
+            user=other_user,
+            name='Ben Cruz',
+            email='athlete2@example.com',
+            age=21,
+        )
+        EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+        )
+        EventRegistration.objects.create(
+            registrant=other_user,
+            participant=other_participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+        )
+        self.client.force_login(self.admin)
+        # First approval: only 1 confirmed entry -> not enough for a bracket.
+        self.client.post(
+            reverse('registration_review', args=[EventRegistration.objects.get(registrant=self.participant_user).id]),
+            {'action': 'approve'},
+        )
+        self.assertEqual(self.sport_event.matches.count(), 0)
+        # Second approval: 2 confirmed entries -> bracket auto-generated.
+        self.client.post(
+            reverse('registration_review', args=[EventRegistration.objects.get(registrant=other_user).id]),
+            {'action': 'approve'},
+        )
+        matches = list(self.sport_event.matches.all())
+        self.assertEqual(len(matches), 1)
+        match_entries = list(matches[0].entries.order_by('side'))
+        self.assertEqual(
+            {match_entries[0].participant_id, match_entries[1].participant_id},
+            {self.participant.id, other_participant.id},
+        )
+        from audit.models import AuditLog
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action='BRACKET_GENERATED',
+                details__icontains='auto-generated',
+            ).exists(),
+        )
+
+    def test_approval_keeps_existing_bracket(self):
+        from sports.models import Match
+        registration = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+        )
+        # Pre-existing bracket (e.g. seeded) must not be cleared or extended.
+        seeded_match = Match.objects.create(event=self.sport_event, name='Round 1')
+        self.client.force_login(self.admin)
+        self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'approve'})
+        from audit.models import AuditLog
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action='BRACKET_GENERATED',
+                details__icontains='auto-generated',
+            ).exists(),
+        )
+        self.assertListEqual(list(self.sport_event.matches.order_by('id')), [seeded_match])
+
     def test_approval_creates_participant_competition(self):
         registration = EventRegistration.objects.create(
             registrant=self.participant_user,

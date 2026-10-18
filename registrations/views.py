@@ -121,7 +121,7 @@ def registration_review(request, registration_id):
             )
             messages.success(request, f'Registration for {registration.contestant_name} is now under review.')
     elif action == 'approve':
-        approve_registration(registration, request.user, admin_notes)
+        approved = approve_registration(registration, request.user, admin_notes)
         from audit.models import record_action_from_request
         record_action_from_request(
             request,
@@ -130,6 +130,11 @@ def registration_review(request, registration_id):
             details=f'Registration approved for {registration.contestant_name}',
         )
         messages.success(request, f'Registration for {registration.contestant_name} approved.')
+        if approved and registration.sport_event:
+            messages.success(
+                request,
+                f'Matches were auto-generated for {registration.sport_event.name}.',
+            )
     elif action == 'reject':
         reject_registration(registration, request.user, admin_notes)
         from audit.models import record_action_from_request
