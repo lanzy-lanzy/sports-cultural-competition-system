@@ -1,0 +1,176 @@
+/* ==========================================================================
+   Liquid Glass — frosted-glass visual effect
+   Used by the Landing Page, Login, and Register views.
+   Technique: backdrop-filter blur + semi-transparent gradients + subtle
+   border highlights. Text stays high-contrast; a solid fallback is provided
+   for browsers without backdrop-filter support and for users who prefer
+   reduced transparency.
+   ========================================================================== */
+
+:root {
+    --lg-blur: 18px;
+    --lg-panel-bg: rgba(11, 58, 32, 0.55);      /* pine-dark, semi-transparent */
+    --lg-panel-bg-2: rgba(12, 83, 48, 0.35);     /* pine-deep highlight stop    */
+    --lg-hairline: rgba(255, 255, 255, 0.35);    /* top border highlight        */
+    --lg-border: rgba(255, 255, 255, 0.16);      /* outer border                */
+    --lg-shadow: 0 24px 60px -20px rgba(3, 24, 14, 0.65);
+    --lg-accent: #8FE3B4;                         /* light green for links/labels on dark */
+}
+
+/* --- Dark frosted panel (cards over the campus photo background) --------- */
+.lg-glass {
+    position: relative;
+    isolation: isolate;
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0) 100%),
+        linear-gradient(180deg, var(--lg-panel-bg) 0%, var(--lg-panel-bg-2) 100%);
+    backdrop-filter: blur(var(--lg-blur)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(150%);
+    border: 1px solid var(--lg-border);
+    box-shadow: var(--lg-shadow);
+    /* Ensure light text over the frosted panel keeps AA contrast */
+    color: #ffffff;
+}
+
+/* Subtle inner top highlight to sell the "liquid" edge. */
+.lg-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, var(--lg-hairline) 0%, rgba(255, 255, 255, 0) 30%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* --- Light frosted panel (sticky header, accent chips on light bg) ------- */
+.lg-glass-light {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(245, 247, 244, 0.76) 100%);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 12px 32px -16px rgba(11, 58, 32, 0.35);
+}
+
+/* --- Frosted inputs (dark panel) ----------------------------------------- */
+.lg-input {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.lg-input::placeholder { color: rgba(255, 255, 255, 0.55); }
+.lg-input:hover { border-color: rgba(255, 255, 255, 0.40) !important; }
+.lg-input:focus {
+    outline: none;
+    border-color: var(--lg-accent) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 0 0 3px rgba(143, 227, 180, 0.30);
+}
+/* Keep dropdown option text legible (options render on native white lists). */
+.lg-input option { color: #15251B; background: #ffffff; }
+
+/* --- Frosted translucent button / chip ----------------------------------- */
+.lg-btn-glass {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background-color .15s ease, border-color .15s ease;
+}
+.lg-btn-glass:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.50);
+}
+
+/* --- Accent link colour for light text over the frosted panel ------------ */
+.lg-link {
+    color: var(--lg-accent);
+    transition: color .15s ease;
+}
+.lg-link:hover { color: #B8EFCF; }
+
+/* --- Scoped frosted inputs for Django-rendered forms (Register) ----------
+   Overrides the white widget classes coming from accounts/forms.py so the
+   registration form matches the frosted panel while keeping light, high-
+   contrast text. Scoped to `.lg-form` so it never leaks into other views. */
+.lg-form input[type=text],
+.lg-form input[type=password],
+.lg-form input[type=tel],
+.lg-form input[type=email],
+.lg-form select {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.lg-form input::placeholder { color: rgba(255, 255, 255, 0.55); }
+.lg-form input:hover,
+.lg-form select:hover { border-color: rgba(255, 255, 255, 0.40) !important; }
+.lg-form input:focus,
+.lg-form select:focus {
+    outline: none;
+    border-color: var(--lg-accent) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 0 0 3px rgba(143, 227, 180, 0.30) !important;
+}
+.lg-form select option { color: #15251B; background: #ffffff; }
+
+/* ==========================================================================
+   Accessibility fallbacks
+   ========================================================================== */
+
+/* Browsers without backdrop-filter: use a more opaque, solid panel so text
+   contrast never depends on the blurred background bleeding through. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .lg-glass {
+        background: #0B3A20;
+        background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%);
+    }
+    .lg-glass-light { background: #ffffff; }
+    .lg-input { background: rgba(255, 255, 255, 0.16) !important; }
+    .lg-form input[type=text],
+    .lg-form input[type=password],
+    .lg-form input[type=tel],
+    .lg-form input[type=email],
+    .lg-form select { background: rgba(255, 255, 255, 0.16) !important; }
+}
+
+/* Respect users who prefer reduced transparency: drop the blur and go solid. */
+@media (prefers-reduced-transparency: reduce) {
+    .lg-glass {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%);
+    }
+    .lg-glass-light {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: #ffffff;
+    }
+    .lg-input {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.18) !important;
+    }
+    .lg-form input[type=text],
+    .lg-form input[type=password],
+    .lg-form input[type=tel],
+    .lg-form input[type=email],
+    .lg-form select {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.18) !important;
+    }
+}
+
+/* Users who prefer reduced motion: no shine animation (none is used by
+   default), keeping the effect purely static. */

@@ -33,6 +33,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/liquid-glass.css' %}">
 </head>
 <body class="bg-white font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
     <div class="flex min-h-screen flex-col">
@@ -48,7 +49,7 @@
             </div>
         </div>
 
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <header class="lg-glass-light sticky top-0 z-30">
             <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6" aria-label="Main navigation">
                 <a href="{% url 'landing_page' %}" class="flex min-w-0 items-center gap-3" aria-label="Competrack home">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
@@ -91,12 +92,12 @@
                         <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
                             Sign in to Competrack
                         </a>
-                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-md border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
+                        <a href="#platform" class="lg-btn-glass inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
                             Explore the platform
                         </a>
                     </div>
 
-                    <dl class="mt-14 grid w-full max-w-2xl grid-cols-1 divide-y divide-white/15 border-y border-white/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <dl class="lg-glass mt-14 grid w-full max-w-2xl grid-cols-1 divide-y divide-white/15 rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                         <div class="px-4 py-4 text-center">
                             <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Integrity</dt>
                             <dd class="mt-1.5 text-sm font-semibold text-white">Transparent scoring</dd>
