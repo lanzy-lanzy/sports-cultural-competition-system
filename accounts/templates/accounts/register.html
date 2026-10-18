@@ -6,6 +6,7 @@
     <meta name="description" content="Create your Competrack account for the J.H. Cerilles State College competition platform.">
     <title>Create Account - Competrack</title>
     {% load static %}
+    <link rel="preload" as="image" href="{% static 'images/jh_bg.png' %}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -31,8 +32,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-paper font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
-    <main class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
+<body class="relative min-h-screen bg-pine-dark font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
+    <div class="fixed inset-0" aria-hidden="true">
+        <img src="{% static 'images/jh_bg.png' %}" alt="" fetchpriority="high" class="h-full w-full object-cover object-center">
+        <div class="absolute inset-0 bg-gradient-to-b from-pine-dark/90 via-pine-dark/70 to-pine-dark/95"></div>
+    </div>
+
+    <main class="relative flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
         <div class="grid w-full max-w-5xl overflow-hidden rounded-md border border-slate-200 border-t-[3px] border-t-pine bg-white shadow-sm lg:min-h-[640px] lg:grid-cols-[.85fr_1.15fr]">
 
             <section class="hidden flex-col justify-between bg-pine-dark px-10 py-12 text-white lg:flex" aria-label="About registration">
