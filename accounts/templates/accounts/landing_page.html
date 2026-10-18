@@ -6,6 +6,7 @@
     <meta name="description" content="The official competition scoring and management platform of J.H. Cerilles State College.">
     <title>Competrack &middot; JHCSC Competition Management System</title>
     {% load static %}
+    <link rel="preload" as="image" href="{% static 'images/jh_bg.png' %}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -71,127 +72,44 @@
         </header>
 
         <main class="flex-1">
-            <section class="mx-auto max-w-6xl px-6 pb-24 pt-20 lg:grid lg:grid-cols-12 lg:gap-16 lg:pt-24">
-                <div class="lg:col-span-7">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-pine">Official competition platform</p>
-                    <h1 class="mt-6 max-w-2xl font-display text-4xl font-semibold leading-[1.15] tracking-[-0.01em] text-ink sm:text-5xl lg:text-[3.4rem]">
+            <section class="relative isolate overflow-hidden bg-pine-dark">
+                <img src="{% static 'images/jh_bg.png' %}" alt="" fetchpriority="high" class="absolute inset-0 -z-20 h-full w-full object-cover object-center">
+                <div class="absolute inset-0 -z-10 bg-gradient-to-b from-pine-dark/90 via-pine-dark/70 to-pine-dark/95" aria-hidden="true"></div>
+
+                <div class="relative mx-auto flex min-h-[32rem] max-w-3xl flex-col items-center justify-center px-6 py-20 text-center sm:min-h-[38rem] sm:py-24 lg:min-h-[42rem]">
+                    <span class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-white/30 sm:h-28 sm:w-28">
+                        <img src="{% static 'images/it_logo.jpg' %}" alt="School of Computing Studies seal" class="h-full w-full object-cover">
+                    </span>
+                    <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.24em] text-moss">Official competition platform</p>
+                    <h1 class="mt-6 font-display text-4xl font-semibold leading-[1.15] tracking-[-0.01em] text-white sm:text-5xl lg:text-[3.4rem]">
                         Every score counted.<br>
                         Every result official.
                     </h1>
-                    <p class="mt-6 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
+                    <p class="mt-6 max-w-xl text-base leading-8 text-white/85 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
 
-                    <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-pine px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">
+                    <div class="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
                             Sign in to Competrack
                         </a>
-                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-slate-400 hover:bg-paper">
+                        <a href="#platform" class="inline-flex items-center justify-center gap-2 rounded-md border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
                             Explore the platform
                         </a>
                     </div>
 
-                    <dl class="mt-12 grid max-w-lg grid-cols-3 divide-x divide-slate-200 border-y border-slate-200">
-                        <div class="py-4 pr-4">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Integrity</dt>
-                            <dd class="mt-1.5 text-sm font-semibold text-ink">Transparent scoring</dd>
+                    <dl class="mt-14 grid w-full max-w-2xl grid-cols-1 divide-y divide-white/15 border-y border-white/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                        <div class="px-4 py-4 text-center">
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Integrity</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-white">Transparent scoring</dd>
                         </div>
-                        <div class="px-4 py-4">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Accuracy</dt>
-                            <dd class="mt-1.5 text-sm font-semibold text-ink">Live standings</dd>
+                        <div class="px-4 py-4 text-center">
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Accuracy</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-white">Live standings</dd>
                         </div>
-                        <div class="px-4 py-4">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Reports</dt>
-                            <dd class="mt-1.5 text-sm font-semibold text-ink">Print-ready results</dd>
+                        <div class="px-4 py-4 text-center">
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Reports</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-white">Print-ready results</dd>
                         </div>
                     </dl>
-                </div>
-
-                <div class="mt-16 lg:col-span-5 lg:mt-0">
-                    <div class="mx-auto max-w-md">
-                        {% if scorecard %}
-                        <div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-                            <div class="flex items-center gap-3 bg-pine-dark px-5 py-4">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white p-0.5">
-                                    <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/60">J.H. Cerilles State College</p>
-                                    <p class="mt-0.5 truncate font-display text-sm font-semibold text-white">{{ scorecard.competition_name }}</p>
-                                    <p class="truncate text-[11px] text-white/60">{{ scorecard.round_name }}</p>
-                                </div>
-                                <span class="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-                                    <span class="{% if scorecard.status_label == 'LIVE' %}h-1.5 w-1.5 rounded-full bg-moss{% else %}h-1.5 w-1.5 rounded-full bg-white/40{% endif %}"></span>{{ scorecard.status_label }}
-                                </span>
-                            </div>
-
-                            <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-200">
-                                <div class="px-4 py-4 text-center">
-                                    <div class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Entries</div>
-                                    <div class="mt-1 font-display text-lg font-semibold text-ink tabular-nums">{{ scorecard.entries }}</div>
-                                </div>
-                                <div class="px-4 py-4 text-center">
-                                    <div class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Criteria</div>
-                                    <div class="mt-1 font-display text-lg font-semibold text-ink tabular-nums">{{ scorecard.criteria }}</div>
-                                </div>
-                                <div class="px-4 py-4 text-center">
-                                    <div class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Judges</div>
-                                    <div class="mt-1 font-display text-lg font-semibold text-ink tabular-nums">{{ scorecard.judges_done }}<span class="text-slate-400">/{{ scorecard.judges_total }}</span></div>
-                                </div>
-                            </div>
-
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="border-b border-slate-200 bg-paper text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                                        <th scope="col" class="px-6 py-3 font-semibold">Rank</th>
-                                        <th scope="col" class="px-6 py-3 font-semibold">Entry</th>
-                                        <th scope="col" class="px-6 py-3 text-right font-semibold">Average</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    {% for row in scorecard.leaderboard %}
-                                    <tr>
-                                        <td class="px-6 py-3.5 text-xs {% if row.rank == '01' %}font-semibold text-pine{% else %}font-medium text-slate-400{% endif %} tabular-nums">{{ row.rank }}</td>
-                                        <td class="px-6 py-3.5">
-                                            <div class="font-medium text-ink">{{ row.name }}</div>
-                                            {% if row.number %}<div class="text-xs text-slate-400">Entry {{ row.number }}</div>{% endif %}
-                                        </td>
-                                        <td class="px-6 py-3.5 text-right {% if forloop.first %}font-semibold{% else %}font-medium{% endif %} text-ink tabular-nums">{{ row.score }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="3" class="px-6 py-10 text-center">
-                                            <p class="text-sm font-medium text-ink">No certified scores yet</p>
-                                            <p class="mt-1 text-xs text-slate-400">Judging has not begun for this round.</p>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-
-                            <div class="flex items-center justify-between border-t border-slate-200 bg-moss/60 px-6 py-4">
-                                <span class="text-xs text-slate-500">{{ scorecard.round_label }}</span>
-                                <span class="text-xs font-semibold text-pine tabular-nums">
-                                    {% if scorecard.status_label == 'FINAL' and scorecard.percent == 100 %}Certified complete{% else %}{{ scorecard.percent }}% complete{% endif %}
-                                </span>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-                            <div class="flex items-center gap-3 bg-pine-dark px-5 py-4">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white p-0.5">
-                                    <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/60">J.H. Cerilles State College</p>
-                                    <p class="mt-0.5 font-display text-sm font-semibold text-white">Official Score Sheet</p>
-                                </div>
-                            </div>
-                            <div class="px-6 py-14 text-center">
-                                <p class="font-display text-lg font-semibold text-ink">Awaiting the first official results</p>
-                                <p class="mx-auto mt-2 max-w-xs text-sm leading-6 text-slate-500">Live standings from an ongoing competition will appear here as soon as judges begin scoring.</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
                 </div>
             </section>
 

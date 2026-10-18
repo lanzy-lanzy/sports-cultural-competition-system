@@ -36,15 +36,20 @@
         <div class="grid w-full max-w-5xl overflow-hidden rounded-md border border-slate-200 border-t-[3px] border-t-pine bg-white shadow-sm lg:min-h-[640px] lg:grid-cols-[.85fr_1.15fr]">
 
             <section class="hidden flex-col justify-between bg-pine-dark px-10 py-12 text-white lg:flex" aria-label="About registration">
-                <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-3" aria-label="Competrack home">
+                <div class="flex items-center justify-between gap-4">
+                    <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-3" aria-label="Competrack home">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white p-1">
+                            <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
+                        </span>
+                        <span class="leading-tight">
+                            <span class="block font-display text-base font-semibold">Competrack</span>
+                            <span class="block text-[10px] font-medium uppercase tracking-[0.22em] text-moss">J.H. Cerilles State College</span>
+                        </span>
+                    </a>
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white p-1">
-                        <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
+                        <img src="{% static 'images/it_logo.jpg' %}" alt="School of Computing Studies seal" class="h-full w-full rounded-full object-cover">
                     </span>
-                    <span class="leading-tight">
-                        <span class="block font-display text-base font-semibold">Competrack</span>
-                        <span class="block text-[10px] font-medium uppercase tracking-[0.22em] text-moss">J.H. Cerilles State College</span>
-                    </span>
-                </a>
+                </div>
 
                 <div class="max-w-xs">
                     <h1 class="font-display text-3xl font-semibold leading-snug tracking-[-0.01em]">Create the account that fits your role.</h1>
@@ -75,8 +80,13 @@
                         <a href="{% url 'landing_page' %}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-ink">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back to home
                         </a>
-                        <span class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1 lg:hidden">
-                            <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
+                        <span class="flex items-center gap-2 lg:hidden">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
+                                <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
+                            </span>
+                            <span class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
+                                <img src="{% static 'images/it_logo.jpg' %}" alt="School of Computing Studies seal" class="h-full w-full rounded-full object-cover">
+                            </span>
                         </span>
                     </div>
 

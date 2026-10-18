@@ -46,17 +46,17 @@ class AccountTest(TestCase):
 
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'images/jhcsc_logo.png')
-        self.assertContains(resp, 'images/it_logo.png')
+        self.assertContains(resp, 'images/it_logo.jpg')
         self.assertContains(resp, reverse('login'))
         self.assertContains(resp, reverse('register'))
-        self.assertContains(resp, 'Every score counts.')
+        self.assertContains(resp, 'Every score counted.')
 
     def test_auth_pages_share_institutional_branding(self):
         for route_name in ('login', 'register'):
             with self.subTest(route_name=route_name):
                 resp = self.client.get(reverse(route_name))
                 self.assertContains(resp, 'images/jhcsc_logo.png')
-                self.assertContains(resp, 'images/it_logo.png')
+                self.assertContains(resp, 'images/it_logo.jpg')
                 self.assertContains(resp, reverse('landing_page'))
 
     def test_invalid_login_shows_a_clear_error(self):
