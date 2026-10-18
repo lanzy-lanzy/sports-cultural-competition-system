@@ -78,63 +78,117 @@
 .lg-input option { color: #15251B; background: #ffffff; }
 
 /* --- Frosted application sidebar (templates/base.html) -------------------
-   Dark emerald frosted glass. Nav text and icons are lifted to high-contrast
-   light tones; the active item becomes a brighter emerald pill. Scoped to
-   `.lg-sidebar` so none of these overrides leak into the rest of the app. */
-.lg-sidebar {
-    background: linear-gradient(180deg, rgba(6, 95, 70, 0.88) 0%, rgba(2, 44, 34, 0.94) 100%);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border-right: 1px solid rgba(16, 185, 129, 0.28);
-    box-shadow: 1px 0 30px -12px rgba(2, 44, 34, 0.70);
-    color: rgba(255, 255, 255, 0.85);
+   Dark emerald liquid glass. The body carries faint pine glows so the
+   frosted panel has real color to blur behind it; nav rows become layered
+   glass pills. Scoped to `.lg-sidebar` and `body.app-canvas` so nothing
+   leaks into the rest of the app. */
+body.app-canvas {
+    background-image:
+        radial-gradient(900px 500px at -140px 28%, rgba(17, 107, 59, 0.16), transparent 62%),
+        radial-gradient(760px 460px at -180px 86%, rgba(46, 156, 92, 0.10), transparent 58%),
+        radial-gradient(1200px 640px at 112% 8%, rgba(17, 107, 59, 0.05), transparent 62%);
+    background-attachment: fixed;
 }
-/* Soft translucent edge highlights to reinforce the glass depth. */
+.lg-sidebar {
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0) 62%),
+        linear-gradient(180deg, rgba(11, 58, 32, 0.74) 0%, rgba(17, 107, 59, 0.84) 55%, rgba(6, 56, 31, 0.92) 100%);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 1px 0 44px -18px rgba(3, 24, 14, 0.75);
+    color: rgba(255, 255, 255, 0.88);
+}
+/* Specular sweep along the glass edge - the "liquid" highlight. */
+.lg-sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+        linear-gradient(105deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 16%, transparent 32%),
+        radial-gradient(360px 220px at 6% -6%, rgba(255, 255, 255, 0.12), transparent 72%);
+    mix-blend-mode: screen;
+}
+/* Fresnel-style inner hairlines for glass depth. */
 .lg-sidebar::after {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
     box-shadow:
-        inset -1px 0 0 rgba(255, 255, 255, 0.10),
-        inset 1px 0 0 rgba(255, 255, 255, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        inset -1px 0 0 rgba(255, 255, 255, 0.12),
+        inset 1px 0 0 rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08);
     border-radius: inherit;
 }
+/* Sidebar scrollbar picks up a light glass tone. */
+.lg-sidebar .app-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.24); }
 
 /* High-contrast text + icons for the dark glass. */
 .lg-sidebar .text-ink { color: #ffffff !important; }
-.lg-sidebar .text-slate-600 { color: rgba(255, 255, 255, 0.82) !important; }
-.lg-sidebar .text-slate-400 { color: rgba(209, 250, 229, 0.62) !important; }
+.lg-sidebar .text-slate-800 { color: #ffffff !important; }
+.lg-sidebar .text-slate-600 { color: rgba(255, 255, 255, 0.80) !important; }
+.lg-sidebar .text-slate-500 { color: rgba(255, 255, 255, 0.68) !important; }
+.lg-sidebar .text-slate-400 { color: rgba(255, 255, 255, 0.52) !important; }
 .lg-sidebar nav a.text-slate-600:hover,
-.lg-sidebar nav a:hover .text-slate-600 { color: #ffffff !important; }
-.lg-sidebar nav a:hover .text-slate-400 { color: #6ee7b7 !important; }
+.lg-sidebar nav a:hover .text-slate-600,
+.lg-sidebar nav a:hover .text-ink { color: #ffffff !important; }
+.lg-sidebar nav a:hover .text-slate-400 { color: #a7f3d0 !important; }
+.lg-sidebar .text-pine-deep { color: #ffffff !important; }
+.lg-sidebar .text-pine { color: #a7f3d0 !important; }
+.lg-sidebar .text-campus { color: #a7f3d0 !important; }
 
-/* Active item: brighter emerald pill with white text, icon and indicator dot. */
-.lg-sidebar nav .bg-moss { background-color: rgba(16, 185, 129, 0.30) !important; }
-.lg-sidebar nav .text-pine-deep { color: #ffffff !important; }
-.lg-sidebar nav .bg-pine { background-color: #6ee7b7 !important; }
+/* Active item becomes a lifted glass pill with a glow. */
+.lg-sidebar nav .bg-moss {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    border-radius: 0.75rem !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        0 14px 28px -16px rgba(0, 0, 0, 0.55);
+}
+.lg-sidebar nav .bg-pine { background-color: #a7f3d0 !important; }
 
-/* Hover background for nav and brand-header links/buttons. */
+/* Frosted wash + mint icons on hover for nav and brand actions. */
 .lg-sidebar nav a:hover,
 .lg-sidebar nav button:hover,
 .lg-sidebar > div:first-of-type a:hover,
-.lg-sidebar > div:first-of-type button:hover { background-color: rgba(16, 185, 129, 0.16) !important; }
+.lg-sidebar > div:first-of-type button:hover {
+    background-color: rgba(255, 255, 255, 0.09) !important;
+    border-radius: 0.75rem !important;
+}
 
-/* Dividers, the footer user card and avatar rings become subtle dark glass. */
+/* Dividers, user card and avatar rings become subtle dark glass. */
 .lg-sidebar .border-slate-200 { border-color: rgba(255, 255, 255, 0.12) !important; }
+.lg-sidebar .border-slate-100 { border-color: rgba(255, 255, 255, 0.10) !important; }
+.lg-sidebar .border-slate-300 { border-color: rgba(255, 255, 255, 0.16) !important; }
 .lg-sidebar .ring-slate-200 { --tw-ring-color: rgba(255, 255, 255, 0.18) !important; }
-.lg-sidebar div.border-t .bg-white { background-color: rgba(255, 255, 255, 0.06) !important; }
+.lg-sidebar .bg-slate-50\/70 { background-color: rgba(255, 255, 255, 0.04) !important; }
+.lg-sidebar div.border-t .bg-white {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.lg-sidebar .bg-rose-50 { background-color: rgba(244, 63, 94, 0.14) !important; }
+.lg-sidebar .bg-slate-100 { background-color: rgba(255, 255, 255, 0.10) !important; }
 
 @media (prefers-reduced-transparency: reduce) {
+    body.app-canvas { background-image: none; }
     .lg-sidebar {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        background: #064E3B;
+        background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%);
     }
+    .lg-sidebar::before { display: none; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .lg-sidebar { background: #064E3B; }
+    body.app-canvas { background-image: none; }
+    .lg-sidebar { background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%); }
+    .lg-sidebar::before { display: none; }
 }
 
 /* --- Frosted translucent button / chip ----------------------------------- */

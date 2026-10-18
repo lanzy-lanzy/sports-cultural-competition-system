@@ -34,9 +34,8 @@ def sports_hub(request):
 
     competitions = (
         Competition.objects
-        .filter(sport_events__isnull=False)
-        .distinct()
-        .order_by('-start_date')
+        .all()
+        .order_by('-start_date', '-id')
     )
 
     events = (
@@ -92,12 +91,17 @@ def sports_hub(request):
     )
     today = now.date()
 
+    all_events = [event for row in competition_rows for event in row['events']]
+    open_statuses = (SportsEvent.Status.PLANNED, SportsEvent.Status.SCHEDULED, SportsEvent.Status.ONGOING)
+
     return render(request, 'sports/sports_hub.html', {
         'competition_rows': competition_rows,
         'stats': {
             'sport_types': SportType.objects.filter(is_active=True).count(),
             'venues': Venue.objects.filter(is_active=True).count(),
-            'events': sum(len(row['events']) for row in competition_rows),
+            'events': len(all_events),
+            'events_open': sum(event.status in open_statuses for event in all_events),
+            'events_done': sum(event.status == SportsEvent.Status.COMPLETED for event in all_events),
             'matches': Match.objects.count(),
             'completed': Match.objects.filter(status=Match.Status.COMPLETED).count(),
             'awaiting': Match.objects.filter(status=Match.Status.SCHEDULED).count(),

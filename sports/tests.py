@@ -722,6 +722,34 @@ class SportsNavigationPagesTest(TestCase):
         )
         self.assertEqual(response.context['stats']['matches'], Match.objects.count())
 
+    def test_hub_offers_event_management_for_every_competition(self):
+        from competitions.models import Competition
+        fresh = Competition.objects.create(
+            name='Fresh Meet',
+            start_date='2026-06-01',
+            end_date='2026-06-02',
+            created_by=self.admin,
+        )
+        event = SportsEvent.objects.first()
+        response = self.client.get(reverse('sports_hub'))
+        self.assertEqual(response.status_code, 200)
+        # Competitions with zero events are listed too.
+        self.assertContains(response, fresh.name)
+        self.assertContains(response, reverse('create_sport_event', args=[fresh.id]))
+        # Existing events expose direct management links.
+        self.assertContains(response, reverse('create_sport_event', args=[self.competition.id]))
+        self.assertContains(response, reverse('edit_sport_event', args=[event.id]))
+        self.assertContains(response, 'Manage events')
+        self.assertContains(response, 'Add sport event')
+
+    def test_hub_events_stat_card(self):
+        response = self.client.get(reverse('sports_hub'))
+        self.assertEqual(response.context['stats']['events'], SportsEvent.objects.count())
+        # Card + header button both surface the events section.
+        self.assertContains(response, '>Sport events</p>')
+        self.assertContains(response, 'href="#sport-events"')
+        self.assertEqual(response.context['stats']['events_open'] + response.context['stats']['events_done'], response.context['stats']['events'] - SportsEvent.objects.filter(status='CANCELLED').count())
+
     def test_hub_flags_overdue_matches(self):
         response = self.client.get(reverse('sports_hub'))
         overdue = response.context['overdue']

@@ -61,6 +61,9 @@ class SportsEventForm(forms.ModelForm):
         self.fields['sport_type'].queryset = SportType.objects.filter(is_active=True)
         self.fields['venue'].queryset = Venue.objects.filter(is_active=True)
         self.fields['venue'].required = False
+        # The view names the event after the sport type and division when the
+        # name is left blank, so keep the form permissive about it.
+        self.fields['name'].required = False
         _style_fields(self)
 
     def clean(self):

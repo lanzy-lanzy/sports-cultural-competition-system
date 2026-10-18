@@ -3,34 +3,367 @@
 {% block title %}{% if event %}Edit Sport Event{% else %}Create Sport Event{% endif %} - Competrack{% endblock %}
 {% block header_title %}Sports{% endblock %}
 
+{% block extra_head %}
+<style>
+    .event-form .errorlist { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+    .event-form .errorlist li {
+        display: inline-block; border-radius: 0.5rem; background: #FEF2F2;
+        border: 1px solid #FECACA; color: #B91C1C;
+        padding: 0.3rem 0.65rem; font-size: 12px; font-weight: 600;
+    }
+    .event-form select:invalid { color: #475569; }
+    .event-form .toggle-box input[type="checkbox"] {
+        height: 1.25rem; width: 1.25rem; border-radius: 0.375rem;
+        accent-color: #116B3B; flex-shrink: 0; cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="mx-auto max-w-3xl">
-    <div class="mb-7 flex items-center justify-between">
+<div class="mx-auto max-w-6xl">
+
+    {# ---------- Page header ---------- #}
+    <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
             <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Sports Event Management</p>
-            <h1 class="mt-1 font-display text-2xl font-bold text-ink">{% if event %}Edit sport event{% else %}Create sport event{% endif %}</h1>
-            <p class="mt-1 text-sm text-slate-500">{{ competition.name|title }}</p>
+            <h1 class="mt-1 font-display text-3xl font-bold text-ink">{% if event %}Edit sport event{% else %}Create sport event{% endif %}</h1>
+            <p class="mt-2 text-sm text-slate-500">
+                <span class="inline-flex items-center gap-1.5">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M8 21l8 0" /><path d="M12 17l0 4" /><path d="M7 4l10 0" /><path d="M17 4v8a5 5 0 0 1 -10 0v-8" /><path d="M5 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg>
+                    {{ competition.name|title }}
+                </span>
+            </p>
         </div>
-        <a href="{% url 'competition_sport_events' competition.id %}" class="text-sm font-semibold text-slate-500 hover:text-campus">&larr; Back</a>
+        <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:border-teal-200 hover:text-ink">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 14a3.5 3.5 0 0 0 5 0l3 -3a3.5 3.5 0 0 0 -5 -5l-.7 .5" /><path d="M14 10a3.5 3.5 0 0 0 -5 0l-3 3a3.5 3.5 0 0 0 5 5l.7 -.5" /></svg>
+            All sport events
+        </a>
     </div>
 
-    <form method="POST" class="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {% for field in form %}
-            <div class="{% if field.name == 'rules' or field.name == 'name' %}sm:col-span-2{% endif %}">
-                <label class="mb-1.5 block text-sm font-semibold text-slate-700">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<p class="mt-1 text-xs text-slate-400">{{ field.help_text }}</p>{% endif %}
-                {% for error in field.errors %}<p class="mt-1 text-xs text-rose-600">{{ error }}</p>{% endfor %}
+    {# ---------- Main grid: form + live preview ---------- #}
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+
+        <form method="POST" novalidate class="event-form space-y-6">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            {# ===== Step 1 — Identity ===== #}
+            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <header class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-moss/60 to-white px-6 py-4">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pine text-sm font-bold text-white">1</span>
+                    <div>
+                        <h2 class="font-display text-base font-bold text-ink">Event identity</h2>
+                        <p class="text-xs text-slate-500">What is being played, and who can join.</p>
+                    </div>
+                    <svg class="ml-auto h-6 w-6 text-teal-300" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6" /><path d="M11 13l9 -9" /><path d="M15 4h5v5" /></svg>
+                </header>
+                <div class="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
+
+                    <div>
+                        <label for="{{ form.sport_type.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Sport type <span class="text-rose-500">*</span></label>
+                        {{ form.sport_type }}
+                        {{ form.sport_type.errors }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.format.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Tournament format <span class="text-rose-500">*</span></label>
+                        {{ form.format }}
+                        {{ form.format.errors }}
+                        <p class="mt-1 text-xs text-slate-400">This decides how the match bracket is built. A minimum of two entries is required before generating matches.</p>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.name.id_for_label }}" class="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <span>Event name <span class="text-rose-500">*</span></span>
+                            <button type="button" id="use-suggested" class="normal-case tracking-normal text-[11px] font-semibold text-pine transition hover:text-pine-deep">Suggest a name &rarr;</button>
+                        </label>
+                        {{ form.name }}
+                        {{ form.name.errors }}
+                        <p class="mt-1 text-xs text-slate-400">Leave this blank and Competrack names the event automatically, e.g. &ldquo;Basketball - Men&rdquo;.</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.category.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Category <span class="text-rose-500">*</span></label>
+                        {{ form.category }}
+                        {{ form.category.errors }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.gender.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Division <span class="text-rose-500">*</span></label>
+                        {{ form.gender }}
+                        {{ form.gender.errors }}
+                    </div>
+
+                    <div class="sm:col-span-2 toggle-box mt-1 flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3.5 transition checked:border-pine hover:border-teal-200">
+                        <span>
+                            <span class="block text-sm font-semibold text-slate-800">Team-based event</span>
+                            <span class="mt-0.5 block text-xs text-slate-400">Teams pair up in matches. Untick for individual participants (singles, chess, athletics&hellip;).</span>
+                        </span>
+                        {{ form.team_based }}
+                    </div>
+                </div>
+            </section>
+
+            {# ===== Step 2 — Schedule & venue ===== #}
+            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <header class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-moss/60 to-white px-6 py-4">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pine text-sm font-bold text-white">2</span>
+                    <div>
+                        <h2 class="font-display text-base font-bold text-ink">Where &amp; when</h2>
+                        <p class="text-xs text-slate-500">Venue, capacity and the event window.</p>
+                    </div>
+                    <svg class="ml-auto h-6 w-6 text-teal-300" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
+                </header>
+                <div class="grid grid-cols-1 gap-5 px-6 py-6 sm:grid-cols-2">
+
+                    <div>
+                        <label for="{{ form.venue.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Venue</label>
+                        {{ form.venue }}
+                        {{ form.venue.errors }}
+                        <p class="mt-1 text-xs text-slate-400">Optional now &mdash; can be assigned per match later.</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.max_teams.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Entry cap</label>
+                        {{ form.max_teams }}
+                        {{ form.max_teams.errors }}
+                        <p class="mt-1 text-xs text-slate-400">Maximum number of teams or individuals.</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.start_date.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Start date</label>
+                        {{ form.start_date }}
+                        {{ form.start_date.errors }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.end_date.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">End date</label>
+                        {{ form.end_date }}
+                        {{ form.end_date.errors }}
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="{{ form.status.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Initial status <span class="text-rose-500">*</span></label>
+                        {{ form.status }}
+                        {{ form.status.errors }}
+                    </div>
+                </div>
+
+                <div class="mx-6 mb-6 flex items-start gap-3 rounded-xl border border-teal-100 bg-moss/50 px-4 py-3">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-pine" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 15v.01" /><path d="M12 12a3.5 3.5 0 1 0 0 -7h-.5a2.5 2.5 0 0 0 -2 4" /></svg>
+                    <p class="text-xs leading-relaxed text-slate-600">Venue conflicts with other active events on the same dates will be flagged before saving.</p>
+                </div>
+            </section>
+
+            {# ===== Step 3 — Rules ===== #}
+            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <header class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-moss/60 to-white px-6 py-4">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pine text-sm font-bold text-white">3</span>
+                    <div>
+                        <h2 class="font-display text-base font-bold text-ink">Rules &amp; notes</h2>
+                        <p class="text-xs text-slate-500">Shared with judges and shown on the event page.</p>
+                    </div>
+                    <svg class="ml-auto h-6 w-6 text-teal-300" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 9h8" /><path d="M8 13h6" /><path d="M9 18h-3a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-3l-3 3l-3 -3z" /></svg>
+                </header>
+                <div class="px-6 py-6">
+                    <label for="{{ form.rules.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Rules</label>
+                    {{ form.rules }}
+                    {{ form.rules.errors }}
+                    <p class="mt-1 text-xs text-slate-400">Scoring system, tie-breakers, equipment requirements&hellip; optional.</p>
+                </div>
+            </section>
+
+            {# ---------- Actions ---------- #}
+            <div class="flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row">
+                <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-pine-deep">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 15l-2 -2" /><path d="M19 6l-14 7a3 3 0 0 0 3 5l14 -7a3 3 0 0 0 -3 -5z" /><path d="M14 12l2 2" /></svg>
+                    {% if event %}Save changes{% else %}Create event{% endif %}
+                </button>
             </div>
-            {% endfor %}
-        </div>
-        <div class="mt-8 flex justify-end gap-3">
-            <a href="{% url 'competition_sport_events' competition.id %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400">Cancel</a>
-            <button type="submit" class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow">Save event</button>
-        </div>
-    </form>
+        </form>
+
+        {# ---------- Live preview panel ---------- #}
+        <aside class="lg:sticky lg:top-24">
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex items-center gap-2 border-b border-slate-100 bg-paper px-5 py-3">
+                    <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-pine opacity-60"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-pine"></span></span>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Live preview</p>
+                </div>
+
+                <div class="p-5">
+                    <div class="flex items-center gap-4">
+                        <div id="pv-initial" class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pine to-pine-deep font-display text-xl font-bold text-white shadow-soft">?</div>
+                        <div class="min-w-0">
+                            <p id="pv-name" class="truncate font-display text-lg font-bold text-ink">Your event name</p>
+                            <p class="mt-0.5 truncate text-xs text-slate-500">{{ competition.name|title }}</p>
+                        </div>
+                    </div>
+
+                    <div id="pv-chips" class="mt-4 flex flex-wrap gap-1.5">
+                        <span class="rounded-full border border-teal-100 bg-moss px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pine-deep" data-role="format">&mdash;</span>
+                        <span class="rounded-full border border-teal-100 bg-moss px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pine-deep" data-role="gender">&mdash;</span>
+                        <span class="rounded-full border border-teal-100 bg-moss px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pine-deep" data-role="category">&mdash;</span>
+                        <span class="rounded-full border border-teal-100 bg-moss px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pine-deep" data-role="contestant">&mdash;</span>
+                    </div>
+
+                    <dl class="mt-5 space-y-3 text-sm">
+                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
+                            <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3l8 -8" /><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9" /></svg>
+                            <dt class="sr-only">Venue</dt>
+                            <dd id="pv-venue" class="truncate text-slate-600">No venue yet</dd>
+                        </div>
+                        <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
+                            <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /></svg>
+                            <dt class="sr-only">Dates</dt>
+                            <dd id="pv-dates" class="truncate text-slate-600">Dates not set</dd>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" /><path d="M5 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg>
+                            <dt class="sr-only">Entries</dt>
+                            <dd class="truncate text-slate-600">Entries added after creation</dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-5">
+                        <p class="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Status</p>
+                        <span id="pv-status" class="inline-flex items-center rounded-md bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">Planned</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 bg-paper px-5 py-4">
+                    <p class="text-xs leading-relaxed text-slate-500">After creating the event you can add entries, generate the bracket on the event page, and matches will start appearing on the match board.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
 </div>
+
+<script>
+(function () {
+    var form = document.querySelector('.event-form');
+    if (!form) return;
+
+    var fields = {
+        name: form.querySelector('[name="name"]'),
+        sportType: form.querySelector('[name="sport_type"]'),
+        format: form.querySelector('[name="format"]'),
+        gender: form.querySelector('[name="gender"]'),
+        category: form.querySelector('[name="category"]'),
+        teamBased: form.querySelector('[name="team_based"]'),
+        venue: form.querySelector('[name="venue"]'),
+        start: form.querySelector('[name="start_date"]'),
+        end: form.querySelector('[name="end_date"]'),
+        status: form.querySelector('[name="status"]'),
+    };
+
+    var STATUS_STYLES = {
+        PLANNED: 'bg-slate-100 text-slate-600',
+        SCHEDULED: 'bg-teal-50 text-teal-700',
+        ONGOING: 'bg-amber-50 text-amber-700',
+        COMPLETED: 'bg-emerald-50 text-emerald-700',
+        CANCELLED: 'bg-rose-50 text-rose-700',
+    };
+
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    function label(el) {
+        if (!el) return '';
+        var opt = el.selectedOptions && el.selectedOptions[0];
+        return opt ? opt.text.trim() : '';
+    }
+
+    function nameParts() {
+        var sport = label(fields.sportType);
+        var gender = label(fields.gender);
+        var words = [];
+        if (sport) words.push(sport);
+        if (gender) words.push(gender);
+        return words.join(' - ');
+    }
+
+    function initials() {
+        var raw = (fields.name && fields.name.value.trim()) || nameParts();
+        var parts = raw.split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    }
+
+    function dates() {
+        var s = fields.start && fields.start.value;
+        var e = fields.end && fields.end.value;
+        if (!s && !e) return 'Dates not set';
+        function fmt(v) {
+            var bits = v.split('-');
+            if (bits.length < 3) return v;
+            return MONTHS[parseInt(bits[1], 10) - 1] + ' ' + parseInt(bits[2], 10);
+        }
+        if (s && e && s !== e) return fmt(s) + ' \u2192 ' + fmt(e);
+        return fmt(s || e);
+    }
+
+    function refresh() {
+        var pvName = document.getElementById('pv-name');
+        var pvInitial = document.getElementById('pv-initial');
+        var pvVenue = document.getElementById('pv-venue');
+        var pvDates = document.getElementById('pv-dates');
+        var pvStatus = document.getElementById('pv-status');
+        var pvChips = document.getElementById('pv-chips');
+        if (!pvName) return;
+
+        var chosen = fields.name && fields.name.value.trim();
+        pvName.textContent = chosen || nameParts() || 'Your event name';
+        pvName.classList.toggle('text-slate-400', !chosen);
+        pvInitial.textContent = initials();
+
+        var setChip = function (role, text) {
+            var chip = pvChips.querySelector('[data-role="' + role + '"]');
+            if (chip) chip.textContent = text || '\u2014';
+        };
+        setChip('format', label(fields.format));
+        setChip('gender', label(fields.gender));
+        setChip('category', label(fields.category));
+        setChip('contestant', fields.teamBased && fields.teamBased.checked ? 'Team-based' : 'Individual');
+
+        var venueText = label(fields.venue);
+        pvVenue.textContent = venueText || 'No venue yet';
+        pvVenue.classList.toggle('text-slate-400', !venueText);
+
+        pvDates.textContent = dates();
+
+        var statusText = label(fields.status) || 'Planned';
+        pvStatus.textContent = statusText;
+        pvStatus.className = 'inline-flex items-center rounded-md px-3 py-1.5 text-xs font-bold ' +
+            (STATUS_STYLES[fields.status && fields.status.value] || STATUS_STYLES.PLANNED);
+    }
+
+    ['change', 'input', 'keyup'].forEach(function (evt) {
+        Object.keys(fields).forEach(function (key) {
+            var el = fields[key];
+            if (el && el.classList.contains('toggle-box')) return;
+            if (el) el.addEventListener(evt, refresh);
+        });
+    });
+    var toggleWrap = form.querySelector('.toggle-box');
+    if (toggleWrap && fields.teamBased) {
+        toggleWrap.addEventListener('change', refresh);
+    }
+
+    var suggestBtn = document.getElementById('use-suggested');
+    if (suggestBtn && fields.name) {
+        suggestBtn.addEventListener('click', function () {
+            var suggested = nameParts();
+            if (suggested) {
+                fields.name.value = suggested;
+                fields.name.focus();
+                refresh();
+            }
+        });
+    }
+
+    refresh();
+})();
+</script>
 {% endblock %}
