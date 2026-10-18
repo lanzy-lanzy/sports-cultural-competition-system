@@ -25,7 +25,7 @@ NAV_GROUPS = {
         'edit_judge_assignment', 'delete_judge_assignment',
     ],
     'sports': [
-        'sports_hub', 'match_board',
+        'sports_hub',
         'sport_type_list', 'sport_type_create', 'sport_type_edit',
         'venue_list', 'venue_create', 'venue_edit', 'venue_detail',
         'competition_sport_events', 'create_sport_event',
@@ -35,6 +35,7 @@ NAV_GROUPS = {
         'match_schedule', 'edit_match', 'record_match_result',
         'event_standings', 'event_bracket',
     ],
+    'match_board': ['match_board'],
     'results': [
         'results_list', 'competition_results_detail', 'results_reveal',
         'toggle_results_visibility', 'round_results', 'generate_pdf_results',
