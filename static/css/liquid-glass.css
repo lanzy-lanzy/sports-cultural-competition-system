@@ -685,6 +685,33 @@ body.app-canvas {
     transform: translateY(1px);
 }
 
+/* --- Submit-button loader ------------------------------------------------
+   The two slots inside a [data-loader] button swap via the `hidden`
+   attribute. The attribute selector is declared after the base rule so it
+   reliably beats the display:flex below - toggling Tailwind's .hidden
+   against .flex instead is order-dependent and can silently fail. */
+.loader-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.loader-slot[hidden] { display: none; }
+
+/* The spinner. Animated here rather than with Tailwind's animate-spin so
+   the reduced-motion preference can be honoured. */
+.btn-spinner {
+    animation: btn-spinner-rotate 0.7s linear infinite;
+}
+@keyframes btn-spinner-rotate {
+    to { transform: rotate(360deg); }
+}
+/* Reduced motion: drop the rotation entirely and let the "Signing in…"
+   label carry the state on its own. */
+@media (prefers-reduced-motion: reduce) {
+    .btn-spinner { display: none; }
+}
+
 /* --- Light-surface variant: header controls on the paper canvas ---------
    Same dual-shadow geometry, inverted ramp for a light background. */
 .neu-raise-light {
