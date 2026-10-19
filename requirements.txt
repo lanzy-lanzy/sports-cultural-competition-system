@@ -26,6 +26,8 @@ pillow==12.2.0
     # via
     #   reportlab
     #   scoring
+python-dotenv==1.2.4
+    # via scoring
 reportlab==5.0.0
     # via scoring
 sqlparse==0.5.1

@@ -91,15 +91,29 @@ body.app-canvas {
 }
 .lg-sidebar {
     background:
-        linear-gradient(160deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(255, 255, 255, 0) 62%),
-        linear-gradient(180deg, rgba(11, 58, 32, 0.74) 0%, rgba(17, 107, 59, 0.84) 55%, rgba(6, 56, 31, 0.92) 100%);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
-    border-right: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 1px 0 44px -18px rgba(3, 24, 14, 0.75);
-    color: rgba(255, 255, 255, 0.88);
+        /* Key light from the top-left, agreeing with the light source the
+           .neu-* classes use. Deliberately a low-alpha tint rather than a
+           screen blend: screen pushed every pixel toward white and was the
+           main cause of the washed-out look. */
+        radial-gradient(140% 70% at 4% -10%, rgba(167, 243, 208, 0.10) 0%, rgba(167, 243, 208, 0.03) 38%, transparent 68%),
+        /* Deep emerald ramp. Opacity sits at ~0.96 so the light page canvas
+           stops lifting the black point into grey-green, and the four stops
+           give the panel real tonal range instead of one flat green field. */
+        linear-gradient(180deg,
+            rgba(17, 74, 43, 0.96) 0%,
+            rgba(11, 52, 31, 0.965) 34%,
+            rgba(7, 34, 20, 0.97) 68%,
+            rgba(4, 20, 12, 0.975) 100%);
+    backdrop-filter: blur(26px) saturate(128%);
+    -webkit-backdrop-filter: blur(26px) saturate(128%);
+    border-right: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+        1px 0 0 rgba(255, 255, 255, 0.05),
+        20px 0 50px -20px rgba(3, 24, 14, 0.72),
+        inset -1px 0 0 rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.86);
 }
-/* Specular sweep along the glass edge - the "liquid" highlight. */
+/* Specular sheen along the top-left glass edge - the "liquid" highlight. */
 .lg-sidebar::before {
     content: "";
     position: absolute;
@@ -108,9 +122,8 @@ body.app-canvas {
     pointer-events: none;
     border-radius: inherit;
     background:
-        linear-gradient(105deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 16%, transparent 32%),
-        radial-gradient(360px 220px at 6% -6%, rgba(255, 255, 255, 0.12), transparent 72%);
-    mix-blend-mode: screen;
+        linear-gradient(150deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 18%, transparent 34%),
+        radial-gradient(520px 300px at 0% 0%, rgba(167, 243, 208, 0.07), transparent 70%);
 }
 /* Fresnel-style inner hairlines for glass depth. */
 .lg-sidebar::after {
@@ -119,21 +132,24 @@ body.app-canvas {
     inset: 0;
     pointer-events: none;
     box-shadow:
-        inset -1px 0 0 rgba(255, 255, 255, 0.12),
-        inset 1px 0 0 rgba(255, 255, 255, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.16),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+        inset -1px 0 0 rgba(255, 255, 255, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.04);
     border-radius: inherit;
 }
 /* Sidebar scrollbar picks up a light glass tone. */
-.lg-sidebar .app-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.24); }
+.lg-sidebar .app-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); }
 
-/* High-contrast text + icons for the dark glass. */
+/* High-contrast text + icons for the dark glass. Icons are muted so the
+   labels lead, but not so far that they drop below a legible contrast. */
 .lg-sidebar .text-ink { color: #ffffff !important; }
 .lg-sidebar .text-slate-800 { color: #ffffff !important; }
-.lg-sidebar .text-slate-600 { color: rgba(255, 255, 255, 0.80) !important; }
-.lg-sidebar .text-slate-500 { color: rgba(255, 255, 255, 0.68) !important; }
-.lg-sidebar .text-slate-400 { color: rgba(255, 255, 255, 0.52) !important; }
+.lg-sidebar .text-slate-600 { color: rgba(255, 255, 255, 0.86) !important; }
+.lg-sidebar .text-slate-500 { color: rgba(255, 255, 255, 0.72) !important; }
+.lg-sidebar .text-slate-400 { color: rgba(255, 255, 255, 0.56) !important; }
+/* Section headings ("Workspace", "Management") carry the tracking already;
+   they get a touch more presence than the muted icons beside them. */
+.lg-sidebar nav p.text-slate-400 { color: rgba(255, 255, 255, 0.62) !important; }
 .lg-sidebar nav a.text-slate-600:hover,
 .lg-sidebar nav a:hover .text-slate-600,
 .lg-sidebar nav a:hover .text-ink { color: #ffffff !important; }
@@ -142,23 +158,27 @@ body.app-canvas {
 .lg-sidebar .text-pine { color: #a7f3d0 !important; }
 .lg-sidebar .text-campus { color: #a7f3d0 !important; }
 
-/* Active item becomes a lifted glass pill with a glow. */
+/* Active item: a mint-lit raised pill. A plain white wash over emerald turned
+   into a desaturated grey smudge that read as "dirty", not "selected";
+   tinting with the brand accent keeps it unmistakably active but still soft. */
 .lg-sidebar nav .bg-moss {
-    background-color: rgba(255, 255, 255, 0.14) !important;
+    background:
+        linear-gradient(135deg, rgba(167, 243, 208, 0.22) 0%, rgba(167, 243, 208, 0.10) 100%) !important;
     border-radius: 0.75rem !important;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.24),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-        0 14px 28px -16px rgba(0, 0, 0, 0.55);
+        inset 0 1px 0 rgba(255, 255, 255, 0.26),
+        inset 0 -1px 0 rgba(0, 30, 16, 0.30),
+        0 10px 20px -12px rgba(0, 20, 10, 0.75);
 }
 .lg-sidebar nav .bg-pine { background-color: #a7f3d0 !important; }
 
-/* Frosted wash + mint icons on hover for nav and brand actions. */
-.lg-sidebar nav a:hover,
+/* Frosted wash + mint icons on hover for nav and brand actions. The active
+   pill is excluded so hovering it cannot wash out its own gradient. */
+.lg-sidebar nav a:hover:not(.bg-moss),
 .lg-sidebar nav button:hover,
 .lg-sidebar > div:first-of-type a:hover,
 .lg-sidebar > div:first-of-type button:hover {
-    background-color: rgba(255, 255, 255, 0.09) !important;
+    background-color: rgba(255, 255, 255, 0.07) !important;
     border-radius: 0.75rem !important;
 }
 
@@ -181,13 +201,13 @@ body.app-canvas {
     .lg-sidebar {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%);
+        background: linear-gradient(180deg, #12452A 0%, #0B341F 34%, #072214 68%, #04140C 100%);
     }
     .lg-sidebar::before { display: none; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     body.app-canvas { background-image: none; }
-    .lg-sidebar { background: linear-gradient(180deg, #0B3A20 0%, #0C5330 100%); }
+    .lg-sidebar { background: linear-gradient(180deg, #12452A 0%, #0B341F 34%, #072214 68%, #04140C 100%); }
     .lg-sidebar::before { display: none; }
 }
 
@@ -289,3 +309,267 @@ body.app-canvas {
 
 /* Users who prefer reduced motion: no shine animation (none is used by
    default), keeping the effect purely static. */
+
+
+/* ==========================================================================
+   Neumorphism — soft extrude fused onto the frosted glass
+   ------------------------------------------------------------------------
+   Liquid glass supplies the surface: translucency, backdrop blur, specular
+   edge. Neumorphism supplies the volume: a light source at the top-left and a
+   matching well at the bottom-right, so a panel reads as physically raised
+   and a control reads as pressed into it. Neither style alone carries both
+   ideas, which is why the two are layered here rather than mixed.
+
+   Palette note: classic neumorphism assumes a light neutral surface. This app
+   is dark emerald over a campus photo, so the highlight is a soft white sheen
+   and the shadow is a deep pine well. Depth is deliberately restrained so the
+   white/70 body text keeps its 4.5:1 contrast over the frosted panel.
+
+   Light-source convention is top-left throughout, matching the specular sweep
+   on .lg-sidebar so the two styles agree on where the light comes from.
+
+   Consumed by: accounts/login.html, accounts/register.html, base.html.
+   ========================================================================== */
+
+:root {
+    /* Dark-surface ramp */
+    --nm-radius: 1rem;
+    --nm-radius-sm: 0.75rem;
+    --nm-light: rgba(255, 255, 255, 0.09);        /* top-left sheen  */
+    --nm-light-edge: rgba(255, 255, 255, 0.20);   /* 1px inner catch */
+    --nm-dark: rgba(1, 16, 9, 0.55);              /* bottom-right well */
+    --nm-dark-deep: rgba(0, 10, 6, 0.72);         /* deep well / cast */
+    --nm-press-ms: 140ms;
+    --nm-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Light-surface ramp, for controls on the paper canvas */
+    --nm-l-light: rgba(255, 255, 255, 0.95);
+    --nm-l-dark: rgba(21, 37, 27, 0.13);
+}
+
+/* --- Raised slab: the main frosted panel --------------------------------
+   Casts a deep well away from the light, plus a soft sheen toward it, so the
+   card floats above the page instead of sitting flat on top of it. */
+.neu-slab {
+    border-radius: var(--nm-radius);
+    box-shadow:
+        -10px -10px 26px -14px var(--nm-light),
+        14px 14px 34px -14px var(--nm-dark-deep),
+        inset 0 1px 0 var(--nm-light-edge);
+}
+
+/* --- Pressed well: a recess cut into the slab --------------------------- */
+.neu-well {
+    border-radius: var(--nm-radius);
+    box-shadow:
+        inset 6px 6px 14px -7px var(--nm-dark-deep),
+        inset -6px -6px 14px -7px var(--nm-light),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* --- Raised control: buttons, chips, pills ------------------------------
+   Hover lifts it a little further; :active sinks it back into the surface.
+   That press is the signature neumorphic gesture. */
+.neu-raise {
+    border-radius: var(--nm-radius);
+    box-shadow:
+        -5px -5px 14px -8px var(--nm-light),
+        7px 7px 18px -8px var(--nm-dark),
+        inset 0 1px 0 var(--nm-light-edge);
+    transition:
+        box-shadow var(--nm-press-ms) var(--nm-ease),
+        transform var(--nm-press-ms) var(--nm-ease),
+        background-color .15s ease,
+        border-color .15s ease,
+        color .15s ease;
+}
+.neu-raise:hover {
+    box-shadow:
+        -6px -6px 16px -8px var(--nm-light),
+        9px 9px 22px -8px var(--nm-dark-deep),
+        inset 0 1px 0 var(--nm-light-edge);
+}
+.neu-raise:active,
+.neu-raise.is-pressed {
+    box-shadow:
+        inset 5px 5px 12px -6px var(--nm-dark-deep),
+        inset -5px -5px 12px -6px var(--nm-light);
+    transform: translateY(1px);
+}
+
+/* --- Medallion: raised circular emblem (college seals, avatars) --------- */
+.neu-medallion {
+    border-radius: 9999px;
+    box-shadow:
+        -4px -4px 10px -6px var(--nm-light),
+        5px 5px 12px -6px var(--nm-dark),
+        inset 0 1px 0 var(--nm-light-edge);
+}
+
+/* --- Groove line: a recessed divider inside a slab ---------------------- */
+.neu-seam-top { position: relative; }
+.neu-seam-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
+/* Pointer affordance: these are anchors/buttons restyled above. */
+.lg-sidebar nav a,
+.neu-raise,
+.neu-raise-light { cursor: pointer; }
+
+/* --- Inputs become wells pressed into the panel -------------------------
+   The deepest neumorphic cue on a form: the field looks carved out of the
+   glass rather than painted on it. */
+.lg-input.neu-well {
+    background: rgba(3, 24, 14, 0.28) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow:
+        inset 6px 6px 14px -7px var(--nm-dark-deep),
+        inset -6px -6px 14px -7px var(--nm-light),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.lg-input.neu-well:hover { border-color: rgba(255, 255, 255, 0.34) !important; }
+/* Focus keeps the accent ring so keyboard users still see the caret target. */
+.lg-input.neu-well:focus {
+    background: rgba(3, 24, 14, 0.34) !important;
+    border-color: var(--lg-accent) !important;
+    box-shadow:
+        inset 6px 6px 14px -7px var(--nm-dark-deep),
+        inset -6px -6px 14px -7px var(--nm-light),
+        0 0 0 3px rgba(143, 227, 180, 0.30);
+}
+
+/* Same treatment for the Django-rendered widgets in accounts/forms.py.
+   Targeted by type rather than class so the registration form picks this up
+   without editing forms.py or the template. */
+.lg-form input[type=text],
+.lg-form input[type=password],
+.lg-form input[type=tel],
+.lg-form input[type=email],
+.lg-form select {
+    background: rgba(3, 24, 14, 0.28) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    border-radius: var(--nm-radius) !important;
+    box-shadow:
+        inset 6px 6px 14px -7px var(--nm-dark-deep),
+        inset -6px -6px 14px -7px var(--nm-light),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.lg-form input:hover,
+.lg-form select:hover { border-color: rgba(255, 255, 255, 0.34) !important; }
+.lg-form input:focus,
+.lg-form select:focus {
+    background: rgba(3, 24, 14, 0.34) !important;
+    border-color: var(--lg-accent) !important;
+    box-shadow:
+        inset 6px 6px 14px -7px var(--nm-dark-deep),
+        inset -6px -6px 14px -7px var(--nm-light),
+        0 0 0 3px rgba(143, 227, 180, 0.30) !important;
+}
+
+/* --- Numbered steps on the register page -------------------------------- */
+.neu-steps {
+    border-top-color: transparent !important;
+    border-radius: var(--nm-radius);
+    box-shadow:
+        inset 5px 5px 12px -6px var(--nm-dark-deep),
+        inset -5px -5px 12px -6px var(--nm-light);
+}
+.neu-steps > li { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+.neu-steps > li:last-child { border-bottom-color: transparent !important; }
+
+/* --- Sidebar: a slab standing off the canvas, nav rows press into it ---- */
+.lg-sidebar {
+    box-shadow:
+        1px 0 0 rgba(255, 255, 255, 0.06),
+        18px 0 46px -18px var(--nm-dark-deep),
+        inset -1px 0 0 var(--nm-light-edge);
+}
+.lg-sidebar nav a {
+    border-radius: var(--nm-radius-sm);
+    box-shadow: none;
+    transition:
+        box-shadow .18s var(--nm-ease),
+        transform .18s var(--nm-ease),
+        background-color .18s ease,
+        color .18s ease;
+}
+.lg-sidebar nav a:hover {
+    box-shadow:
+        -4px -4px 12px -7px var(--nm-light),
+        5px 5px 14px -7px var(--nm-dark),
+        inset 0 1px 0 var(--nm-light-edge);
+}
+.lg-sidebar nav a:active { transform: translateY(1px); }
+/* The active page keeps the mint-lit pill defined with the sidebar palette
+   above; a pressed well there fought with that tint and read as muddy.
+   Only the hover lift and the press gesture are handled here. */
+.lg-sidebar div.border-t .bg-white {
+    box-shadow:
+        -4px -4px 12px -7px var(--nm-light),
+        6px 6px 16px -7px var(--nm-dark),
+        inset 0 1px 0 var(--nm-light-edge);
+}
+
+/* --- Light-surface variant: header controls on the paper canvas ---------
+   Same dual-shadow geometry, inverted ramp for a light background. */
+.neu-raise-light {
+    border-radius: var(--nm-radius-sm);
+    box-shadow:
+        -4px -4px 10px -6px var(--nm-l-light),
+        5px 5px 12px -6px var(--nm-l-dark),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition:
+        box-shadow var(--nm-press-ms) var(--nm-ease),
+        transform var(--nm-press-ms) var(--nm-ease),
+        background-color .15s ease,
+        border-color .15s ease,
+        color .15s ease;
+}
+.neu-raise-light:hover {
+    box-shadow:
+        -5px -5px 12px -6px var(--nm-l-light),
+        6px 6px 15px -6px var(--nm-l-dark),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.neu-raise-light:active {
+    box-shadow:
+        inset 4px 4px 10px -5px rgba(21, 37, 27, 0.16),
+        inset -4px -4px 10px -5px rgba(255, 255, 255, 0.95);
+    transform: translateY(1px);
+}
+
+/* Neumorphic depth is pure box-shadow, so it survives both fallbacks below;
+   only the translucency they replace needs handling. */
+@media (prefers-reduced-transparency: reduce) {
+    .lg-input.neu-well,
+    .lg-form input[type=text],
+    .lg-form input[type=password],
+    .lg-form input[type=tel],
+    .lg-form input[type=email],
+    .lg-form select {
+        background: rgba(11, 58, 32, 0.92) !important;
+    }
+}
+
+/* No press animation: keep the static depth, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+    .neu-raise,
+    .neu-raise-light,
+    .lg-sidebar nav a {
+        transition:
+            box-shadow .01ms linear,
+            background-color .15s ease,
+            border-color .15s ease,
+            color .15s ease;
+    }
+    .neu-raise:active,
+    .neu-raise-light:active,
+    .lg-sidebar nav a:active { transform: none; }
+}

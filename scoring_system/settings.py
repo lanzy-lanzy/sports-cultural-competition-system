@@ -13,8 +13,14 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load local .env before any os.environ lookups below. Real environment
+# variables win, so deployment config is never overridden by the file.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -94,8 +100,8 @@ WSGI_APPLICATION = 'scoring_system.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-# Default backend is the local XAMPP MySQL/MariaDB server. Set DB_ENGINE=sqlite
-# to fall back to the previous db.sqlite3 file.
+# The active backend is picked by DB_ENGINE in .env. Leave it unset to fall
+# back to the local XAMPP MySQL/MariaDB server.
 
 DB_ENGINE = os.environ.get('DB_ENGINE', 'mysql').lower()
 
