@@ -517,6 +517,143 @@ body.app-canvas {
         inset 0 1px 0 var(--nm-light-edge);
 }
 
+/* --- Light-surface card system (dashboard panels) -----------------------
+   Same dual-shadow geometry as .neu-raise-light, sized for panels instead of
+   controls. Cards are raised off the paper canvas while the icon chips inside
+   them are pressed back in - that extrude/inset pairing is what sells the
+   style. Applied via .app-card rather than restyling utility classes so it
+   never leaks into unrelated markup. */
+.app-card {
+    --nm-card-radius: 0.875rem;
+    position: relative;
+    border-radius: var(--nm-card-radius);
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
+    border: 1px solid rgba(21, 37, 27, 0.07);
+    box-shadow:
+        -3px -3px 8px -4px rgba(255, 255, 255, 0.95),
+        0 10px 24px -14px rgba(21, 37, 27, 0.22),
+        0 2px 4px -2px rgba(21, 37, 27, 0.05);
+    transition:
+        box-shadow .22s var(--nm-ease),
+        border-color .18s ease;
+}
+
+/* Interactive cards lift further on hover. Shadow only - a transform here
+   would nudge the grid and read as jitter rather than depth. */
+.app-card--link { cursor: pointer; }
+.app-card--link:hover {
+    border-color: rgba(17, 107, 59, 0.30);
+    box-shadow:
+        -3px -3px 8px -4px rgba(255, 255, 255, 0.95),
+        0 18px 34px -16px rgba(17, 107, 59, 0.26),
+        0 3px 6px -3px rgba(21, 37, 27, 0.06);
+}
+
+/* The hero carries a mint glow off the top-right corner so it reads as the
+   page's anchor instead of one more panel in the grid. */
+.app-card--hero {
+    background:
+        radial-gradient(120% 150% at 100% 0%, rgba(167, 243, 208, 0.30) 0%, rgba(167, 243, 208, 0.07) 44%, transparent 72%),
+        linear-gradient(135deg, #ffffff 0%, #f4f9f5 100%);
+}
+
+/* Icon chips sit pressed into the card they belong to. */
+.app-chip {
+    border-radius: 0.75rem;
+    background: linear-gradient(145deg, rgba(234, 242, 235, 0.95), rgba(214, 233, 220, 0.95));
+    color: #0c5330;
+    box-shadow:
+        inset 2px 2px 5px -2px rgba(21, 37, 27, 0.16),
+        inset -2px -2px 5px -2px rgba(255, 255, 255, 0.95);
+}
+
+/* A neutral sibling of .app-chip for icons that should not carry the brand
+   accent, so a grid of tiles does not read as one undifferentiated green. */
+.app-chip--neutral {
+    background: linear-gradient(145deg, rgba(241, 245, 242, 0.95), rgba(226, 232, 229, 0.95));
+    color: #475569;
+}
+
+/* Inner list rows inside a card: shallow raised strips that read as a stack
+   of surfaces rather than a flat list on a white sheet. */
+.app-row {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(21, 37, 27, 0.06);
+    background: linear-gradient(180deg, #fafcfa 0%, #f4f8f4 100%);
+    box-shadow: 0 2px 6px -4px rgba(21, 37, 27, 0.16);
+    transition:
+        border-color .18s ease,
+        box-shadow .18s var(--nm-ease),
+        background-color .18s ease;
+}
+.app-row:hover {
+    border-color: rgba(17, 107, 59, 0.26);
+    box-shadow: 0 8px 16px -10px rgba(17, 107, 59, 0.30);
+}
+
+/* Quick-action tiles. The first one is the primary action and stays solid
+   pine; the rest are raised surfaces so the set reads as a family. */
+.app-tile {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(21, 37, 27, 0.07);
+    background: linear-gradient(180deg, #ffffff 0%, #fafcfa 100%);
+    box-shadow:
+        -2px -2px 6px -3px rgba(255, 255, 255, 0.95),
+        0 8px 18px -12px rgba(21, 37, 27, 0.24);
+    transition:
+        box-shadow .2s var(--nm-ease),
+        border-color .18s ease,
+        transform .2s var(--nm-ease);
+}
+.app-tile:hover {
+    border-color: rgba(17, 107, 59, 0.28);
+    box-shadow:
+        -2px -2px 6px -3px rgba(255, 255, 255, 0.95),
+        0 14px 26px -14px rgba(17, 107, 59, 0.30);
+}
+.app-tile-primary {
+    border-radius: 0.875rem;
+    background: linear-gradient(160deg, #14804A 0%, #0C5330 60%, #0A4526 100%);
+    box-shadow:
+        -3px -3px 9px -5px rgba(255, 255, 255, 0.35),
+        0 14px 26px -14px rgba(12, 83, 48, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition:
+        box-shadow .2s var(--nm-ease),
+        transform .2s var(--nm-ease);
+}
+.app-tile-primary:hover {
+    box-shadow:
+        -3px -3px 9px -5px rgba(255, 255, 255, 0.35),
+        0 18px 32px -16px rgba(12, 83, 48, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Primary action: raised, sinks on press. */
+.app-btn-primary {
+    border-radius: 0.75rem;
+    background: linear-gradient(180deg, #14804A 0%, #0C5330 100%);
+    box-shadow:
+        -4px -4px 10px -6px rgba(255, 255, 255, 0.55),
+        0 10px 20px -12px rgba(12, 83, 48, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transition:
+        box-shadow var(--nm-press-ms) var(--nm-ease),
+        transform var(--nm-press-ms) var(--nm-ease);
+}
+.app-btn-primary:hover {
+    box-shadow:
+        -4px -4px 10px -6px rgba(255, 255, 255, 0.55),
+        0 14px 26px -12px rgba(12, 83, 48, 0.80),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.app-btn-primary:active {
+    box-shadow:
+        inset 4px 4px 10px -5px rgba(0, 40, 20, 0.50),
+        inset -4px -4px 10px -5px rgba(255, 255, 255, 0.18);
+    transform: translateY(1px);
+}
+
 /* --- Light-surface variant: header controls on the paper canvas ---------
    Same dual-shadow geometry, inverted ramp for a light background. */
 .neu-raise-light {
