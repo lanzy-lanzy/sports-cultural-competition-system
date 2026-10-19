@@ -38,7 +38,7 @@
 <body class="bg-white font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
     <div class="flex min-h-screen flex-col">
 
-        <div class="bg-pine-dark px-6 py-2">
+        <div class="bg-[#082015] px-6 py-2">
             <div class="mx-auto flex max-w-6xl items-center justify-between text-[11px] font-medium tracking-wide text-white/70">
                 <span>J.H. Cerilles State College</span>
                 <span class="flex items-center gap-2 uppercase tracking-[0.18em]">
@@ -52,12 +52,12 @@
         <header class="lg-glass-light sticky top-0 z-30">
             <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6" aria-label="Main navigation">
                 <a href="{% url 'landing_page' %}" class="flex min-w-0 items-center gap-3" aria-label="Competrack home">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
+                    <span class="neu-medallion flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
                         <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
                     </span>
                     <span class="min-w-0 leading-tight">
                         <span class="block font-display text-base font-semibold text-ink">Competrack</span>
-                        <span class="block text-[10px] font-medium uppercase tracking-[0.22em] text-slate-400">Competition Management System</span>
+                        <span class="block text-[10px] font-medium uppercase tracking-[0.22em] text-slate-500">Competition Management System</span>
                     </span>
                 </a>
 
@@ -67,7 +67,7 @@
                 </div>
 
                 <div class="flex shrink-0 items-center gap-3">
-                    <a href="{% url 'login' %}" class="inline-flex items-center rounded-md bg-pine px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-pine-deep focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">Sign in</a>
+                    <a href="{% url 'login' %}" class="app-btn-primary inline-flex items-center rounded-md px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-pine/40 focus:ring-offset-2">Sign in</a>
                 </div>
             </nav>
         </header>
@@ -75,10 +75,10 @@
         <main class="flex-1">
             <section class="relative isolate overflow-hidden bg-pine-dark">
                 <img src="{% static 'images/jh_bg.png' %}" alt="" fetchpriority="high" class="absolute inset-0 -z-20 h-full w-full object-cover object-center">
-                <div class="absolute inset-0 -z-10 bg-gradient-to-b from-pine-dark/90 via-pine-dark/70 to-pine-dark/95" aria-hidden="true"></div>
+                <div class="hero-scrim absolute inset-0 -z-10" aria-hidden="true"></div>
 
                 <div class="relative mx-auto flex min-h-[32rem] max-w-3xl flex-col items-center justify-center px-6 py-20 text-center sm:min-h-[38rem] sm:py-24 lg:min-h-[42rem]">
-                    <span class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-white/30 sm:h-28 sm:w-28">
+                    <span class="neu-medallion flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-white/30 sm:h-28 sm:w-28">
                         <img src="{% static 'images/it_logo.jpg' %}" alt="School of Computing Studies seal" class="h-full w-full object-cover">
                     </span>
                     <p class="mt-8 text-[11px] font-semibold uppercase tracking-[0.24em] text-moss">Official competition platform</p>
@@ -89,7 +89,7 @@
                     <p class="mt-6 max-w-xl text-base leading-8 text-white/85 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
 
                     <div class="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
+                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
                             Sign in to Competrack
                         </a>
                         <a href="#platform" class="lg-btn-glass inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
@@ -97,17 +97,17 @@
                         </a>
                     </div>
 
-                    <dl class="lg-glass mt-14 grid w-full max-w-2xl grid-cols-1 divide-y divide-white/15 rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <dl class="lg-glass neu-slab mt-14 grid w-full max-w-2xl grid-cols-1 divide-y divide-white/15 rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                         <div class="px-4 py-4 text-center">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Integrity</dt>
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/70">Integrity</dt>
                             <dd class="mt-1.5 text-sm font-semibold text-white">Transparent scoring</dd>
                         </div>
                         <div class="px-4 py-4 text-center">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Accuracy</dt>
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/70">Accuracy</dt>
                             <dd class="mt-1.5 text-sm font-semibold text-white">Live standings</dd>
                         </div>
                         <div class="px-4 py-4 text-center">
-                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">Reports</dt>
+                            <dt class="text-[10px] font-medium uppercase tracking-[0.18em] text-white/70">Reports</dt>
                             <dd class="mt-1.5 text-sm font-semibold text-white">Print-ready results</dd>
                         </div>
                     </dl>
@@ -122,51 +122,51 @@
                         <p class="mt-5 leading-7 text-slate-600">From setup to the final announcement, each step stays organized, accurate, and easy to follow.</p>
                     </div>
 
-                    <div class="mt-14 grid gap-px overflow-hidden rounded-md border border-slate-200 bg-slate-200 md:grid-cols-3">
-                        <article class="bg-white p-8">
-                            <p class="font-display text-sm font-semibold text-pine tabular-nums">01</p>
-                            <h3 class="mt-4 text-lg font-semibold text-ink">For administrators</h3>
+                    <div class="mt-14 grid gap-5 md:grid-cols-3">
+                        <article class="app-card p-8">
+                            <span class="app-chip flex h-10 w-10 items-center justify-center font-display text-sm font-semibold tabular-nums">01</span>
+                            <h3 class="mt-5 text-lg font-semibold text-ink">For administrators</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Create competitions, organize rounds, assign judges, and manage participants from one clear workspace.</p>
                         </article>
-                        <article class="bg-white p-8">
-                            <p class="font-display text-sm font-semibold text-pine tabular-nums">02</p>
-                            <h3 class="mt-4 text-lg font-semibold text-ink">For judges</h3>
+                        <article class="app-card p-8">
+                            <span class="app-chip flex h-10 w-10 items-center justify-center font-display text-sm font-semibold tabular-nums">02</span>
+                            <h3 class="mt-5 text-lg font-semibold text-ink">For judges</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Score confidently with guided criteria, automatic totals, and a focused panel built for fast decisions.</p>
                         </article>
-                        <article class="bg-white p-8">
-                            <p class="font-display text-sm font-semibold text-pine tabular-nums">03</p>
-                            <h3 class="mt-4 text-lg font-semibold text-ink">For results teams</h3>
+                        <article class="app-card p-8">
+                            <span class="app-chip flex h-10 w-10 items-center justify-center font-display text-sm font-semibold tabular-nums">03</span>
+                            <h3 class="mt-5 text-lg font-semibold text-ink">For results teams</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Review live rankings, switch between rounds, and produce polished official reports ready to print.</p>
                         </article>
                     </div>
                 </div>
             </section>
 
-            <section id="workflow" class="border-t border-slate-200 bg-white">
+            <section id="workflow" class="border-t border-slate-200 bg-moss">
                 <div class="mx-auto max-w-6xl px-6 py-20 sm:py-24">
                     <div class="max-w-2xl">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-pine">How it works</p>
                         <h2 class="mt-5 font-display text-3xl font-semibold tracking-[-0.01em] text-ink sm:text-4xl">From first round to final result.</h2>
                     </div>
 
-                    <ol class="mt-14 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-                        <li class="relative border-t border-slate-200 pt-6">
-                            <span class="absolute -top-1 left-6 flex h-8 w-8 items-center justify-center rounded-full border border-pine bg-white font-display text-xs font-semibold text-pine tabular-nums">01</span>
+                    <ol class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <li class="app-card p-6">
+                            <span class="neu-raise-light flex h-9 w-9 items-center justify-center rounded-full border border-pine/40 bg-white font-display text-xs font-semibold text-pine tabular-nums">01</span>
                             <h3 class="mt-4 text-base font-semibold text-ink">Set up competitions</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Build events, define scoring criteria, and organize rounds and venues.</p>
                         </li>
-                        <li class="relative border-t border-slate-200 pt-6">
-                            <span class="absolute -top-1 left-6 flex h-8 w-8 items-center justify-center rounded-full border border-pine bg-white font-display text-xs font-semibold text-pine tabular-nums">02</span>
+                        <li class="app-card p-6">
+                            <span class="neu-raise-light flex h-9 w-9 items-center justify-center rounded-full border border-pine/40 bg-white font-display text-xs font-semibold text-pine tabular-nums">02</span>
                             <h3 class="mt-4 text-base font-semibold text-ink">Assign judges &amp; entries</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Invite judging panels and confirm participant entries against eligibility rules.</p>
                         </li>
-                        <li class="relative border-t border-slate-200 pt-6">
-                            <span class="absolute -top-1 left-6 flex h-8 w-8 items-center justify-center rounded-full border border-pine bg-white font-display text-xs font-semibold text-pine tabular-nums">03</span>
+                        <li class="app-card p-6">
+                            <span class="neu-raise-light flex h-9 w-9 items-center justify-center rounded-full border border-pine/40 bg-white font-display text-xs font-semibold text-pine tabular-nums">03</span>
                             <h3 class="mt-4 text-base font-semibold text-ink">Score in real time</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Judges submit guided scores while totals and rankings update automatically.</p>
                         </li>
-                        <li class="relative border-t border-slate-200 pt-6">
-                            <span class="absolute -top-1 left-6 flex h-8 w-8 items-center justify-center rounded-full border border-pine bg-white font-display text-xs font-semibold text-pine tabular-nums">04</span>
+                        <li class="app-card p-6">
+                            <span class="neu-raise-light flex h-9 w-9 items-center justify-center rounded-full border border-pine/40 bg-white font-display text-xs font-semibold text-pine tabular-nums">04</span>
                             <h3 class="mt-4 text-base font-semibold text-ink">Publish official results</h3>
                             <p class="mt-2 text-sm leading-6 text-slate-500">Reveal standings, certify award lists, and issue print-ready reports.</p>
                         </li>
@@ -174,35 +174,35 @@
                 </div>
             </section>
 
-            <section class="border-t border-slate-200 bg-pine-dark px-6 py-20 sm:py-24">
+            <section class="surface-deep border-t border-white/10 px-6 py-20 sm:py-24">
                 <div class="mx-auto flex max-w-4xl flex-col items-center gap-10 text-center lg:flex-row lg:justify-between lg:text-left">
                     <div class="max-w-xl">
-                        <div class="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-white p-1 lg:mx-0">
+                        <div class="neu-medallion mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-white p-1 lg:mx-0">
                             <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
                         </div>
                         <h2 class="font-display text-3xl font-semibold tracking-[-0.01em] text-white sm:text-4xl">Run the next competition with confidence.</h2>
-                        <p class="mt-4 leading-7 text-white/70">Sign in to manage an event, or register for a judge account to start scoring.</p>
+                        <p class="mt-4 leading-7 text-white/75">Sign in to manage an event, or register for a judge account to start scoring.</p>
                     </div>
                     <div class="flex w-full max-w-sm flex-col gap-3 sm:flex-row lg:w-auto lg:max-w-none">
-                        <a href="{% url 'login' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss">Sign in to Competrack</a>
-                        <a href="{% url 'register' %}" class="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">Register as judge</a>
+                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center whitespace-nowrap rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss">Sign in to Competrack</a>
+                        <a href="{% url 'register' %}" class="lg-btn-glass inline-flex items-center justify-center whitespace-nowrap rounded-md border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">Register as judge</a>
                     </div>
                 </div>
             </section>
         </main>
 
-        <footer class="border-t border-slate-200 bg-white">
+        <footer class="border-t border-slate-200 bg-paper">
             <div class="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
+                    <span class="neu-medallion flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-1">
                         <img src="{% static 'images/jhcsc_logo.png' %}" alt="" class="h-full w-full rounded-full object-contain">
                     </span>
                     <span class="leading-tight">
                         <span class="block font-display text-sm font-semibold text-ink">Competrack &middot; J.H. Cerilles State College</span>
-                        <span class="block text-xs text-slate-400">Competition Management System &middot; Dumingag Campus</span>
+                        <span class="block text-xs text-slate-500">Competition Management System &middot; Dumingag Campus</span>
                     </span>
                 </div>
-                <p class="text-xs text-slate-400">&copy; {% now "Y" %} Information Technology Department</p>
+                <p class="text-xs text-slate-500">&copy; {% now "Y" %} Information Technology Department</p>
             </div>
         </footer>
     </div>

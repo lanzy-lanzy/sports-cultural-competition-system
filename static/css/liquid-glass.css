@@ -15,6 +15,33 @@
     --lg-border: rgba(255, 255, 255, 0.16);      /* outer border                */
     --lg-shadow: 0 24px 60px -20px rgba(3, 24, 14, 0.65);
     --lg-accent: #8FE3B4;                         /* light green for links/labels on dark */
+
+    /* Deep emerald ramp, shared by the app sidebar and the landing page's
+       dark bands so both read as the same material. */
+    --nm-deep-ramp: linear-gradient(180deg,
+        rgba(17, 74, 43, 0.96) 0%,
+        rgba(11, 52, 31, 0.965) 34%,
+        rgba(7, 34, 20, 0.97) 68%,
+        rgba(4, 20, 12, 0.975) 100%);
+}
+
+/* A full-bleed deep emerald band for the landing page's dark sections. */
+.surface-deep {
+    background:
+        radial-gradient(140% 70% at 4% -10%, rgba(167, 243, 208, 0.10) 0%, rgba(167, 243, 208, 0.03) 38%, transparent 68%),
+        var(--nm-deep-ramp);
+}
+
+/* Hero scrim over the campus photo (landing page). Defined here rather than
+   as Tailwind arbitrary values because the CDN's JIT does not reliably
+   compile `from-[#hex]/opacity` combinations - it silently emits no
+   background-image, which leaves the headline sitting on a bare photo.
+   Kept dark enough in the middle band for the body copy to clear 4.5:1. */
+.hero-scrim {
+    background: linear-gradient(180deg,
+        rgba(8, 23, 14, 0.90) 0%,
+        rgba(9, 38, 21, 0.80) 45%,
+        rgba(6, 17, 9, 0.94) 100%);
 }
 
 /* --- Dark frosted panel (cards over the campus photo background) --------- */
@@ -48,13 +75,17 @@
     z-index: 1;
 }
 
-/* --- Light frosted panel (sticky header, accent chips on light bg) ------- */
+/* --- Light frosted panel (sticky header, accent chips on light bg) -------
+   Carries the same soft dual shadow as the cards so the header reads as a
+   raised bar rather than a flat white strip. */
 .lg-glass-light {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(245, 247, 244, 0.76) 100%);
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
-    box-shadow: 0 12px 32px -16px rgba(11, 58, 32, 0.35);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(245, 247, 244, 0.84) 100%);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 12px 32px -16px rgba(11, 58, 32, 0.30),
+        0 1px 0 rgba(21, 37, 27, 0.04);
 }
 
 /* --- Frosted inputs (dark panel) ----------------------------------------- */
