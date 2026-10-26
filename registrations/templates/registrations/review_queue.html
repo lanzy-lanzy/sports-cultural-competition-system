@@ -46,28 +46,29 @@
                     </p>
                 </div>
             </div>
-            <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
-                {% if registration.status == 'APPROVED' %}bg-emerald-100 text-emerald-700
-                {% elif registration.status == 'REJECTED' %}bg-rose-100 text-rose-700
-                {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-100 text-sky-700
-                {% else %}bg-amber-100 text-amber-700{% endif %}">
-                <span class="h-1.5 w-1.5 rounded-full
-                    {% if registration.status == 'APPROVED' %}bg-emerald-500
-                    {% elif registration.status == 'REJECTED' %}bg-rose-500
-                    {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-500
-                    {% else %}bg-amber-500{% endif %}"></span>
-                {{ registration.get_status_display }}
-            </span>
+            <div class="flex shrink-0 items-center gap-2.5">
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset
+                    {% if registration.status == 'APPROVED' %}bg-emerald-50 text-emerald-700 ring-emerald-200/70
+                    {% elif registration.status == 'REJECTED' %}bg-rose-50 text-rose-700 ring-rose-200/70
+                    {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-50 text-sky-700 ring-sky-200/70
+                    {% else %}bg-amber-50 text-amber-700 ring-amber-200/70{% endif %}">
+                    <span class="h-1.5 w-1.5 rounded-full
+                        {% if registration.status == 'APPROVED' %}bg-emerald-500
+                        {% elif registration.status == 'REJECTED' %}bg-rose-500
+                        {% elif registration.status == 'UNDER_REVIEW' %}bg-sky-500
+                        {% else %}bg-amber-500{% endif %}"></span>
+                    {{ registration.get_status_display }}
+                </span>
+                <form method="post" action="{% url 'registration_review' registration.id %}"
+                    onsubmit="return confirm('Delete the registration for {{ registration.contestant_name|stringformat:'r' }}? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="delete" title="Delete registration"
+                        class="group flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-transparent text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-4 w-4 transition-transform group-hover:scale-110"><path fill-rule="evenodd" d="M5 2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2a1 1 0 0 1 0-2h1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1a1 1 0 0 1 0 2Zm3.5 3a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V5ZM10 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5ZM4.5 6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 1 0v-6a.5.5 0 0 0-.5-.5Z" clip-rule="evenodd"/></svg>
+                    </button>
+                </form>
+            </div>
         </div>
-
-        <form method="post" action="{% url 'registration_review' registration.id %}" class="flex items-center justify-end border-b border-slate-100 bg-slate-50/50 px-6 py-2"
-            onsubmit="return confirm('Delete the registration for {{ registration.contestant_name|stringformat:'r' }}? This cannot be undone.');">
-            {% csrf_token %}
-            <button type="submit" name="action" value="delete" class="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M5 2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2a1 1 0 0 1 0-2h1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1a1 1 0 0 1 0 2Zm3.5 3a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V5ZM10 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5ZM4.5 6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 1 0v-6a.5.5 0 0 0-.5-.5Z" clip-rule="evenodd"/></svg>
-                Delete
-            </button>
-        </form>
 
         <div class="px-6 py-4">
             <p class="text-xs text-slate-500">
