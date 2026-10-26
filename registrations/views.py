@@ -13,6 +13,7 @@ from .forms import EventRegistrationForm
 from .models import EventRegistration, RegistrationTemplate
 from .services import (
     approve_registration,
+    delete_registration,
     reject_registration,
     start_review,
     soft_delete_registration_template,
@@ -104,6 +105,18 @@ def registration_review(request, registration_id):
 
     action = request.POST.get('action')
     admin_notes = (request.POST.get('admin_notes') or '').strip()
+
+    if action == 'delete':
+        contestant_name = registration.contestant_name
+        delete_registration(registration)
+        from audit.models import record_action_from_request
+        record_action_from_request(
+            request,
+            'REGISTRATION_DELETED',
+            details=f'Registration deleted from review queue: {contestant_name}',
+        )
+        messages.success(request, f'Registration for {contestant_name} was deleted.')
+        return redirect('registration_review_queue')
 
     if registration.status not in (
         EventRegistration.Status.PENDING,

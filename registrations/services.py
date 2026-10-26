@@ -102,6 +102,18 @@ def reject_registration(registration, reviewer, admin_notes=''):
 
 
 @transaction.atomic
+def delete_registration(registration):
+    """Permanently remove a registration from the review queue.
+
+    Deletes any attached requirements document from storage before removing the
+    record so no orphaned files are left behind.
+    """
+    if registration.requirements_document and registration.requirements_document.name:
+        registration.requirements_document.delete(save=False)
+    registration.delete()
+
+
+@transaction.atomic
 def force_delete_registration_template(template):
     """Permanently delete a registration template and its associated files.
 

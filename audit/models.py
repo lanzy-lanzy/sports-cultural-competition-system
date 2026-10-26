@@ -17,6 +17,7 @@ class AuditLog(models.Model):
         BRACKET_GENERATED = 'BRACKET_GENERATED', 'Bracket generated'
         BRACKET_CLEARED = 'BRACKET_CLEARED', 'Bracket cleared'
         REGISTRATION_REVIEW = 'REGISTRATION_REVIEW', 'Registration reviewed'
+        REGISTRATION_DELETED = 'REGISTRATION_DELETED', 'Registration deleted'
         ELIGIBILITY_REVIEW = 'ELIGIBILITY_REVIEW', 'Eligibility reviewed'
         ANNOUNCEMENT_PUBLISH = 'ANNOUNCEMENT_PUBLISH', 'Announcement published'
         AWARD_CHANGE = 'AWARD_CHANGE', 'Award changed'

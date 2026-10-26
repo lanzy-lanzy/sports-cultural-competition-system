@@ -60,6 +60,15 @@
             </span>
         </div>
 
+        <form method="post" action="{% url 'registration_review' registration.id %}" class="flex items-center justify-end border-b border-slate-100 bg-slate-50/50 px-6 py-2"
+            onsubmit="return confirm('Delete the registration for {{ registration.contestant_name|stringformat:'r' }}? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" name="action" value="delete" class="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M5 2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2a1 1 0 0 1 0-2h1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1a1 1 0 0 1 0 2Zm3.5 3a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V5ZM10 5.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5ZM4.5 6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 1 0v-6a.5.5 0 0 0-.5-.5Z" clip-rule="evenodd"/></svg>
+                Delete
+            </button>
+        </form>
+
         <div class="px-6 py-4">
             <p class="text-xs text-slate-500">
                 Submitted by {{ registration.registrant.get_full_name|default:registration.registrant.username }}

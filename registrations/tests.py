@@ -289,3 +289,49 @@ class RegistrationTest(TestCase):
         self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'review'})
         registration.refresh_from_db()
         self.assertEqual(registration.status, EventRegistration.Status.APPROVED)
+
+    def test_delete_removes_pending_registration_and_audits(self):
+        registration = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+        )
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'delete'})
+        self.assertRedirects(resp, reverse('registration_review_queue'))
+        self.assertFalse(EventRegistration.objects.filter(id=registration.id).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='REGISTRATION_DELETED').exists())
+
+    def test_delete_works_on_finalized_registration(self):
+        # Approved/rejected rows are locked for review actions but can still be removed.
+        registration = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            competition=self.competition,
+            status=EventRegistration.Status.APPROVED,
+        )
+        self.client.force_login(self.admin)
+        self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'delete'})
+        self.assertFalse(EventRegistration.objects.filter(id=registration.id).exists())
+
+    def test_queue_shows_delete_button(self):
+        EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            competition=self.competition,
+        )
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse('registration_review_queue')), 'value="delete"')
+
+    def test_non_management_cannot_delete(self):
+        registration = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            competition=self.competition,
+        )
+        self.client.force_login(self.participant_user)
+        resp = self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'delete'})
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(EventRegistration.objects.filter(id=registration.id).exists())
