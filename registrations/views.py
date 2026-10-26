@@ -10,8 +10,13 @@ from participants.models import Participant
 from teams.models import TeamMembership
 
 from .forms import EventRegistrationForm
-from .models import EventRegistration
-from .services import approve_registration, reject_registration, start_review
+from .models import EventRegistration, RegistrationTemplate
+from .services import (
+    approve_registration,
+    reject_registration,
+    start_review,
+    soft_delete_registration_template,
+)
 
 
 @role_required(UserProfile.Role.PARTICIPANT, UserProfile.Role.TEAM_MANAGER)
@@ -149,3 +154,65 @@ def registration_review(request, registration_id):
         messages.error(request, 'Invalid review action.')
 
     return redirect('registration_review_queue')
+
+
+@management_required
+def registration_templates(request):
+    """List and manage registration templates in the review queue view."""
+    templates = RegistrationTemplate.objects.select_related(
+        'competition', 'sport_event', 'participant', 'team'
+    ).order_by('-created_at')
+
+    # Handle bulk delete actions (soft or force)
+    action = request.POST.get('action')
+    if action == 'template_delete':
+        template_id = request.POST.get('template_id')
+        if template_id:
+            template = get_object_or_404(RegistrationTemplate, id=template_id)
+            soft_delete_registration_template(template)
+            messages.success(request, f'Soft-deleted template: {template.name}')
+        return redirect('registration_templates')
+
+    if action == 'template_force_delete':
+        template_id = request.POST.get('template_id')
+        if template_id:
+            template = get_object_or_404(RegistrationTemplate, id=template_id)
+            template.delete()
+            messages.success(request, f'Force-deleted template: {template.name}')
+        return redirect('registration_templates')
+
+    return render(
+        request,
+        'registrations/templates_admin.html',
+        {
+            'templates': templates,
+            'status_counts': dict(templates.values_list('status').annotate(total=Count('id'))),
+        },
+    )
+
+
+@management_required
+def registration_template_action(request):
+    """Handle single template delete/force-delete via POST (AJAX or form)."""
+    if request.method != 'POST':
+        return redirect('registration_templates')
+
+    action = request.POST.get('action')
+    template_id = request.POST.get('template_id')
+
+    if not template_id:
+        messages.error(request, 'No template selected.')
+        return redirect('registration_templates')
+
+    template = get_object_or_404(RegistrationTemplate, id=template_id)
+
+    if action == 'template_delete':
+        soft_delete_registration_template(template)
+        messages.success(request, f'Soft-deleted template: {template.name}')
+    elif action == 'template_force_delete':
+        template.delete()
+        messages.success(request, f'Force-deleted template: {template.name}')
+    else:
+        messages.error(request, 'Invalid action.')
+
+    return redirect('registration_templates')

@@ -99,3 +99,39 @@ def reject_registration(registration, reviewer, admin_notes=''):
              + (f' Reason: {admin_notes}' if admin_notes else ''),
         link='',
     )
+
+
+@transaction.atomic
+def force_delete_registration_template(template):
+    """Permanently delete a registration template and its associated files.
+
+    Bypasses any protection that would otherwise prevent deletion, satisfying
+    the 'force delete' requirement. Audits the action immediately.
+    """
+    from audit.models import record_action
+
+    template_id = template.id
+
+    # Delete the requirements document file from storage
+    if template.requirements_document and template.requirements_document.name:
+        template.requirements_document.delete(save=False)
+
+    # Permanent delete of the template record using parent's delete() directly
+    # to bypass the overridden delete() in RegistrationTemplate (avoids recursion)
+    RegistrationTemplate = template.__class__
+    super(RegistrationTemplate, template).delete()
+
+    record_action(
+        template.created_by if hasattr(template, 'created_by') else None,
+        'TEMPLATE_DELETED',
+        target=template,
+        details=f'Force deleted registration template: {template.name}',
+    )
+
+
+@transaction.atomic
+def soft_delete_registration_template(template):
+    """Mark a template as archived without removing the record (soft delete)."""
+    from .models import RegistrationTemplate
+    template.status = RegistrationTemplate.Status.ARCHIVED
+    template.save(update_fields=['status'])

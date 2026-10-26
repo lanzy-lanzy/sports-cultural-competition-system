@@ -101,4 +101,91 @@ class EventRegistration(models.Model):
             return f'{self.sport_event.name} (sport)'
         if self.competition_id:
             return self.competition.name
+
+class RegistrationTemplate(models.Model):
+    """A reusable, pre-configured registration setup that organizers can reuse
+    when submitting registrations, and approve/import from the review queue."""
+
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        ACTIVE = 'ACTIVE', 'Active'
+        ARCHIVED = 'ARCHIVED', 'Archived'
+
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    competition = models.ForeignKey(
+        Competition,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+    )
+    sport_event = models.ForeignKey(
+        SportsEvent,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+    )
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+    )
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+    )
+    requirements_document = models.FileField(
+        upload_to='registration_templates/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text='Optional requirements such as waiver forms or clearances.',
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'registration templates'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def contestant_name(self):
+        if self.team_id:
+            return self.team.name
+        if self.participant_id:
+            return self.participant.name
         return '—'
+
+    @property
+    def target_name(self):
+        if self.sport_event_id:
+            return f'{self.sport_event.name} (sport)'
+        if self.competition_id:
+            return self.competition.name
+        return '—'
+
+    def delete(self, *args, force_delete=False, **kwargs):
+        """
+        Delete a registration template.
+
+        If force_delete=True, permanently removes the template and its files
+        (bypassing any soft-delete logic). Otherwise, marks as archived.
+        """
+        if force_delete:
+            from registrations.services import force_delete_registration_template
+            force_delete_registration_template(self)
+        else:
+            from registrations.services import soft_delete_registration_template
+            soft_delete_registration_template(self)
+        # Use the parent class's delete method directly to avoid recursion
+        models.Model.delete(self, *args, **kwargs)

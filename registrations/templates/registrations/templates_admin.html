@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Registration Templates - Competrack{% endblock %}
+
+{% block header_title %}Registration Templates{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+    <div>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">Registration Templates</h1>
+        <p class="mt-1 text-sm text-slate-500">
+            Manage reusable registration templates. Use <span class="font-semibold text-slate-700">Delete</span> to archive (soft delete), or <span class="font-semibold text-red-600">Force Delete</span> to permanently remove a template and its files.
+        </p>
+    </div>
+</div>
+
+<div class="overflow-hidden rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+    <div class="p-6">
+        {% with pending_count=status_counts.get_changed|default:0 %}
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <div class="flex-1">
+                <h2 class="font-display text-lg font-semibold text-slate-900">Templates</h2>
+                <p class="text-xs text-slate-500">
+                    {{ templates.count }} template{{ templates.count|pluralize }}
+                    {% if pending_count %} · {{ pending_count }} pending approval{{ pending_count|pluralize:"s" }}{% endif %}
+                </p>
+            </div>
+            <div class="flex shrink-0 gap-2">
+                <form method="post" action="{% url 'registration_templates' %}" class="flex gap-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="template_force_delete">
+                    <button type="submit" class="cursor-pointer rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700" onclick="return confirm('PERMANENTLY delete selected templates? This cannot be undone.');">
+                        Force Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endwith %}
+
+        <div class="mt-4 space-y-3">
+            {% for template in templates %}
+            <div class="rounded-md border border-slate-200/80 bg-white/70 p-4 shadow-sm">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-md bg-teal-500 text-white font-display text-sm font-bold">
+                                {{ template.name|make_list|first|upper }}
+                            </span>
+                            <div>
+                                <h3 class="font-display text-lg font-semibold text-slate-900">{{ template.name }}</h3>
+                                <p class="text-xs text-slate-500">
+                                    {{ template.target_name }}
+                                    {% if template.team %}&middot; Team{% endif%}
+                                    {% if template.participant %}&middot; Participant{% endif %}
+                                    &middot; {{ template.created_at|date:"M d, Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-600">{{ template.description }}</p>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Status: <span class="font-medium
+                                {% if template.status == 'ACTIVE' %}text-emerald-600
+                                {% elif template.status == 'ARCHIVED' %}text-slate-400
+                                {% else %}text-amber-600{% endif %}">
+                                {{ template.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 gap-2">
+                        <form method="post" action="{% url 'registration_templates' %}" class="flex gap-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="template_delete">
+                            <input type="hidden" name="template_id" value="{{ template.id }}">
+                            <button type="submit" class="cursor-pointer rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                                Delete (Archive)
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'registration_templates' %}" class="flex gap-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="template_force_delete">
+                            <input type="hidden" name="template_id" value="{{ template.id }}">
+                            <button type="submit" class="cursor-pointer rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100" onclick="return confirm('PERMANENTLY delete this template and its files? This cannot be undone.');">
+                                Force Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-12 text-center">
+                <h3 class="font-display text-lg font-semibold text-slate-900">No templates</h3>
+                <p class="mt-2 text-sm text-slate-500">Registration templates appear here for review and management.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
