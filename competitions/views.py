@@ -24,17 +24,32 @@ def _parse_decimal(raw, default=None):
     return value
 
 
-def _competition_extras(post):
-    """Fields shared by create/edit competition forms for kinds and medals."""
-    kind = post.get('kind')
+def _validate_category_fields(post):
+    """Sports and Socio Cultural competitions must be declared explicitly so
+    the match board, cultural hub and reports classify them correctly.
+    Returns (kind, cultural_event_type, errors); nothing is saved when the
+    selection is invalid."""
+    kind = (post.get('kind') or '').strip()
+    event_type = (post.get('cultural_event_type') or '').strip()
+    errors = []
+
     if kind not in Competition.Kind.values:
-        kind = Competition.Kind.MIXED
-    event_type = post.get('cultural_event_type')
-    if event_type not in Competition.CulturalEventType.values:
+        errors.append('Select the competition category: Sports or Socio Cultural.')
+    elif kind == Competition.Kind.CULTURAL:
+        if event_type not in Competition.CulturalEventType.values:
+            errors.append(
+                'Select a Socio Cultural sub-type (for example dancing, singing, or literary arts).'
+            )
+    else:
+        # Sports (and legacy Mixed) competitions never carry a cultural sub-type.
         event_type = ''
+
+    return kind, event_type, errors
+
+
+def _medal_points(post):
+    """Fields shared by create/edit competition forms for the medal tally."""
     return {
-        'kind': kind,
-        'cultural_event_type': event_type,
         'gold_points': _parse_decimal(post.get('gold_points'), Decimal('10')),
         'silver_points': _parse_decimal(post.get('silver_points'), Decimal('5')),
         'bronze_points': _parse_decimal(post.get('bronze_points'), Decimal('3')),
@@ -51,6 +66,62 @@ def competition_list(request):
         competitions = competitions.filter(status__in=['ACTIVE', 'COMPLETED'])
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
     return render(request, 'competitions/competition_list.html', {'page_obj': page_obj})
+
+
+@management_required
+def socio_cultural_management(request):
+    """Home for staff to run socio-cultural competitions (dance, singing,
+    pageants, quiz bees and the like) apart from sports brackets. Only
+    competitions flagged as cultural appear here; sports stay in the Sports
+    hub and match board."""
+    competitions = (
+        Competition.objects
+        .filter(kind=Competition.Kind.CULTURAL)
+        .annotate(
+            rounds_count=Count('rounds', distinct=True),
+            criteria_count=Count('rounds__criteria', distinct=True),
+            participant_count=Count('participants', distinct=True),
+        )
+        .order_by('-start_date', '-id')
+    )
+
+    # Event-type chips act as a quick filter without leaving the page.
+    selected_type = request.GET.get('type', '')
+    if selected_type not in Competition.CulturalEventType.values:
+        selected_type = ''
+    if selected_type:
+        competitions = competitions.filter(cultural_event_type=selected_type)
+
+    type_counts = [
+        {
+            'value': row['cultural_event_type'],
+            'label': dict(Competition.CulturalEventType.choices)[row['cultural_event_type']],
+            'count': row['n'],
+        }
+        for row in (
+            Competition.objects
+            .filter(kind=Competition.Kind.CULTURAL)
+            .exclude(cultural_event_type='')
+            .values('cultural_event_type')
+            .annotate(n=Count('id'))
+            .order_by('cultural_event_type')
+        )
+    ]
+
+    rows = list(competitions)
+    stats = {
+        'competitions': len(rows),
+        'active': sum(1 for c in rows if c.status == 'ACTIVE'),
+        'completed': sum(1 for c in rows if c.status == 'COMPLETED'),
+        'rounds': sum(c.rounds_count for c in rows),
+        'participants': sum(c.participant_count for c in rows),
+    }
+    return render(request, 'competitions/socio_cultural_management.html', {
+        'cultural_competitions': rows,
+        'stats': stats,
+        'type_counts': type_counts,
+        'selected_type': selected_type,
+    })
 
 
 @login_required
@@ -77,6 +148,13 @@ def competition_detail(request, competition_id):
 @management_required
 def create_competition(request):
     if request.method == 'POST':
+        kind, event_type, category_errors = _validate_category_fields(request.POST)
+        if category_errors:
+            # Re-render with the submitted values so staff can fix the choice.
+            return render(request, 'competitions/create_competition.html', {
+                'form_data': request.POST,
+                'category_errors': category_errors,
+            })
         try:
             with transaction.atomic():
                 competition = Competition.objects.create(
@@ -86,7 +164,9 @@ def create_competition(request):
                     end_date=request.POST.get('end_date'),
                     status=request.POST.get('status'),
                     created_by=request.user,
-                    **_competition_extras(request.POST)
+                    kind=kind,
+                    cultural_event_type=event_type,
+                    **_medal_points(request.POST)
                 )
 
                 round_names = request.POST.getlist('round_names[]')
@@ -140,6 +220,18 @@ def edit_competition(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
 
     if request.method == 'POST':
+        kind, event_type, category_errors = _validate_category_fields(request.POST)
+        if category_errors:
+            # Echo the submitted values (unsaved) so staff can fix the choice.
+            competition.name = (request.POST.get('title') or competition.name).upper()
+            competition.description = (request.POST.get('description') or '').upper() or competition.description
+            competition.kind = request.POST.get('kind') or competition.kind
+            competition.cultural_event_type = request.POST.get('cultural_event_type') or competition.cultural_event_type
+            return render(request, 'competitions/edit_competition.html', {
+                'competition': competition,
+                'category_errors': category_errors,
+            })
+
         title = request.POST.get('title')
         description = request.POST.get('description')
         start_date = request.POST.get('start_date')
@@ -151,7 +243,9 @@ def edit_competition(request, competition_id):
         competition.start_date = start_date
         competition.end_date = end_date
         competition.status = status
-        for key, value in _competition_extras(request.POST).items():
+        competition.kind = kind
+        competition.cultural_event_type = event_type
+        for key, value in _medal_points(request.POST).items():
             setattr(competition, key, value)
         competition.save()
 

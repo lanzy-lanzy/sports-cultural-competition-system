@@ -1318,10 +1318,35 @@ def medal_tally(request, competition_id):
 
 @management_required
 def overall_medal_tally(request):
-    """One medal table across every competition, sports and judged alike."""
-    tally = compute_overall_medal_tally()
+    """One medal table across every competition, sports and judged alike.
+
+    ?category=sports or cultural narrows the tally, the bar charts and the
+    breakdown to one competition category; anything else shows all of them.
+    Socio Cultural is kind == CULTURAL, every other kind counts as Sports,
+    which is the same rule the match board and the cultural hub use.
+    """
+    category = request.GET.get('category', '')
+    competitions = Competition.objects.all()
+    if category == 'cultural':
+        competitions = competitions.filter(kind=Competition.Kind.CULTURAL)
+    elif category == 'sports':
+        competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
+    else:
+        category = ''
+    tally = compute_overall_medal_tally(competitions)
+    # When nothing has been tallied yet, show which competitions are still
+    # waiting to complete instead of a bare empty state.
+    pending = []
+    if not tally['rows']:
+        pending = list(
+            competitions.exclude(status='COMPLETED')
+            .select_related()
+            .order_by('start_date')[:20]
+        )
     return render(request, 'scoring/overall_medal_tally.html', {
         'tally': tally,
+        'category': category,
+        'pending': pending,
     })
 
 

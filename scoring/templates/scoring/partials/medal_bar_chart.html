@@ -1,0 +1,21 @@
+{% if series %}
+{% with data_id=chart_id|add:'-data' %}
+<div class="relative h-72 w-full">
+    <canvas id="{{ chart_id }}" data-medal-chart data-series-id="{{ data_id }}" data-chart-max="{{ chart_max }}"
+            role="img" aria-label="Stacked bar graph of gold, silver and bronze medals per competitor"></canvas>
+</div>
+{{ series|json_script:data_id }}
+<noscript>
+    <ul class="mt-3 space-y-1 text-xs text-slate-600">
+        {% for row in series %}
+        <li class="flex items-center justify-between gap-3">
+            <span class="truncate font-semibold text-slate-700">{{ row.rank }}. {{ row.name }}{% if row.provisional %} (provisional){% endif %}</span>
+            <span class="shrink-0 text-slate-500">{{ row.gold }}G &middot; {{ row.silver }}S &middot; {{ row.bronze }}B</span>
+        </li>
+        {% endfor %}
+    </ul>
+</noscript>
+{% endwith %}
+{% else %}
+<p class="rounded-md border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center text-sm text-slate-400">{{ empty_note|default:"No medals yet." }}</p>
+{% endif %}

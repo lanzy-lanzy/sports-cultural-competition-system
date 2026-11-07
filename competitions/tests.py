@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from .models import Competition, Round, Criterion
 from scoring.models import CompetitionResult
+from accounts.models import UserProfile
 
 
 class CompetitionViewTest(TestCase):
@@ -22,7 +23,7 @@ class CompetitionViewTest(TestCase):
         data = {
             'name': 'New Comp', 'description': 'desc',
             'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
-            'status': 'DRAFT',
+            'status': 'DRAFT', 'kind': 'SPORTS',
             'round_names[]': ['Round A'], 'round_orders[]': ['1'],
             'round_weights[]': ['100'], 'round_statuses[]': ['PENDING'],
             'criterion_names_1[]': ['C1'], 'criterion_descriptions_1[]': ['x'],
@@ -31,6 +32,7 @@ class CompetitionViewTest(TestCase):
         resp = self.client.post(reverse('create_competition'), data)
         self.assertRedirects(resp, reverse('competition_list'))
         comp = Competition.objects.get(name='NEW COMP')
+        self.assertEqual(comp.kind, 'SPORTS')
         self.assertEqual(comp.rounds.count(), 1)
         self.assertEqual(comp.rounds.first().criteria.count(), 1)
         self.assertEqual(comp.rounds.first().criteria.first().max_score, Decimal('50'))
@@ -39,7 +41,7 @@ class CompetitionViewTest(TestCase):
         data = {
             'title': 'Renamed', 'description': 'new',
             'start_date': '2026-03-01 00:00:00', 'end_date': '2026-03-02 00:00:00',
-            'status': 'COMPLETED',
+            'status': 'COMPLETED', 'kind': 'SPORTS',
         }
         resp = self.client.post(reverse('edit_competition', args=[self.competition.id]), data)
         self.assertRedirects(resp, reverse('competition_detail', args=[self.competition.id]))
@@ -145,9 +147,59 @@ class CompetitionViewTest(TestCase):
             'criterion_names_1[]': ['C1'], 'criterion_descriptions_1[]': ['x'],
             'criterion_max_scores_1[]': ['50'],
         }
-        self.client.post(reverse('create_competition'), data)
-        comp = Competition.objects.get(name='COMP')
-        self.assertEqual(comp.kind, 'MIXED')
+        resp = self.client.post(reverse('create_competition'), data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Select the competition category')
+        self.assertTrue(resp.context['category_errors'])
+        # Nothing is stored when the explicit category selection is invalid.
+        self.assertEqual(Competition.objects.filter(name='COMP').count(), 0)
+
+    def test_create_competition_requires_explicit_category(self):
+        data = {
+            'name': 'No Category', 'description': 'desc',
+            'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
+            'status': 'DRAFT',
+        }
+        resp = self.client.post(reverse('create_competition'), data)
+        self.assertContains(resp, 'Select the competition category')
+        self.assertFalse(Competition.objects.filter(name='NO CATEGORY').exists())
+
+    def test_create_competition_cultural_requires_subtype(self):
+        for event_type in ('', 'NOT_A_TYPE'):
+            data = {
+                'name': 'Cultural Only', 'description': 'desc',
+                'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
+                'status': 'DRAFT', 'kind': 'CULTURAL', 'cultural_event_type': event_type,
+            }
+            resp = self.client.post(reverse('create_competition'), data)
+            self.assertContains(resp, 'sub-type')
+            self.assertFalse(Competition.objects.filter(name='CULTURAL ONLY').exists())
+
+    def test_create_competition_sports_clears_cultural_subtype(self):
+        data = {
+            'name': 'Mislabeled', 'description': 'desc',
+            'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
+            'status': 'DRAFT', 'kind': 'SPORTS', 'cultural_event_type': 'DANCE',
+        }
+        resp = self.client.post(reverse('create_competition'), data)
+        self.assertRedirects(resp, reverse('competition_list'))
+        comp = Competition.objects.get(name='MISLABELED')
+        self.assertEqual(comp.kind, 'SPORTS')
+        self.assertEqual(comp.cultural_event_type, '')
+
+    def test_edit_competition_rejects_invalid_category_without_saving(self):
+        resp = self.client.post(
+            reverse('edit_competition', args=[self.competition.id]),
+            {
+                'title': 'Renamed', 'description': 'new',
+                'start_date': '2026-03-01 00:00:00', 'end_date': '2026-03-02 00:00:00',
+                'status': 'ACTIVE', 'kind': 'CULTURAL', 'cultural_event_type': '',
+            },
+        )
+        self.assertContains(resp, 'sub-type')
+        self.competition.refresh_from_db()
+        self.assertEqual(self.competition.name, 'Comp')
+        self.assertNotEqual(self.competition.kind, 'CULTURAL')
 
     def test_edit_competition_updates_medal_points(self):
         data = {
@@ -207,3 +259,67 @@ class CompetitionViewTest(TestCase):
         self.client.post(reverse('edit_round', args=[self.competition.id, round_obj.id]), data)
         criterion.refresh_from_db()
         self.assertEqual(criterion.weight_percentage, Decimal('25'))
+
+
+class SocioCulturalManagementTest(TestCase):
+    """The cultural hub keeps socio-cultural competitions apart from sports."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'a@a.com', 'pass')
+        self.client.login(username='admin', password='pass')
+        self.cultural = Competition.objects.create(
+            name='Himig Campus', description='Solo singing',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            status='ACTIVE',
+            start_date='2026-01-01 00:00:00', end_date='2026-01-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.sports = Competition.objects.create(
+            name='Intramurals', description='Ball games',
+            kind=Competition.Kind.SPORTS,
+            status='ACTIVE',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+
+    def test_page_lists_only_cultural_competitions(self):
+        response = self.client.get(reverse('socio_cultural_management'))
+        self.assertEqual(response.status_code, 200)
+        rows = response.context['cultural_competitions']
+        self.assertEqual([c.id for c in rows], [self.cultural.id])
+        self.assertContains(response, self.cultural.name)
+        self.assertNotContains(response, self.sports.name)
+        self.assertEqual(response.context['stats']['competitions'], 1)
+
+    def test_event_type_filter(self):
+        response = self.client.get(
+            reverse('socio_cultural_management'), {'type': 'DANCE'},
+        )
+        self.assertEqual(response.context['selected_type'], 'DANCE')
+        self.assertEqual(response.context['cultural_competitions'], [])
+
+        response = self.client.get(
+            reverse('socio_cultural_management'), {'type': 'SINGING'},
+        )
+        self.assertEqual(
+            [c.id for c in response.context['cultural_competitions']],
+            [self.cultural.id],
+        )
+
+    def test_malformed_type_is_ignored(self):
+        response = self.client.get(
+            reverse('socio_cultural_management'), {'type': 'NOT-A-TYPE'},
+        )
+        self.assertEqual(response.context['selected_type'], '')
+        self.assertEqual(len(response.context['cultural_competitions']), 1)
+
+    def test_page_requires_management_role(self):
+        spectator = User.objects.create_user('culture_viewer', 'c@c.com', 'pass')
+        profile, _ = UserProfile.objects.get_or_create(user=spectator)
+        profile.role = UserProfile.Role.SPECTATOR
+        profile.save()
+        self.client.force_login(spectator)
+        self.assertEqual(
+            self.client.get(reverse('socio_cultural_management')).status_code, 403,
+        )

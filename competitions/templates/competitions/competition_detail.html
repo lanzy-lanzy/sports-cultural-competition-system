@@ -9,6 +9,7 @@
     <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <div>
             <h1 class="font-display text-2xl font-semibold text-slate-900">{{ competition.name }}</h1>
+            <div class="mt-2">{% include 'competitions/partials/category_badge.html' %}</div>
             <p class="mt-2 max-w-2xl text-sm text-slate-500">{{ competition.description }}</p>
         </div>
         <div class="flex flex-wrap gap-2.5">

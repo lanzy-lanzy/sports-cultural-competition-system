@@ -79,7 +79,7 @@ def contestant_identity(team=None, participant=None):
 
 
 def _award_medals(competition):
-    """Yield ``(key, name, medal_type, source, points)`` for a competition's awards."""
+    """Yield ``(key, name, medal_type, source, points, participant, provisional)`` for a competition's awards."""
     points_map = medal_points_for(competition)
     recipients = (
         AwardRecipient.objects
@@ -97,11 +97,17 @@ def _award_medals(competition):
         key, name = contestant_identity(
             team=recipient.team, participant=recipient.participant,
         )
-        yield key, name, atype, 'award', points_map[atype]
+        # Manual awards are entered deliberately, so they count as final.
+        yield key, name, atype, 'award', points_map[atype], recipient.participant, False
 
 
 def _sports_medals(competition):
-    """Yield ``(key, name, medal_type, source, points)`` for a competition's sport events."""
+    """Yield sport-event podiums; every match of the event must be decided.
+
+    The event-level podium is final once its bracket is fully played, even if
+    the wider competition is still running, so these medals are never marked
+    provisional.
+    """
     from sports.services import event_podium
 
     points_map = medal_points_for(competition)
@@ -111,7 +117,7 @@ def _sports_medals(competition):
             if atype is None:
                 continue
             key, name = contestant_identity(team=entry.team, participant=entry.participant)
-            yield key, name, atype, 'sports', points_map[atype]
+            yield key, name, atype, 'sports', points_map[atype], entry.participant, False
 
 
 def _has_manual_medal_awards(competition):
@@ -121,14 +127,18 @@ def _has_manual_medal_awards(competition):
 
 
 def _standings_medals(competition):
-    """Yield podium medals for a judged competition from its final standings.
+    """Yield podium medals for a judged competition from its standings.
 
-    Manual awards always win: this only fills the gap for a completed
-    competition that has no medal awards entered yet, mirroring how sport
-    events derive their podium from results. A competition still running
-    never contributes, so the tally never shows a provisional champion.
+    Manual awards always win: this only fills the gap for a judged
+    competition that has no medal awards entered yet. A COMPLETED
+    competition's podium is final. An ACTIVE (still running) competition
+    contributes provisional medals derived from the rounds that already
+    carry standings, so Socio Cultural events appear on the tally and the
+    bar graphs while the competition is ongoing instead of vanishing from
+    it. Only participants who have actually been judged can reach the
+    podium, and DRAFT or CANCELLED competitions contribute nothing.
     """
-    if competition.status != 'COMPLETED':
+    if competition.status not in ('ACTIVE', 'COMPLETED'):
         return
     if _has_manual_medal_awards(competition):
         return
@@ -136,7 +146,21 @@ def _standings_medals(competition):
         return
 
     points_map = medal_points_for(competition)
+    provisional = competition.status != 'COMPLETED'
     standings = build_overall_standings(competition)
+    if provisional:
+        # Rank only judged participants; an unscored zero must not place
+        # anybody on a podium that has not been performed yet.
+        scored = set(
+            CompetitionResult.objects.filter(
+                round__competition=competition,
+            ).values_list('participant_id', flat=True).distinct()
+        )
+        standings = OrderedDict(
+            (pid, data) for pid, data in standings.items() if pid in scored
+        )
+        if not standings:
+            return
     participants = {
         p.id: p
         for p in competition.participants.select_related('team_membership__team')
@@ -151,7 +175,7 @@ def _standings_medals(competition):
             if participant is None:
                 continue
             key, name = contestant_identity(participant=participant)
-            yield key, name, SPORT_MEDAL_TO_AWARD[medal], 'standings', points_map[SPORT_MEDAL_TO_AWARD[medal]]
+            yield key, name, SPORT_MEDAL_TO_AWARD[medal], 'standings', points_map[SPORT_MEDAL_TO_AWARD[medal]], participant, provisional
             break
 
 
@@ -177,15 +201,22 @@ def _rank_rows(tally):
 
 
 def _accumulate(medals, track_sources=False):
-    """Fold ``(key, name, medal_type, source, points)`` tuples into ranked tally rows."""
+    """Fold medal tuples into ranked tally rows.
+
+    Each tuple is ``(key, name, medal_type, source, points, participant,
+    provisional)``. A row is flagged ``provisional`` when any of its medals
+    came from a competition that is still running.
+    """
     tally = {}
-    for key, name, atype, source, points in medals:
+    for key, name, atype, source, points, _recipient, provisional in medals:
         row = tally.setdefault(key, {
+            'key': key,
             'name': name,
             'gold': 0,
             'silver': 0,
             'bronze': 0,
             'points': Decimal('0'),
+            'provisional': False,
         })
         if atype == Award.Type.GOLD_MEDAL:
             row['gold'] += 1
@@ -194,6 +225,7 @@ def _accumulate(medals, track_sources=False):
         elif atype == Award.Type.BRONZE_MEDAL:
             row['bronze'] += 1
         row['points'] += points
+        row['provisional'] = row['provisional'] or provisional
         if track_sources:
             row.setdefault('sources', {})
             row['sources'][source] = row['sources'].get(source, 0) + 1
@@ -206,6 +238,132 @@ def _accumulate(medals, track_sources=False):
             row['award'] = sources.get('award', 0)
             row['standings'] = sources.get('standings', 0)
     return rows
+
+
+def _accumulate_individuals(medals):
+    """Fold medals per named participant, ignoring team and delegation folding.
+
+    The main tally merges individual medals into their delegation; the bar
+    graph also needs to credit the person themselves, so every medal earned
+    directly by a participant counts against that participant here.
+    """
+    tally = {}
+    for _key, _name, atype, _source, points, recipient, provisional in medals:
+        if recipient is None:
+            continue
+        row = tally.setdefault(recipient.id, {
+            'key': ('individual', recipient.id),
+            'name': recipient.name,
+            'gold': 0,
+            'silver': 0,
+            'bronze': 0,
+            'points': Decimal('0'),
+            'provisional': False,
+        })
+        if atype == Award.Type.GOLD_MEDAL:
+            row['gold'] += 1
+        elif atype == Award.Type.SILVER_MEDAL:
+            row['silver'] += 1
+        elif atype == Award.Type.BRONZE_MEDAL:
+            row['bronze'] += 1
+        row['points'] += points
+        row['provisional'] = row['provisional'] or provisional
+    return _rank_rows(tally)
+
+
+def _chart_series(rows):
+    """Convert tally rows into JSON-safe data for the vendored Chart.js graph.
+
+    Decimal points and Python bools are flattened so the list can be embedded
+    straight into the page with ``json_script``.
+    """
+    return [
+        {
+            'name': row['name'],
+            'rank': row['rank'],
+            'gold': row['gold'],
+            'silver': row['silver'],
+            'bronze': row['bronze'],
+            'total': row['total_medals'],
+            'points': float(row['points']),
+            'provisional': bool(row['provisional']),
+        }
+        for row in rows
+    ]
+
+
+def _team_records(competition=None):
+    """Win/loss/draw counts per team from completed matches.
+
+    Scoped to one competition when given, otherwise every match across the
+    system counts, so per-competition and overall tallies each see their own
+    record. Returns ``{team_id: {'wins', 'losses', 'draws'}}``.
+    """
+    from django.db.models import Count
+    from sports.models import Match, MatchEntry
+
+    completed = MatchEntry.objects.filter(
+        team__isnull=False,
+        match__status=Match.Status.COMPLETED,
+    )
+    if competition is not None:
+        completed = completed.filter(match__event__competition=competition)
+
+    records = {}
+    for outcome, queryset in (
+        ('wins', completed.filter(is_winner=True)),
+        ('draws', completed.filter(is_draw=True)),
+        ('losses', completed.filter(is_winner=False, is_draw=False)),
+    ):
+        for counts in queryset.values('team_id').annotate(total=Count('id')):
+            record = records.setdefault(counts['team_id'], {'wins': 0, 'losses': 0, 'draws': 0})
+            record[outcome] = counts['total']
+    return records
+
+
+def attach_team_records(rows, competition=None):
+    """Enrich tally rows with each registered team's status and match record.
+
+    Team rows gain ``status``/``status_display`` (the team's registration
+    status) plus ``wins``, ``losses``, ``draws``, ``played`` and ``win_pct``
+    from completed matches, so the medal table doubles as a standings board.
+    Delegation and individual rows get neutral values the templates render
+    as a dash. Ranking stays on the existing ``rank`` field, which already
+    reflects each delegation's current position on the tally.
+    """
+    from teams.models import Team
+
+    if not rows:
+        return
+
+    records = _team_records(competition)
+    team_ids = {
+        row['key'][1] for row in rows
+        if isinstance(row.get('key'), tuple) and row['key'][0] == 'team'
+    }
+    statuses = dict(Team.objects.filter(id__in=team_ids).values_list('id', 'status'))
+    status_labels = dict(Team.Status.choices)
+
+    for row in rows:
+        key = row.get('key')
+        if not (isinstance(key, tuple) and key[0] == 'team'):
+            row.update({
+                'status': '', 'status_display': '',
+                'wins': 0, 'losses': 0, 'draws': 0, 'played': 0, 'win_pct': None,
+            })
+            continue
+        record = records.get(key[1], {'wins': 0, 'losses': 0, 'draws': 0})
+        played = record['wins'] + record['losses'] + record['draws']
+        status = statuses.get(key[1], '')
+        row.update({
+            'status': status,
+            'status_display': status_labels.get(status, ''),
+            'wins': record['wins'],
+            'losses': record['losses'],
+            'draws': record['draws'],
+            'played': played,
+            'win_pct': (record['wins'] / played) if played else None,
+        })
 
 
 def compute_medal_tally(competition):
@@ -223,7 +381,27 @@ def compute_medal_tally(competition):
         + list(_standings_medals(competition))
     )
     rows = _accumulate(medals)
-    return {'rows': rows, 'champion': rows[0] if rows else None}
+    attach_team_records(rows, competition)
+    individuals = _accumulate_individuals(medals)
+    team_rows = [
+        row for row in rows
+        if isinstance(row.get('key'), tuple) and row['key'][0] in ('team', 'delegation')
+    ]
+
+    for row in rows + individuals:
+        row['total_medals'] = row['gold'] + row['silver'] + row['bronze']
+    chart_max_medals = max(
+        (row['total_medals'] for row in rows + individuals), default=0,
+    )
+    return {
+        'rows': rows,
+        'champion': rows[0] if rows else None,
+        'team_rows': team_rows,
+        'individuals': individuals,
+        'chart_max_medals': chart_max_medals,
+        'team_chart': _chart_series(team_rows),
+        'individual_chart': _chart_series(individuals),
+    }
 
 
 def compute_overall_medal_tally(competitions=None):
@@ -250,6 +428,7 @@ def compute_overall_medal_tally(competitions=None):
         )
         medals.extend(competition_medals)
         rows = _accumulate(competition_medals, track_sources=True)
+        attach_team_records(rows, competition)
         breakdown.append({
             'competition': competition,
             'rows': rows,
@@ -258,6 +437,20 @@ def compute_overall_medal_tally(competitions=None):
         })
 
     rows = _accumulate(medals, track_sources=True)
+    attach_team_records(rows)
+    individuals = _accumulate_individuals(medals)
+    team_rows = [
+        row for row in rows
+        if isinstance(row.get('key'), tuple) and row['key'][0] in ('team', 'delegation')
+    ]
+
+    # Shared scale so team and individual bars can be compared side by side.
+    for row in rows + individuals:
+        row['total_medals'] = row['gold'] + row['silver'] + row['bronze']
+    chart_max_medals = max(
+        (row['total_medals'] for row in rows + individuals), default=0,
+    )
+
     totals = {
         'gold': sum(row['gold'] for row in rows),
         'silver': sum(row['silver'] for row in rows),
@@ -271,6 +464,13 @@ def compute_overall_medal_tally(competitions=None):
         'champion': rows[0] if rows else None,
         'breakdown': breakdown,
         'totals': totals,
+        # Bar graph series: delegation/team rows vs raw per-participant rows.
+        'team_rows': team_rows,
+        'individuals': individuals,
+        'chart_max_medals': chart_max_medals,
+        # JSON-safe payloads rendered into the page for the Chart.js graph.
+        'team_chart': _chart_series(team_rows),
+        'individual_chart': _chart_series(individuals),
     }
 
 

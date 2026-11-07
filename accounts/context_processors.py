@@ -36,6 +36,7 @@ NAV_GROUPS = {
         'event_standings', 'event_bracket',
     ],
     'match_board': ['match_board'],
+    'cultural': ['socio_cultural_management'],
     'results': [
         'results_list', 'competition_results_detail', 'results_reveal',
         'toggle_results_visibility', 'round_results', 'generate_pdf_results',
@@ -65,8 +66,14 @@ NAV_GROUPS = {
         'audit_log_list', 'clear_audit_logs',
     ],
     'reports': [
-        'reports_home', 'export_participants_csv', 'export_team_rosters_csv',
-        'export_registrations_csv', 'export_schedule_csv', 'export_medal_tally_csv',
+        'reports_home',
+        'export_participants_csv', 'export_participants_pdf', 'print_participants',
+        'export_team_rosters_csv', 'export_team_rosters_pdf', 'print_team_rosters',
+        'export_registrations_csv', 'export_registrations_pdf', 'print_registrations',
+        'export_schedule_csv', 'export_schedule_pdf', 'print_schedule',
+        'export_medal_tally_csv', 'export_medal_tally_pdf', 'print_medal_tally',
+        'export_judge_scores_csv', 'export_judge_scores_pdf', 'print_judge_scores',
+        'export_standings_csv', 'export_standings_pdf', 'print_standings',
     ],
     'scoreboard': ['scoreboard'],
     'awards': [

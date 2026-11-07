@@ -115,7 +115,8 @@ def sports_hub(request):
 
 @management_required
 def match_board(request):
-    """Every match across every competition, filtered and grouped by day."""
+    """Every match across every competition, filtered, split into the Sports and
+    Socio Cultural categories and grouped by day."""
     matches = Match.objects.select_related(
         'event', 'event__competition', 'event__sport_type', 'venue',
     ).prefetch_related('entries__team', 'entries__participant')
@@ -125,6 +126,7 @@ def match_board(request):
     venue_id = request.GET.get('venue', '')
     status = request.GET.get('status', '')
     day = request.GET.get('day', '')
+    category = request.GET.get('category', '')
 
     if competition_id.isdigit():
         matches = matches.filter(event__competition_id=int(competition_id))
@@ -134,6 +136,12 @@ def match_board(request):
         matches = matches.filter(venue_id=int(venue_id))
     if status in Match.Status.values:
         matches = matches.filter(status=status)
+    # Competitions flagged as cultural surface their bracket events under
+    # "Socio Cultural"; everything else (sports and mixed) stays under Sports.
+    if category == 'cultural':
+        matches = matches.filter(event__competition__kind=Competition.Kind.CULTURAL)
+    elif category == 'sports':
+        matches = matches.exclude(event__competition__kind=Competition.Kind.CULTURAL)
 
     # Validate the day before filtering; a bad value simply clears the filter.
     selected_day = None
@@ -169,6 +177,30 @@ def match_board(request):
 
     total = sum(len(day_matches) for day_matches in days.values()) + len(unscheduled)
 
+    # Split each day's matches into the two display categories so the board
+    # never mixes sports play with socio-cultural events in one table.
+    def category_groups(day_matches):
+        cultural = [
+            match for match in day_matches
+            if match.event.competition.kind == Competition.Kind.CULTURAL
+        ]
+        cultural_ids = {match.id for match in cultural}
+        sports = [match for match in day_matches if match.id not in cultural_ids]
+        return [
+            {'key': 'sports', 'label': 'Sports', 'matches': sports},
+            {'key': 'cultural', 'label': 'Socio Cultural', 'matches': cultural},
+        ]
+
+    sections = [
+        {
+            'day': day,
+            'count': len(day_matches),
+            'groups': category_groups(day_matches),
+        }
+        for day, day_matches in days.items()
+    ]
+    unscheduled_groups = category_groups(unscheduled)
+
     # Guard the bounds explicitly: day_keys[-1] would wrap to the last day.
     prev_day = next_day = None
     if selected_index is not None:
@@ -182,13 +214,16 @@ def match_board(request):
         'sport': sport_id,
         'venue': venue_id,
         'status': status,
+        'category': category,
         'day': day,
     }
     active_count = sum(1 for value in filter_state.values() if value)
 
     return render(request, 'sports/match_board.html', {
         'days': days,
+        'sections': sections,
         'unscheduled': unscheduled,
+        'unscheduled_groups': unscheduled_groups,
         'day_keys': day_keys,
         'selected_index': selected_index,
         'prev_day': prev_day,

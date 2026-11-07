@@ -838,6 +838,73 @@ class SportsNavigationPagesTest(TestCase):
         self.assertIsNone(response.context['next_day'])
         self.assertGreater(len(response.context['day_keys']), 1)
 
+    def _make_cultural_match(self):
+        """A bracket-style match under a cultural competition."""
+        cultural = Competition.objects.create(
+            name='Cultural Night',
+            description='Socio cultural line-up',
+            kind=Competition.Kind.CULTURAL,
+            start_date='2026-03-01T08:00:00Z',
+            end_date='2026-03-02T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        sport = SportType.objects.filter(is_active=True).first()
+        event = SportsEvent.objects.create(
+            competition=cultural, sport_type=sport, name='Quiz Bee', team_based=False,
+        )
+        return Match.objects.create(
+            event=event, name='Final', round_number=1,
+            status=Match.Status.COMPLETED, scheduled_start=timezone.now(),
+        )
+
+    def test_board_splits_cultural_matches_into_their_own_category(self):
+        match = self._make_cultural_match()
+        response = self.client.get(reverse('match_board'))
+        self.assertEqual(response.status_code, 200)
+        groups = [
+            group
+            for section in response.context['sections']
+            for group in section['groups']
+        ]
+        cultural_matches = [m for g in groups if g['key'] == 'cultural' for m in g['matches']]
+        sports_matches = [m for g in groups if g['key'] == 'sports' for m in g['matches']]
+        unscheduled = response.context['unscheduled']
+        self.assertIn(match, cultural_matches)
+        self.assertNotIn(match, sports_matches)
+        # Every match is shown exactly once across the two categories.
+        self.assertEqual(
+            len(cultural_matches) + len(sports_matches) + len(unscheduled),
+            Match.objects.count(),
+        )
+
+    def test_board_category_filter_narrows_to_one_category(self):
+        match = self._make_cultural_match()
+        response = self.client.get(reverse('match_board'), {'category': 'cultural'})
+        self.assertEqual(
+            response.context['total'],
+            Match.objects.filter(
+                event__competition__kind=Competition.Kind.CULTURAL,
+            ).count(),
+        )
+        shown = {
+            group['key']
+            for section in response.context['sections']
+            for group in section['groups'] if group['matches']
+        } | {
+            group['key']
+            for group in response.context['unscheduled_groups'] if group['matches']
+        }
+        self.assertEqual(shown, {'cultural'})
+        rendered_matches = [
+            m for section in response.context['sections']
+            for group in section['groups'] for m in group['matches']
+        ] + [
+            m for group in response.context['unscheduled_groups']
+            for m in group['matches']
+        ]
+        self.assertEqual(rendered_matches, [match])
+
     def test_navigation_pages_require_management_role(self):
         spectator = User.objects.create_user('nav_spectator', 'nav@test.com', 'pass')
         profile, _ = UserProfile.objects.get_or_create(user=spectator)

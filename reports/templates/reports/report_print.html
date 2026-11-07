@@ -1,0 +1,265 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report.title }} · Competrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#15251B',
+                        pine: '#116B3B',
+                        'pine-deep': '#0C5330',
+                        'pine-dark': '#0B3A20',
+                        moss: '#EAF2EB',
+                        paper: '#F5F7F4',
+                        line: '#D8E4DA',
+                        gold: '#B08A2E',
+                        slate: '#5B6B60',
+                        muted: '#7C8B80',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        display: ['"Source Serif 4"', 'Georgia', 'serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        :root {
+            --pine: #116B3B;
+            --pine-deep: #0C5330;
+            --pine-dark: #0B3A20;
+            --ink: #15251B;
+            --moss: #EAF2EB;
+            --paper: #F5F7F4;
+            --line: #D8E4DA;
+            --gold: #B08A2E;
+            --slate: #5B6B60;
+            --muted: #7C8B80;
+        }
+        html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { background: #EDF1ED; }
+        .report-sheet {
+            box-shadow: 0 24px 60px -28px rgba(21, 37, 27, .45);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .report-table thead {
+            display: table-header-group;
+        }
+        .report-table th {
+            background: var(--pine);
+            color: #fff;
+            font-weight: 700;
+            text-align: left;
+            padding: 7px 8px;
+            border: 1px solid var(--pine-deep);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            line-height: 1.25;
+        }
+        .report-table th.is-numeric { text-align: right; }
+        .report-table td {
+            padding: 6px 8px;
+            border: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink);
+            line-height: 1.4;
+        }
+        .report-table td.is-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+        .report-table tbody tr:nth-child(even) { background: var(--paper); }
+        .report-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+        .report-table .empty-cell {
+            padding: 18px 12px;
+            text-align: center;
+            color: var(--muted);
+            font-style: italic;
+            background: var(--paper);
+        }
+        .section-rule {
+            width: 3px;
+            height: 16px;
+            background: var(--pine);
+            display: inline-block;
+        }
+        @page {
+            size: A4 landscape;
+            margin: 11mm 10mm 13mm;
+        }
+        @media print {
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print { display: none !important; }
+            .report-sheet {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+            }
+            .print-section { break-inside: auto; }
+            .print-avoid { break-inside: avoid; page-break-inside: avoid; }
+            .print-page-break { break-before: page; page-break-before: always; }
+            .report-table { font-size: 9pt; }
+            .report-table th { font-size: 7.5pt; padding: 5px 6px; }
+            .report-table td { padding: 4px 6px; }
+        }
+    </style>
+</head>
+<body class="font-sans text-ink antialiased">
+
+<div class="no-print sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'reports_home' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                Back to reports
+            </a>
+            <div class="hidden leading-tight sm:block">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Print preview</p>
+                <p class="text-sm font-semibold text-ink">{{ report.title }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ pdf_url }}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-pine/40 hover:text-pine">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                Download PDF
+            </a>
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 rounded-md bg-pine px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5z"/></svg>
+                Print / Save as PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<main class="report-sheet mx-auto my-8 max-w-[1360px] overflow-hidden rounded-lg border border-line bg-white">
+    <div class="h-2 w-full bg-pine-dark"></div>
+    <div class="h-[3px] w-full bg-gold"></div>
+
+    <div class="p-6 sm:p-10 lg:p-12">
+        <header class="flex flex-col justify-between gap-6 border-b border-line pb-7 lg:flex-row lg:items-start">
+            <div class="flex items-start gap-4 sm:gap-5">
+                <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-16 w-16 shrink-0 rounded-full object-contain ring-1 ring-line sm:h-20 sm:w-20">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.26em] text-gold">J.H. Cerilles State College</p>
+                    <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">Competrack · Competition Management Platform</p>
+                    <h1 class="mt-3 font-display text-3xl font-semibold leading-tight text-pine-dark sm:text-4xl">{{ report.title }}</h1>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate">{{ report.subtitle }}</p>
+                    {% if report.competition %}
+                    <p class="mt-3 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-paper px-3 py-2 text-xs font-semibold text-pine-deep">
+                        <span>{{ report.competition.name }}</span>
+                        <span class="text-slate-300">|</span>
+                        <span class="font-medium text-slate">{{ report.competition.start_date|date:"F j, Y" }} &ndash; {{ report.competition.end_date|date:"F j, Y" }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="w-full shrink-0 rounded-md border border-line bg-paper px-4 py-3 lg:w-60" style="border-left: 3px solid var(--pine);">
+                <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-muted">Document control</p>
+                <dl class="mt-2 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-3">
+                        <dt class="font-medium text-muted">Generated</dt>
+                        <dd class="text-right font-semibold text-ink">{{ report.generated_at|date:"M j, Y" }}<br><span class="font-normal text-slate">{{ report.generated_at|date:"g:i A" }}</span></dd>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <dt class="font-medium text-muted">Records</dt>
+                        <dd class="font-semibold text-ink">{{ report.record_count }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <dt class="font-medium text-muted">Status</dt>
+                        <dd><span class="rounded-full bg-moss px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">Official</span></dd>
+                    </div>
+                </dl>
+            </div>
+        </header>
+
+        {% if report.summary %}
+        <section class="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {% for label, value in report.summary %}
+            <div class="rounded-md border border-line bg-moss px-4 py-3">
+                <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-muted">{{ label }}</p>
+                <p class="mt-1 font-display text-lg font-semibold text-pine-dark">{{ value }}</p>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% for section in report.sections %}
+        <section class="print-section mt-8">
+            <div class="mb-3 flex items-center gap-2 border-b border-line pb-2">
+                <span class="section-rule"></span>
+                <h2 class="font-display text-base font-semibold text-pine-dark">
+                    {% if section.title %}{{ section.title }}{% else %}Report data{% endif %}
+                </h2>
+                <span class="ml-auto text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                    {{ section.rows|length }} record{{ section.rows|length|pluralize }}
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            {% for column in section.columns %}
+                            <th class="{% if forloop.counter0 in section.numeric_columns %}is-numeric{% endif %}">{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in section.rows %}
+                        <tr>
+                            {% for cell in row %}
+                            <td class="{% if forloop.counter0 in section.numeric_columns %}is-numeric{% endif %}">
+                                {% if cell %}{{ cell }}{% else %}&mdash;{% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ section.columns|length }}" class="empty-cell">{{ section.empty_message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endfor %}
+
+        <section class="print-avoid mt-10 border-t border-line pt-6">
+            <div class="grid gap-10 sm:grid-cols-2">
+                <div>
+                    <p class="border-b border-slate-400 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate">Prepared by</p>
+                    <p class="mt-1 text-[10px] text-muted">Competition Management Office</p>
+                </div>
+                <div>
+                    <p class="border-b border-slate-400 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate">Certified correct by</p>
+                    <p class="mt-1 text-[10px] text-muted">Competition Chairperson</p>
+                </div>
+            </div>
+            <p class="mt-8 text-center text-[10px] uppercase tracking-[0.2em] text-muted">End of report</p>
+            <p class="mt-1 text-center text-[10px] text-muted">Generated electronically by Competrack from live competition records · J.H. Cerilles State College</p>
+        </section>
+    </div>
+</main>
+
+</body>
+</html>

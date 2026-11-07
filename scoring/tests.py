@@ -520,6 +520,35 @@ class MedalTallyTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Team A')
         self.assertContains(response, '10')
+        self.assertContains(response, 'Performance at a glance')
+        self.assertContains(response, 'competition-team-medal-chart')
+        self.assertContains(response, 'chart.umd.js')
+        self.assertNotContains(response, 'Individual Participants')
+        self.assertNotContains(response, 'competition-individual-medal-chart')
+        # Template comments must never leak into the rendered chart markup.
+        self.assertNotContains(response, '{#')
+
+    def test_medal_tally_exposes_team_chart_series(self):
+        gold = self._award('Gold', Award.Type.GOLD_MEDAL)
+        silver = self._award('Silver', Award.Type.SILVER_MEDAL)
+        AwardRecipient.objects.create(
+            award=gold,
+            recipient_type=AwardRecipient.RecipientType.TEAM,
+            team=self.team_a,
+        )
+        AwardRecipient.objects.create(
+            award=silver,
+            recipient_type=AwardRecipient.RecipientType.TEAM,
+            team=self.team_a,
+        )
+
+        tally = compute_medal_tally(self.competition)
+
+        self.assertEqual(tally['chart_max_medals'], 2)
+        self.assertEqual(tally['team_chart'][0]['name'], 'Team A')
+        self.assertEqual(tally['team_chart'][0]['gold'], 1)
+        self.assertEqual(tally['team_chart'][0]['silver'], 1)
+        self.assertEqual(tally['individual_chart'], [])
 
     def test_scoreboard_page_renders(self):
         from sports.models import Match, MatchEntry, SportsEvent, SportType
@@ -695,6 +724,47 @@ class OverallMedalTallyTest(TestCase):
         self.assertEqual(tally['totals']['sports'], 3)
         self.assertEqual(tally['totals']['standings'], 3)
 
+    def test_chart_series_split_teams_and_individuals(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+
+        tally = compute_overall_medal_tally()
+        team_names = {row['name'] for row in tally['team_rows']}
+        individual_names = {row['name'] for row in tally['individuals']}
+        # Team-borne medals land on the team series, judged participants are
+        # graphed by their own name without delegation folding.
+        self.assertIn('Sports 0', team_names)
+        self.assertNotIn('Judge P1', team_names)
+        self.assertIn('Judge P1', individual_names)
+
+        top = tally['individuals'][0]
+        self.assertEqual((top['gold'], top['silver'], top['bronze']), (1, 0, 0))
+        self.assertEqual(top['total_medals'], 1)
+        self.assertEqual(tally['chart_max_medals'], 1)
+        for row in tally['team_rows'] + tally['individuals']:
+            self.assertLessEqual(row['total_medals'], tally['chart_max_medals'])
+
+    def test_chart_only_counts_medals_awarded_to_people(self):
+        self._add_sports_podium()
+        tally = compute_overall_medal_tally()
+        # Team-only sport podiums produce no individual bars.
+        self.assertEqual(tally['individuals'], [])
+        self.assertTrue(tally['team_rows'])
+
+    def test_overall_page_renders_bar_graph(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        resp = self.client.get(reverse('overall_medal_tally'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Performance at a glance')
+        self.assertContains(resp, 'Teams &amp; Delegations')
+        self.assertContains(resp, 'Judge P1')
+        self.assertContains(resp, 'Sports 0')
+        self.assertNotContains(resp, 'Individual Participants')
+        self.assertNotContains(resp, 'individual-medal-chart')
+        # Template comments must never leak into the rendered chart markup.
+        self.assertNotContains(resp, '{#')
+
     def test_breakdown_covers_every_competition(self):
         self._add_sports_podium()
         self._add_judged_podium()
@@ -702,14 +772,126 @@ class OverallMedalTallyTest(TestCase):
         covered = {entry['competition'].name for entry in tally['breakdown']}
         self.assertEqual(covered, {'Sports Meet', 'Singing'})
 
-    def test_running_competition_contributes_nothing(self):
+    def _mark_judged_as_cultural(self):
+        self.judged.kind = Competition.Kind.CULTURAL
+        self.judged.cultural_event_type = Competition.CulturalEventType.SINGING
+        self.judged.save()
+
+    def test_cultural_category_filter_keeps_only_socio_cultural(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        self._mark_judged_as_cultural()
+
+        resp = self.client.get(reverse('overall_medal_tally'), {'category': 'cultural'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Judge P1')
+        self.assertNotContains(resp, 'Sports 0')
+        self.assertNotContains(resp, 'Sports Meet')
+        self.assertEqual(resp.context['category'], 'cultural')
+        self.assertEqual(
+            {entry['competition'].name for entry in resp.context['tally']['breakdown']},
+            {'Singing'},
+        )
+
+    def test_sports_category_filter_excludes_socio_cultural(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        self._mark_judged_as_cultural()
+
+        resp = self.client.get(reverse('overall_medal_tally'), {'category': 'sports'})
+        self.assertContains(resp, 'Sports 0')
+        self.assertNotContains(resp, 'Judge P1')
+        self.assertNotContains(resp, 'Singing')
+        self.assertEqual(resp.context['category'], 'sports')
+
+    def test_unknown_category_value_falls_back_to_all(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        resp = self.client.get(reverse('overall_medal_tally'), {'category': 'bogus'})
+        self.assertEqual(resp.context['category'], '')
+        self.assertContains(resp, 'Sports 0')
+        self.assertContains(resp, 'Judge P1')
+
+    def test_csv_export_respects_category_filter(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        self._mark_judged_as_cultural()
+        resp = self.client.get(reverse('export_medal_tally_csv'), {'category': 'cultural'})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        self.assertIn('Judge P1', body)
+        self.assertNotIn('Sports 0', body)
+        self.assertIn('Socio Cultural', body)
+
+    def test_empty_state_lists_active_competitions_as_pending(self):
+        self.judged.kind = Competition.Kind.CULTURAL
+        self.judged.cultural_event_type = Competition.CulturalEventType.DANCE
         self.judged.status = 'ACTIVE'
         self.judged.save()
+        resp = self.client.get(reverse('overall_medal_tally'))
+        self.assertContains(resp, 'No medals to tally yet')
+        self.assertContains(resp, 'Waiting to be counted')
+        self.assertContains(resp, 'Singing')
+        self.assertEqual([c.id for c in resp.context['pending']], [self.judged.id])
+
+    def test_running_competition_contributes_provisional_medals(self):
+        self._mark_judged_as_cultural()
         self._add_judged_podium()
         self.judged.status = 'ACTIVE'
         self.judged.save()
+
+        tally = compute_overall_medal_tally()
+        self.assertEqual(tally['totals']['standings'], 3)
+        row = next(r for r in tally['rows'] if r['name'] == 'Judge P1')
+        self.assertTrue(row['provisional'])
+        # The individual bar series carries the same flag.
+        chart_row = next(r for r in tally['individuals'] if r['name'] == 'Judge P1')
+        self.assertTrue(chart_row['provisional'])
+
+    def test_provisional_flag_surfaces_on_the_page(self):
+        self._mark_judged_as_cultural()
+        self._add_judged_podium()
+        self.judged.status = 'ACTIVE'
+        self.judged.save()
+        resp = self.client.get(reverse('overall_medal_tally'))
+        self.assertContains(resp, 'Judge P1')
+        self.assertContains(resp, 'PROV')
+        self.assertContains(resp, 'Provisional &mdash; a counted competition is still running')
+
+    def test_unjudged_active_competition_contributes_nothing(self):
+        Round.objects.create(
+            competition=self.judged, name='Final', description='d', order=1,
+            status='COMPLETED', weight_percentage=Decimal('100'),
+        )
+        participant = Participant.objects.create(
+            name='Unjudged', email='u@t.com', phone='0917', age=20,
+            gender='male', status='ACTIVE',
+        )
+        ParticipantCompetition.objects.create(
+            participant=participant, competition=self.judged, number=1,
+        )
+        self.judged.status = 'ACTIVE'
+        self.judged.save()
+        tally = compute_overall_medal_tally()
+        # Nobody has been scored, so an unscored zero must not take a podium.
+        self.assertEqual(tally['totals']['standings'], 0)
+        self.assertEqual(tally['rows'], [])
+
+    def test_draft_competition_contributes_nothing(self):
+        self._add_judged_podium()
+        self.judged.status = 'DRAFT'
+        self.judged.save()
         tally = compute_overall_medal_tally()
         self.assertEqual(tally['totals']['standings'], 0)
+        self.assertEqual(tally['rows'], [])
+
+    def test_completed_medals_are_not_provisional(self):
+        self._add_sports_podium()
+        self._add_judged_podium()
+        tally = compute_overall_medal_tally()
+        self.assertTrue(tally['rows'])
+        for row in tally['rows'] + tally['individuals']:
+            self.assertFalse(row['provisional'])
 
     def test_manual_awards_override_standings(self):
         self._add_judged_podium()

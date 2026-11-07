@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Socio Cultural Management - Competrack{% endblock %}
+{% block header_title %}Socio Cultural{% endblock %}
+
+{% block content %}
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Cultural Competitions &middot; Dance, Singing, Pageants &amp; Academics</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Socio Cultural Management</h1>
+        <p class="mt-2 text-sm text-slate-500">Run judged cultural events here — rounds, criteria, awards and results — separately from sports brackets.</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'create_competition' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-pine-deep">Create cultural competition</a>
+        <a href="{% url 'match_board' %}?category=cultural" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Cultural match board</a>
+        <a href="{% url 'competition_list' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">All competitions</a>
+    </div>
+</div>
+
+<div class="mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Competitions</p>
+        <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.competitions }}</p>
+        <p class="mt-1 text-xs text-slate-500">Cultural events managed</p>
+    </div>
+    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active</p>
+        <p class="mt-1 font-display text-2xl font-bold text-campus">{{ stats.active }}</p>
+        <p class="mt-1 text-xs text-slate-500">Currently running</p>
+    </div>
+    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Completed</p>
+        <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.completed }}</p>
+        <p class="mt-1 text-xs text-slate-500">Ready for publication</p>
+    </div>
+    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rounds</p>
+        <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.rounds }}</p>
+        <p class="mt-1 text-xs text-slate-500">Across all cultural events</p>
+    </div>
+    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Participants</p>
+        <p class="mt-1 font-display text-2xl font-bold text-ink">{{ stats.participants }}</p>
+        <p class="mt-1 text-xs text-slate-500">Enrolled in cultural events</p>
+    </div>
+</div>
+
+{% if type_counts %}
+<div class="mb-6 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filter by event type</span>
+    <a href="{% url 'socio_cultural_management' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not selected_type %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">All types</a>
+    {% for type in type_counts %}
+    <a href="?type={{ type.value }}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if selected_type == type.value %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">{{ type.label }} <span class="text-[10px] {% if selected_type == type.value %}text-white/70{% else %}text-slate-400{% endif %}">{{ type.count }}</span></a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if cultural_competitions %}
+<div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
+    <table class="w-full text-left text-sm">
+        <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th class="px-5 py-3">Competition</th>
+                <th class="px-5 py-3">Schedule</th>
+                <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3 text-center">Rounds</th>
+                <th class="px-5 py-3 text-center">Criteria</th>
+                <th class="px-5 py-3 text-center">Participants</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competition in cultural_competitions %}
+            <tr class="border-b border-slate-100 last:border-0 hover:bg-teal-50/40">
+                <td class="px-5 py-4">
+                    <a href="{% url 'competition_detail' competition.id %}" class="font-semibold text-slate-800 hover:text-campus">{{ competition.name }}</a>
+                    <span class="mt-0.5 block text-[10px] text-slate-400">{% if competition.cultural_event_type %}{{ competition.get_cultural_event_type_display }}{% else %}Cultural competition{% endif %}</span>
+                </td>
+                <td class="px-5 py-4 text-slate-500">{{ competition.start_date|date:'M j, Y' }} &ndash; {{ competition.end_date|date:'M j, Y' }}</td>
+                <td class="px-5 py-4">
+                    <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if competition.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif competition.status == 'ACTIVE' %}bg-cyan-100 text-cyan-700{% elif competition.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ competition.get_status_display|upper }}</span>
+                </td>
+                <td class="px-5 py-4 text-center font-bold text-ink">{{ competition.rounds_count }}</td>
+                <td class="px-5 py-4 text-center text-slate-600">{{ competition.criteria_count }}</td>
+                <td class="px-5 py-4 text-center text-slate-600">{{ competition.participant_count }}</td>
+                <td class="px-5 py-4">
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <a href="{% url 'manage_rounds' competition.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Rounds</a>
+                        <a href="{% url 'create_round' competition.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Add round</a>
+                        <a href="{% url 'award_list' competition.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Awards</a>
+                        <a href="{% url 'medal_tally' competition.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Tally</a>
+                        <a href="{% url 'competition_results_detail' competition.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Results</a>
+                        <a href="{% url 'edit_competition' competition.id %}" class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Edit</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">No cultural competitions yet</p>
+    <p class="mt-2 text-sm text-slate-500">Create a competition and set its kind to “Cultural competition” to manage it from this page.</p>
+    <a href="{% url 'create_competition' %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Create cultural competition</a>
+</div>
+{% endif %}
+{% endblock %}

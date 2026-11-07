@@ -1,7 +1,10 @@
 import csv
 
+from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.utils import timezone
 
 from accounts.access import management_required
 from competitions.models import Competition
@@ -9,6 +12,18 @@ from participants.models import Participant
 from registrations.models import EventRegistration
 from sports.models import Match
 from teams.models import Team
+
+from .pdf import build_report_pdf
+from .reporting import (
+    judge_scores_report,
+    medal_tally_report,
+    participants_report,
+    registrations_report,
+    report_catalog,
+    schedule_report,
+    standings_report,
+    team_rosters_report,
+)
 
 
 class UTF8Response(HttpResponse):
@@ -23,21 +38,70 @@ class UTF8Response(HttpResponse):
             writer.writerow([str(cell) if cell is not None else '' for cell in row])
 
 
+def _pdf_response(report):
+    response = HttpResponse(build_report_pdf(report), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{report.filename}.pdf"'
+    return response
+
+
+def _print_response(request, report):
+    pdf_url_names = {
+        'participants': 'export_participants_pdf',
+        'rosters': 'export_team_rosters_pdf',
+        'registrations': 'export_registrations_pdf',
+        'schedule': 'export_schedule_pdf',
+        'medal-tally': 'export_medal_tally_pdf',
+        'judge-scores': 'export_judge_scores_pdf',
+        'standings': 'export_standings_pdf',
+    }
+    url_name = pdf_url_names[report.key]
+    if report.competition:
+        pdf_url = reverse(url_name, args=[report.competition.id])
+    else:
+        pdf_url = reverse(url_name)
+    return render(request, 'reports/report_print.html', {
+        'report': report,
+        'pdf_url': pdf_url,
+    })
+
+
 @management_required
 def reports_home(request):
-    competitions = Competition.objects.all().order_by('-id')
-    return render(request, 'reports/reports_home.html', {'competitions': competitions})
+    competitions = Competition.objects.annotate(
+        participant_count=Count('participants', distinct=True),
+        match_count=Count('sport_events__matches', distinct=True),
+    ).order_by('-start_date', '-id')
+    stats = {
+        'participants': Participant.objects.count(),
+        'teams': Team.objects.count(),
+        'registrations': EventRegistration.objects.count(),
+        'pending_registrations': EventRegistration.objects.filter(
+            status=EventRegistration.Status.PENDING,
+        ).count(),
+        'matches': Match.objects.count(),
+        'completed_matches': Match.objects.filter(
+            status=Match.Status.COMPLETED,
+        ).count(),
+        'competitions': competitions.count(),
+        'active_competitions': competitions.filter(status='ACTIVE').count(),
+    }
+    return render(request, 'reports/reports_home.html', {
+        'competitions': competitions,
+        'stats': stats,
+        'reports': report_catalog(),
+        'generated_at': timezone.now(),
+    })
 
+
+# ---------------------------------------------------------------------------
+# CSV exports
+# ---------------------------------------------------------------------------
 
 @management_required
 def export_participants_csv(request):
-    rows = [['Participant ID', 'Name', 'Email', 'Phone', 'Age', 'Category', 'Gender', 'Status', 'Team/Delegation', 'Registered']]
-    for participant in Participant.objects.order_by('name'):
-        rows.append([
-            participant.participant_id, participant.name, participant.email, participant.phone,
-            participant.age, participant.get_category_display(), participant.get_gender_display(),
-            participant.status, participant.team_name, participant.registration_date,
-        ])
+    report = participants_report()
+    section = report.sections[0]
+    rows = [section.columns, *section.rows]
     return UTF8Response(rows, 'participant_list.csv')
 
 
@@ -100,24 +164,36 @@ def export_schedule_csv(request):
 def export_medal_tally_csv(request):
     from scoring.services import compute_overall_medal_tally
 
-    rows = [['Competition', 'Rank', 'Team/Delegation', 'Gold', 'Silver', 'Bronze', 'Total Points']]
+    rows = [['Competition', 'Category', 'Rank', 'Team/Delegation', 'Status', 'Wins', 'Losses', 'Draws', 'Gold', 'Silver', 'Bronze', 'Total Points']]
+
+    # ?category=sports|cultural narrows the export to one competition
+    # category, mirroring the on-screen tally filter.
+    category = request.GET.get('category', '')
+    competitions = Competition.objects.all()
+    if category == 'cultural':
+        competitions = competitions.filter(kind=Competition.Kind.CULTURAL)
+    elif category == 'sports':
+        competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
 
     # The overall table first, then a per-competition breakdown underneath.
-    overall = compute_overall_medal_tally()
+    overall = compute_overall_medal_tally(competitions)
     for row in overall['rows']:
         rows.append([
-            'OVERALL', row['rank'], row['name'], row['gold'], row['silver'],
-            row['bronze'], row['points'],
+            'OVERALL', '', row['rank'], row['name'], row.get('status_display', ''),
+            row.get('wins', ''), row.get('losses', ''), row.get('draws', ''),
+            row['gold'], row['silver'], row['bronze'], row['points'],
         ])
 
     for entry in overall['breakdown']:
-        rows.append([entry['competition'].name, '', '', '', '', '', ''])
+        competition_category = 'Socio Cultural' if entry['competition'].kind == Competition.Kind.CULTURAL else entry['competition'].get_kind_display()
+        rows.append([entry['competition'].name, competition_category, '', '', '', '', '', '', '', '', '', ''])
         if not entry['rows']:
-            rows.append([entry['competition'].name, '', 'No medals awarded', '', '', '', ''])
+            rows.append([entry['competition'].name, competition_category, '', 'No medals awarded', '', '', '', '', '', '', '', ''])
         for row in entry['rows']:
             rows.append([
-                entry['competition'].name, row['rank'], row['name'], row['gold'],
-                row['silver'], row['bronze'], row['points'],
+                entry['competition'].name, competition_category, row['rank'], row['name'], row.get('status_display', ''),
+                row.get('wins', ''), row.get('losses', ''), row.get('draws', ''),
+                row['gold'], row['silver'], row['bronze'], row['points'],
             ])
 
     return UTF8Response(rows, 'medal_tally.csv')
@@ -188,3 +264,91 @@ def export_standings_csv(request, competition_id):
             ])
 
     return UTF8Response(rows, filename)
+
+
+# ---------------------------------------------------------------------------
+# PDF exports
+# ---------------------------------------------------------------------------
+
+@management_required
+def export_participants_pdf(request):
+    return _pdf_response(participants_report())
+
+
+@management_required
+def export_team_rosters_pdf(request):
+    return _pdf_response(team_rosters_report())
+
+
+@management_required
+def export_registrations_pdf(request):
+    return _pdf_response(registrations_report())
+
+
+@management_required
+def export_schedule_pdf(request):
+    return _pdf_response(schedule_report())
+
+
+@management_required
+def export_medal_tally_pdf(request):
+    category = request.GET.get('category', '')
+    if category not in ('sports', 'cultural'):
+        category = ''
+    return _pdf_response(medal_tally_report(category))
+
+
+@management_required
+def export_judge_scores_pdf(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    return _pdf_response(judge_scores_report(competition))
+
+
+@management_required
+def export_standings_pdf(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    return _pdf_response(standings_report(competition))
+
+
+# ---------------------------------------------------------------------------
+# Printable views
+# ---------------------------------------------------------------------------
+
+@management_required
+def print_participants(request):
+    return _print_response(request, participants_report())
+
+
+@management_required
+def print_team_rosters(request):
+    return _print_response(request, team_rosters_report())
+
+
+@management_required
+def print_registrations(request):
+    return _print_response(request, registrations_report())
+
+
+@management_required
+def print_schedule(request):
+    return _print_response(request, schedule_report())
+
+
+@management_required
+def print_medal_tally(request):
+    category = request.GET.get('category', '')
+    if category not in ('sports', 'cultural'):
+        category = ''
+    return _print_response(request, medal_tally_report(category))
+
+
+@management_required
+def print_judge_scores(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    return _print_response(request, judge_scores_report(competition))
+
+
+@management_required
+def print_standings(request, competition_id):
+    competition = get_object_or_404(Competition, id=competition_id)
+    return _print_response(request, standings_report(competition))

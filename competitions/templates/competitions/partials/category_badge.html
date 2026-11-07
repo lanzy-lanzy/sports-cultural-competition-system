@@ -1,0 +1,17 @@
+{# Shared category pill: Sports vs Socio Cultural (+ sub-type), mirrors the match board colour code. #}
+{% if competition.kind == 'CULTURAL' %}
+<span class="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+    <span class="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
+    Socio Cultural{% if competition.cultural_event_type %} · {{ competition.get_cultural_event_type_display }}{% endif %}
+</span>
+{% elif competition.kind == 'SPORTS' %}
+<span class="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">
+    <span class="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+    Sports
+</span>
+{% else %}
+<span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
+    <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+    Mixed
+</span>
+{% endif %}

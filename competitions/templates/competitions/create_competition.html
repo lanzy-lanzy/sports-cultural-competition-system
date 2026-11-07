@@ -14,6 +14,15 @@
     <form method="post" class="space-y-6">
         {% csrf_token %}
 
+        {% if category_errors %}
+        <div class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+            <p class="mb-1 font-semibold">Please fix the following before creating the competition:</p>
+            <ul class="list-disc space-y-1 pl-5">
+                {% for error in category_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <!-- Basic Details -->
         <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
             <div class="mb-6 flex items-center gap-3">
@@ -28,70 +37,102 @@
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div>
                     <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
-                    <input type="text" id="name" name="name" required
+                    <input type="text" id="name" name="name" value="{{ form_data.name }}" required
                            class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div>
                     <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
                     <select id="status" name="status" required
                             class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        <option value="PENDING">Pending</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="COMPLETED">Completed</option>
+                        <option value="PENDING" {% if form_data.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                        <option value="ACTIVE" {% if form_data.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                        <option value="COMPLETED" {% if form_data.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
                     </select>
                 </div>
                 <div>
                     <label for="start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
-                    <input type="date" id="start_date" name="start_date" required
+                    <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date }}" required
                            class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <div>
                     <label for="end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
-                    <input type="date" id="end_date" name="end_date" required
+                    <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date }}" required
                            class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
-                <div>
-                    <label for="kind" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Kind</label>
-                    <select id="kind" name="kind"
-                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        <option value="MIXED" selected>Mixed (Sports + Cultural)</option>
-                        <option value="SPORTS">Sports</option>
-                        <option value="CULTURAL">Cultural</option>
-                    </select>
+                <div class="md:col-span-2">
+                    <p class="mb-2 text-sm font-medium text-slate-700">Competition Category <span class="text-rose-500">*</span></p>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label data-kind="SPORTS"
+                               class="category-card flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-cyan-300">
+                            <input type="radio" name="kind" value="SPORTS" class="sr-only" required onchange="updateCategoryUI(this.form)"
+                                   {% if form_data.kind == 'SPORTS' %}checked{% endif %}>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.115 5.19l.319 1.913A6 6 0 008.11 8.36L6.115 5.19zM12 3c-.25 0-.49.01-.73.03L12 6l-3-2.97c1.57-.67 3.35-.67 4.93 0L18 6l-3-2.97c-.24-.02-.48-.03-.73-.03zM4.5 9.75l3.61 2.16-1.16 3.92L4.5 9.75zM19.5 9.75l-2.45 6.08-1.16-3.92 3.61-2.16zM12 14.25l3.89 2.83-1.48 4.99A11.95 11.95 0 0112 22.5c-1.67 0-3.26-.33-4.41-.93l-1.48-4.99L12 14.25z"/>
+                                </svg>
+                            </span>
+                            <span>
+                                <span class="block text-sm font-semibold text-slate-900">Sports</span>
+                                <span class="block text-xs text-slate-500">Athletic events, brackets and match boards.</span>
+                            </span>
+                        </label>
+                        <label data-kind="CULTURAL"
+                               class="category-card flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-violet-300">
+                            <input type="radio" name="kind" value="CULTURAL" class="sr-only" onchange="updateCategoryUI(this.form)"
+                                   {% if form_data.kind == 'CULTURAL' %}checked{% endif %}>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-50 text-violet-600">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m-6.5 3v8.25a2.25 2.25 0 11-2.25-2.25c.62 0 1.18.28 1.56.72m6.19-9.72a2.25 2.25 0 11-3.18 0m3.18 0a2.25 2.25 0 003.18 0M18 6v9.75A2.25 2.25 0 0115.75 18h-.38"/>
+                                </svg>
+                            </span>
+                            <span>
+                                <span class="block text-sm font-semibold text-slate-900">Socio Cultural</span>
+                                <span class="block text-xs text-slate-500">Dancing, singing, literary arts and more.</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <div>
-                    <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Cultural Event Type <span class="font-normal text-slate-400">(optional)</span></label>
-                    <select id="cultural_event_type" name="cultural_event_type"
-                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        <option value="" selected>— None —</option>
-                        <option value="DANCE">Dance</option>
-                        <option value="SINGING">Singing</option>
-                        <option value="CULTURAL_PRESENTATION">Cultural Presentation</option>
-                        <option value="ESSAY_WRITING">Essay Writing</option>
-                        <option value="POSTER_MAKING">Poster Making</option>
-                        <option value="QUIZ_BEE">Quiz Bee</option>
-                        <option value="SPOKEN_POETRY">Spoken Poetry</option>
-                        <option value="COSTUME">Costume</option>
-                        <option value="TALENT_SHOW">Talent Show</option>
-                        <option value="OTHER">Other</option>
+                <div class="cultural-subtype-wrap md:col-span-2 {% if form_data.kind != 'CULTURAL' %}hidden{% endif %}">
+                    <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Socio Cultural Sub-type <span class="text-rose-500">*</span></label>
+                    <select id="cultural_event_type" name="cultural_event_type" required
+                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100"
+                            {% if form_data.kind != 'CULTURAL' %}disabled{% endif %}>
+                        <option value="">— Select a sub-type —</option>
+                        <optgroup label="Performing Arts">
+                            <option value="DANCE" {% if form_data.cultural_event_type == 'DANCE' %}selected{% endif %}>Dancing</option>
+                            <option value="SINGING" {% if form_data.cultural_event_type == 'SINGING' %}selected{% endif %}>Singing</option>
+                            <option value="TALENT_SHOW" {% if form_data.cultural_event_type == 'TALENT_SHOW' %}selected{% endif %}>Talent Show</option>
+                            <option value="CULTURAL_PRESENTATION" {% if form_data.cultural_event_type == 'CULTURAL_PRESENTATION' %}selected{% endif %}>Cultural Presentation</option>
+                            <option value="COSTUME" {% if form_data.cultural_event_type == 'COSTUME' %}selected{% endif %}>Costume</option>
+                        </optgroup>
+                        <optgroup label="Literary &amp; Academic Arts">
+                            <option value="ESSAY_WRITING" {% if form_data.cultural_event_type == 'ESSAY_WRITING' %}selected{% endif %}>Essay Writing (Literary Arts)</option>
+                            <option value="SPOKEN_POETRY" {% if form_data.cultural_event_type == 'SPOKEN_POETRY' %}selected{% endif %}>Spoken Poetry</option>
+                            <option value="QUIZ_BEE" {% if form_data.cultural_event_type == 'QUIZ_BEE' %}selected{% endif %}>Quiz Bee</option>
+                            <option value="POSTER_MAKING" {% if form_data.cultural_event_type == 'POSTER_MAKING' %}selected{% endif %}>Poster Making</option>
+                        </optgroup>
+                        <optgroup label="Other">
+                            <option value="OTHER" {% if form_data.cultural_event_type == 'OTHER' %}selected{% endif %}>Other cultural event</option>
+                        </optgroup>
                     </select>
+                    <p class="mt-1 text-xs text-slate-400">Socio Cultural covers dancing, singing, literary arts and other cultural events.</p>
                 </div>
                 <div class="md:col-span-2">
                     <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label for="gold_points" class="mb-1 block text-xs font-medium text-slate-500">Gold</label>
-                            <input type="number" id="gold_points" name="gold_points" value="10" step="0.5" min="0"
+                            <input type="number" id="gold_points" name="gold_points" value="{% firstof form_data.gold_points '10' %}" step="0.5" min="0"
                                    class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                         </div>
                         <div>
                             <label for="silver_points" class="mb-1 block text-xs font-medium text-slate-500">Silver</label>
-                            <input type="number" id="silver_points" name="silver_points" value="5" step="0.5" min="0"
+                            <input type="number" id="silver_points" name="silver_points" value="{% firstof form_data.silver_points '5' %}" step="0.5" min="0"
                                    class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                         </div>
                         <div>
                             <label for="bronze_points" class="mb-1 block text-xs font-medium text-slate-500">Bronze</label>
-                            <input type="number" id="bronze_points" name="bronze_points" value="3" step="0.5" min="0"
+                            <input type="number" id="bronze_points" name="bronze_points" value="{% firstof form_data.bronze_points '3' %}" step="0.5" min="0"
                                    class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                         </div>
                     </div>
@@ -99,7 +140,7 @@
                 <div class="md:col-span-2">
                     <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                     <textarea id="description" name="description" rows="4" placeholder="Describe your competition..."
-                              class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100"></textarea>
+                              class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">{{ form_data.description }}</textarea>
                 </div>
             </div>
         </div>
@@ -239,6 +280,27 @@
 </div>
 
 <script>
+    function updateCategoryUI(root) {
+        const scope = root || document;
+        const checked = scope.querySelector('input[name="kind"]:checked');
+        const kind = checked ? checked.value : '';
+
+        scope.querySelectorAll('.category-card').forEach(function (card) {
+            const active = card.dataset.kind === kind;
+            card.classList.toggle('border-cyan-400', active);
+            card.classList.toggle('ring-2', active);
+            card.classList.toggle('ring-cyan-100', active);
+            card.classList.toggle('bg-cyan-50/60', active);
+        });
+
+        const wrap = scope.querySelector('.cultural-subtype-wrap');
+        if (wrap) {
+            const isCultural = kind === 'CULTURAL';
+            wrap.classList.toggle('hidden', !isCultural);
+            wrap.querySelectorAll('select, input').forEach(function (el) { el.disabled = !isCultural; });
+        }
+    }
+
     let roundCounter = 0;
 
     function addRound() {
@@ -290,6 +352,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         addRound();
+        updateCategoryUI(document);
     });
 </script>
 {% endblock %}
