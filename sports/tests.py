@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import re
 
@@ -758,6 +758,43 @@ class SportsNavigationPagesTest(TestCase):
             self.assertLess(match.scheduled_start, now)
             self.assertEqual(match.status, Match.Status.SCHEDULED)
 
+    def test_hub_keeps_socio_cultural_data_out_of_sports(self):
+        cultural_match = self._make_cultural_match()
+        cultural = cultural_match.event.competition
+        overdue = Match.objects.create(
+            event=cultural_match.event,
+            name='Cultural overdue',
+            round_number=2,
+            status=Match.Status.SCHEDULED,
+            scheduled_start=timezone.now() - timedelta(hours=2),
+        )
+
+        response = self.client.get(reverse('sports_hub'))
+        competition_ids = [
+            row['competition'].id for row in response.context['competition_rows']
+        ]
+        self.assertNotIn(cultural.id, competition_ids)
+        self.assertNotIn(overdue, response.context['overdue'])
+        self.assertNotContains(response, cultural.name)
+        self.assertNotContains(response, 'Quiz Bee')
+
+        sports_matches = Match.objects.exclude(
+            event__competition__kind=Competition.Kind.CULTURAL,
+        )
+        self.assertEqual(response.context['stats']['matches'], sports_matches.count())
+        self.assertEqual(
+            response.context['stats']['overdue'],
+            sports_matches.filter(
+                status=Match.Status.SCHEDULED, scheduled_start__lt=timezone.now(),
+            ).count(),
+        )
+        self.assertEqual(
+            response.context['stats']['events'],
+            SportsEvent.objects.exclude(
+                competition__kind=Competition.Kind.CULTURAL,
+            ).count(),
+        )
+
     def test_board_groups_matches_by_day(self):
         response = self.client.get(reverse('match_board'))
         self.assertEqual(response.status_code, 200)
@@ -904,6 +941,18 @@ class SportsNavigationPagesTest(TestCase):
             for m in group['matches']
         ]
         self.assertEqual(rendered_matches, [match])
+
+    def test_board_competition_dropdown_follows_the_category(self):
+        self._make_cultural_match()
+        response = self.client.get(reverse('match_board'), {'category': 'cultural'})
+        names = [competition.name for competition in response.context['competitions']]
+        self.assertIn('Cultural Night', names)
+        self.assertNotIn(self.competition.name, names)
+
+        response = self.client.get(reverse('match_board'), {'category': 'sports'})
+        names = [competition.name for competition in response.context['competitions']]
+        self.assertIn(self.competition.name, names)
+        self.assertNotIn('Cultural Night', names)
 
     def test_navigation_pages_require_management_role(self):
         spectator = User.objects.create_user('nav_spectator', 'nav@test.com', 'pass')

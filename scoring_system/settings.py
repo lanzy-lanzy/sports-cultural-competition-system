@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'protests',
     'audit',
     'reports',
+    'sms',
 ]
 
 MIDDLEWARE = [
@@ -199,6 +200,35 @@ EMAIL_BACKEND = os.environ.get(
     'DJANGO_EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend',
 )
+
+
+def _env_bool(name, default=False):
+    return os.environ.get(name, str(default)).lower() in ('1', 'true', 'yes', 'on')
+
+
+# ---------------------------------------------------------------------------
+# Semaphore SMS (https://semaphore.co/docs)
+# ---------------------------------------------------------------------------
+# Set SEMAPHORE_API_KEY and SEMAPHORE_SENDER_NAME in .env to enable sending.
+# The API key is kept out of the database and never exposed in the UI.
+SEMAPHORE_API_KEY = os.environ.get('SEMAPHORE_API_KEY', '').strip()
+SEMAPHORE_SENDER_NAME = os.environ.get('SEMAPHORE_SENDER_NAME', '').strip()
+SEMAPHORE_ENABLED = _env_bool('SEMAPHORE_ENABLED', True)
+SEMAPHORE_DRY_RUN = _env_bool('SEMAPHORE_DRY_RUN', False)
+SEMAPHORE_API_URL = os.environ.get(
+    'SEMAPHORE_API_URL',
+    'https://api.semaphore.co/api/v4/messages',
+)
+SEMAPHORE_ACCOUNT_URL = os.environ.get(
+    'SEMAPHORE_ACCOUNT_URL',
+    'https://api.semaphore.co/api/v4/account',
+)
+SEMAPHORE_TIMEOUT = int(os.environ.get('SEMAPHORE_TIMEOUT', '15'))
+# Match times are shown in Philippine time in SMS, regardless of TIME_ZONE.
+SEMAPHORE_TIMEZONE = os.environ.get('SEMAPHORE_TIMEZONE', 'Asia/Manila')
+# Team events message the coach/manager by default. Set to True to also text
+# every active player on the roster.
+SEMAPHORE_NOTIFY_TEAM_PLAYERS = _env_bool('SEMAPHORE_NOTIFY_TEAM_PLAYERS', False)
 
 
 # Static files (CSS, JavaScript, Images)

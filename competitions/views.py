@@ -4,12 +4,21 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction, models
 from django.core.paginator import Paginator
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .models import Competition, Round, Criterion
 from scoring.services import calculate_rankings
-from django.db.models import Count
+from django.db.models import Count, Q
 from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required
+
+
+def _competition_list_url(category='sports'):
+    """Return the list URL for a category, keeping sports as the default."""
+    url = reverse('competition_list')
+    if str(category).lower() == 'cultural':
+        return f'{url}?category=cultural'
+    return url
 
 
 def _parse_decimal(raw, default=None):
@@ -58,14 +67,37 @@ def _medal_points(post):
 
 @login_required
 def competition_list(request):
-    competitions = Competition.objects.all().order_by('-id').annotate(
+    # Sports and Socio Cultural competitions live in separate lists. Sports is
+    # the default so the two categories are never mixed on one page.
+    category = (request.GET.get('category') or 'sports').strip().lower()
+    if category not in ('sports', 'cultural'):
+        category = 'sports'
+
+    competitions = Competition.objects.all()
+    if get_user_role(request.user) not in MANAGEMENT_ROLES:
+        competitions = competitions.filter(status__in=['ACTIVE', 'COMPLETED'])
+
+    counts = competitions.aggregate(
+        sports=Count('id', filter=~Q(kind=Competition.Kind.CULTURAL)),
+        cultural=Count('id', filter=Q(kind=Competition.Kind.CULTURAL)),
+    )
+
+    if category == 'cultural':
+        competitions = competitions.filter(kind=Competition.Kind.CULTURAL)
+    else:
+        competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
+
+    competitions = competitions.order_by('-id').annotate(
         rounds_count=Count('rounds', distinct=True),
         criteria_count=Count('rounds__criteria', distinct=True),
     )
-    if get_user_role(request.user) not in MANAGEMENT_ROLES:
-        competitions = competitions.filter(status__in=['ACTIVE', 'COMPLETED'])
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
-    return render(request, 'competitions/competition_list.html', {'page_obj': page_obj})
+    return render(request, 'competitions/competition_list.html', {
+        'page_obj': page_obj,
+        'category': category,
+        'sports_count': counts['sports'] or 0,
+        'cultural_count': counts['cultural'] or 0,
+    })
 
 
 @management_required
@@ -207,7 +239,7 @@ def create_competition(request):
                                 )
 
             messages.success(request, 'Competition created successfully!')
-            return redirect('competition_list')
+            return redirect(_competition_list_url(kind))
         except Exception as e:
             messages.error(request, f'Error creating competition: {str(e)}')
             return render(request, 'competitions/create_competition.html')
@@ -259,9 +291,10 @@ def edit_competition(request, competition_id):
 def delete_competition(request, competition_id):
     if request.method == 'POST':
         competition = get_object_or_404(Competition, id=competition_id)
+        category = competition.kind
         competition.delete()
         messages.success(request, 'Competition deleted successfully.')
-        return redirect('competition_list')
+        return redirect(_competition_list_url(category))
     return redirect('competition_list')
 
 
@@ -281,7 +314,7 @@ def toggle_competition_status(request, competition_id):
         competition.save()
 
         messages.success(request, f'Competition status updated to {competition.status}')
-        return redirect('competition_list')
+        return redirect(_competition_list_url(competition.kind))
 
 
 @management_required

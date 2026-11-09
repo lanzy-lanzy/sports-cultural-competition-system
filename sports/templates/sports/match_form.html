@@ -26,6 +26,24 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if sms_configured %}
+        <label class="mt-6 flex items-start gap-3 rounded-md border border-teal-200 bg-teal-50/70 px-4 py-3.5">
+            <input type="checkbox" name="notify_sms" checked class="mt-0.5 h-4 w-4 rounded border-slate-300 text-campus focus:ring-teal-200">
+            <span>
+                <span class="block text-sm font-semibold text-slate-800">Text contestants about this change</span>
+                <span class="mt-0.5 block text-xs text-slate-500">Sends the new time, venue, or status to team managers and participants with a phone number.</span>
+            </span>
+        </label>
+        {% else %}
+        <p class="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            SMS is not configured yet, so no text will be sent. Add
+            <code class="rounded bg-white/70 px-1">SEMAPHORE_API_KEY</code> and
+            <code class="rounded bg-white/70 px-1">SEMAPHORE_SENDER_NAME</code> in <code class="rounded bg-white/70 px-1">.env</code>.
+            <a href="{% url 'sms_dashboard' %}" class="font-bold underline">Open SMS setup</a>.
+        </p>
+        {% endif %}
+
         <div class="mt-8 flex justify-end gap-3">
             <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400">Cancel</a>
             <button type="submit" class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow">Save match</button>

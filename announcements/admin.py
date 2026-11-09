@@ -20,6 +20,6 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(NotificationPreference)
 class NotificationPreferenceAdmin(admin.ModelAdmin):
-    list_display = ('user', 'email_enabled')
-    list_filter = ('email_enabled',)
+    list_display = ('user', 'email_enabled', 'sms_enabled')
+    list_filter = ('email_enabled', 'sms_enabled')
     search_fields = ('user__username', 'user__email')

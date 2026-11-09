@@ -12,10 +12,20 @@
     </div>
     <div class="flex flex-wrap items-center gap-4">
         <a href="{% url 'event_bracket' event.id %}" class="rounded-md bg-campus px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-105">View bracket</a>
+        <a href="{% url 'sms_dashboard' %}" class="text-sm font-semibold text-slate-500 hover:text-campus">SMS updates</a>
         <a href="{% url 'match_board' %}?competition={{ event.competition_id }}" class="text-sm font-semibold text-slate-500 hover:text-campus">All competition matches</a>
         <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
     </div>
 </div>
+
+{% if not sms_configured %}
+<div class="mb-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+    <span class="font-bold">SMS is not configured.</span>
+    Add <code class="rounded bg-white/70 px-1">SEMAPHORE_API_KEY</code> and
+    <code class="rounded bg-white/70 px-1">SEMAPHORE_SENDER_NAME</code> in <code class="rounded bg-white/70 px-1">.env</code> to text contestants automatically.
+    <a href="{% url 'sms_dashboard' %}" class="font-bold underline">Open SMS setup</a>
+</div>
+{% endif %}
 
 {% if matches %}
 <div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
@@ -51,6 +61,23 @@
                     <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif match.status == 'ONGOING' %}bg-cyan-100 text-cyan-700{% elif match.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% elif match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ match.get_status_display }}</td>
                 <td class="px-5 py-4">
                     <div class="flex justify-end gap-2">
+                        {% if sms_configured %}
+                        <form method="post" action="{% url 'sms_notify_match' match.id %}" class="inline">
+                            {% csrf_token %}
+                            {% if match.status == 'COMPLETED' %}
+                            <input type="hidden" name="kind" value="result">
+                            {% elif match.status == 'ONGOING' %}
+                            <input type="hidden" name="kind" value="live">
+                            {% elif match.status == 'POSTPONED' %}
+                            <input type="hidden" name="kind" value="postponed">
+                            {% elif match.status == 'CANCELLED' %}
+                            <input type="hidden" name="kind" value="cancelled">
+                            {% else %}
+                            <input type="hidden" name="kind" value="scheduled">
+                            {% endif %}
+                            <button type="submit" class="rounded-md border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-pine-deep hover:bg-teal-100" title="Text this update to team managers and participants">SMS</button>
+                        </form>
+                        {% endif %}
                         <a href="{% url 'edit_match' match.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Edit</a>
                         {% if match.status != 'COMPLETED' and match.entries.count == 2 %}
                         <button type="button"
@@ -62,6 +89,7 @@
                                 data-start="{% if match.scheduled_start %}{{ match.scheduled_start|date:'D, M j, Y · H:i' }}{% else %}Not scheduled{% endif %}"
                                 data-side1="{% for entry in match.entries.all %}{% if entry.side == 1 %}{{ entry.display_name }}{% endif %}{% endfor %}"
                                 data-side2="{% for entry in match.entries.all %}{% if entry.side == 2 %}{{ entry.display_name }}{% endif %}{% endfor %}"
+                                data-sms="{{ sms_configured|yesno:'1,0' }}"
                                 class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Record result</button>
                         {% endif %}
                     </div>
@@ -113,6 +141,16 @@
                               class="w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></textarea>
                 </div>
             </div>
+
+            {% if sms_configured %}
+            <label class="mt-4 flex items-start gap-3 rounded-md border border-teal-200 bg-teal-50/70 px-4 py-3">
+                <input type="checkbox" name="notify_sms" checked class="mt-0.5 h-4 w-4 rounded border-slate-300 text-campus focus:ring-teal-200">
+                <span>
+                    <span class="block text-xs font-bold text-slate-800">Text the result to contestants</span>
+                    <span class="mt-0.5 block text-[11px] text-slate-500">Sends the final score and winner to team managers and participants with a phone number.</span>
+                </span>
+            </label>
+            {% endif %}
 
             <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 The higher score wins and advances in the bracket. Equal scores are saved as a draw.

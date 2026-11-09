@@ -68,8 +68,12 @@ class NotificationPreference(models.Model):
         default=True,
         help_text='Receive email copies of system notifications and announcements.',
     )
+    sms_enabled = models.BooleanField(
+        default=True,
+        help_text='Receive text messages for match schedules, live updates, and results.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.user} - email {"on" if self.email_enabled else "off"}'
+        return f'{self.user} - email {"on" if self.email_enabled else "off"}, sms {"on" if self.sms_enabled else "off"}'

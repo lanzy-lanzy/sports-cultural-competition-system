@@ -1,13 +1,21 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}Competitions - Competrack{% endblock %}
-{% block header_title %}Competitions{% endblock %}
+{% block title %}{% if category == 'cultural' %}Socio Cultural Competitions{% else %}Sports Competitions{% endif %} - Competrack{% endblock %}
+{% block header_title %}{% if category == 'cultural' %}Socio Cultural{% else %}Sports Competitions{% endif %}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
     <div>
-        <h1 class="font-display text-2xl font-semibold text-slate-900">Competitions</h1>
-        <p class="mt-1 text-sm text-slate-500">{% if can_manage %}Manage and view all competitions in one place.{% else %}Browse current competitions and official information.{% endif %}</p>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">{% if category == 'cultural' %}Socio Cultural Competitions{% else %}Sports Competitions{% endif %}</h1>
+        <p class="mt-1 text-sm text-slate-500">
+            {% if category == 'cultural' %}
+                Judged cultural events kept separate from sports brackets.
+            {% elif can_manage %}
+                Manage and view sports competitions, separate from socio-cultural events.
+            {% else %}
+                Browse current sports competitions and official information.
+            {% endif %}
+        </p>
     </div>
     <div class="flex items-center gap-3">
         <!-- View toggle -->
@@ -28,13 +36,32 @@
             </button>
         </div>
 
-        {% if can_manage %}<button type="button" onclick="openModal('create-comp-modal')" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+        {% if can_manage %}<button type="button" onclick="openCreateComp()" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
             Create Competition
         </button>{% endif %}
     </div>
+</div>
+
+<!-- ===== Category tabs: sports and socio-cultural stay apart ===== -->
+<div class="mb-6 flex flex-wrap items-center gap-2">
+    <a href="{% url 'competition_list' %}?category=sports"
+       class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition {% if category == 'sports' %}border-cyan-600 bg-cyan-600 text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700{% endif %}">
+        Sports
+        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if category == 'sports' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-500{% endif %}">{{ sports_count }}</span>
+    </a>
+    <a href="{% url 'competition_list' %}?category=cultural"
+       class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition {% if category == 'cultural' %}border-violet-600 bg-violet-600 text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700{% endif %}">
+        Socio Cultural
+        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if category == 'cultural' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-500{% endif %}">{{ cultural_count }}</span>
+    </a>
+    {% if category == 'cultural' and can_manage %}
+    <a href="{% url 'socio_cultural_management' %}" class="ml-auto inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700">
+        Open cultural hub
+    </a>
+    {% endif %}
 </div>
 
 {% if page_obj %}
@@ -212,9 +239,17 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872"/>
         </svg>
     </div>
-    <h3 class="font-display text-xl font-semibold text-slate-900">No Competitions Yet</h3>
-    <p class="mt-2 text-sm text-slate-500">{% if can_manage %}Get started by creating your first competition.{% else %}There are no current competitions to display.{% endif %}</p>
-    {% if can_manage %}<button type="button" onclick="openModal('create-comp-modal')" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+    <h3 class="font-display text-xl font-semibold text-slate-900">{% if category == 'cultural' %}No Socio Cultural Competitions Yet{% else %}No Sports Competitions Yet{% endif %}</h3>
+    <p class="mt-2 text-sm text-slate-500">
+        {% if category == 'cultural' %}
+            Create a cultural competition to manage its rounds, criteria, and results.
+        {% elif can_manage %}
+            Get started by creating your first sports competition.
+        {% else %}
+            There are no current sports competitions to display.
+        {% endif %}
+    </p>
+    {% if can_manage %}<button type="button" onclick="openCreateComp()" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
@@ -779,6 +814,16 @@
             wrap.classList.toggle('hidden', !isCultural);
             wrap.querySelectorAll('select, input').forEach(function (el) { el.disabled = !isCultural; });
         }
+    }
+
+    function openCreateComp() {
+        const form = document.querySelector('#create-comp-modal form');
+        const category = '{{ category|escapejs }}';
+        const kind = category === 'cultural' ? 'CULTURAL' : 'SPORTS';
+        const radio = form.querySelector('input[name="kind"][value="' + kind + '"]');
+        if (radio) radio.checked = true;
+        updateCategoryUI(form);
+        openModal('create-comp-modal');
     }
 
     function openEditComp(btn) {

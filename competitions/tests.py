@@ -127,7 +127,9 @@ class CompetitionViewTest(TestCase):
             'criterion_max_scores_1[]': ['50'], 'criterion_weights_1[]': ['60'],
         }
         resp = self.client.post(reverse('create_competition'), data)
-        self.assertRedirects(resp, reverse('competition_list'))
+        self.assertRedirects(
+            resp, f"{reverse('competition_list')}?category=cultural",
+        )
         comp = Competition.objects.get(name='CULTURAL FEST')
         self.assertEqual(comp.kind, 'CULTURAL')
         self.assertEqual(comp.cultural_event_type, 'DANCE')
@@ -323,3 +325,31 @@ class SocioCulturalManagementTest(TestCase):
         self.assertEqual(
             self.client.get(reverse('socio_cultural_management')).status_code, 403,
         )
+
+    def test_competition_list_defaults_to_sports_only(self):
+        response = self.client.get(reverse('competition_list'))
+        self.assertEqual(response.context['category'], 'sports')
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.sports.id])
+        self.assertContains(response, self.sports.name)
+        self.assertNotContains(response, self.cultural.name)
+        self.assertEqual(response.context['sports_count'], 1)
+        self.assertEqual(response.context['cultural_count'], 1)
+
+    def test_competition_list_cultural_tab_lists_only_cultural(self):
+        response = self.client.get(
+            reverse('competition_list'), {'category': 'cultural'},
+        )
+        self.assertEqual(response.context['category'], 'cultural')
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.cultural.id])
+        self.assertContains(response, self.cultural.name)
+        self.assertNotContains(response, self.sports.name)
+
+    def test_competition_list_unknown_category_falls_back_to_sports(self):
+        response = self.client.get(
+            reverse('competition_list'), {'category': 'not-a-category'},
+        )
+        self.assertEqual(response.context['category'], 'sports')
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.sports.id])

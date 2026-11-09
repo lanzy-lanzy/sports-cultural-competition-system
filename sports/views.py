@@ -34,7 +34,7 @@ def sports_hub(request):
 
     competitions = (
         Competition.objects
-        .all()
+        .exclude(kind=Competition.Kind.CULTURAL)
         .order_by('-start_date', '-id')
     )
 
@@ -72,7 +72,9 @@ def sports_hub(request):
             'match_done': match_done,
         })
 
-    base = Match.objects.select_related(
+    base = Match.objects.filter(
+        event__competition__in=competitions,
+    ).select_related(
         'event', 'event__competition', 'event__sport_type', 'venue',
     ).prefetch_related('entries__team', 'entries__participant')
 
@@ -102,9 +104,9 @@ def sports_hub(request):
             'events': len(all_events),
             'events_open': sum(event.status in open_statuses for event in all_events),
             'events_done': sum(event.status == SportsEvent.Status.COMPLETED for event in all_events),
-            'matches': Match.objects.count(),
-            'completed': Match.objects.filter(status=Match.Status.COMPLETED).count(),
-            'awaiting': Match.objects.filter(status=Match.Status.SCHEDULED).count(),
+            'matches': base.count(),
+            'completed': base.filter(status=Match.Status.COMPLETED).count(),
+            'awaiting': base.filter(status=Match.Status.SCHEDULED).count(),
             'overdue': base.filter(status=Match.Status.SCHEDULED, scheduled_start__lt=now).count(),
         },
         'overdue': list(overdue),
@@ -219,6 +221,16 @@ def match_board(request):
     }
     active_count = sum(1 for value in filter_state.values() if value)
 
+    competition_choices = Competition.objects.order_by('-start_date')
+    if category == 'cultural':
+        competition_choices = competition_choices.filter(
+            kind=Competition.Kind.CULTURAL,
+        )
+    elif category == 'sports':
+        competition_choices = competition_choices.exclude(
+            kind=Competition.Kind.CULTURAL,
+        )
+
     return render(request, 'sports/match_board.html', {
         'days': days,
         'sections': sections,
@@ -231,7 +243,7 @@ def match_board(request):
         'total': total,
         'active_count': active_count,
         'filter_state': filter_state,
-        'competitions': Competition.objects.order_by('-start_date'),
+        'competitions': competition_choices,
         'sport_types': SportType.objects.order_by('name'),
         'venues': Venue.objects.order_by('name'),
         'statuses': Match.Status.choices,
@@ -426,18 +438,54 @@ def clear_event_bracket(request, event_id):
 def match_schedule(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
     matches = event.matches.select_related('venue').order_by('round_number', 'id')
-    return render(request, 'sports/match_schedule.html', {'event': event, 'matches': matches})
+    from sms.services import is_configured
+    return render(request, 'sports/match_schedule.html', {
+        'event': event,
+        'matches': matches,
+        'sms_configured': is_configured(),
+    })
 
 
 @management_required
 def edit_match(request, match_id):
     match = get_object_or_404(Match.objects.select_related('event__competition'), id=match_id)
+    previous = {
+        'scheduled_start': match.scheduled_start,
+        'scheduled_end': match.scheduled_end,
+        'venue_id': match.venue_id,
+        'status': match.status,
+    }
     form = MatchForm(request.POST or None, instance=match)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        match = form.save()
+        if request.POST.get('notify_sms') == 'on':
+            kind = None
+            if previous['status'] != match.status:
+                kind = {
+                    Match.Status.ONGOING: 'start',
+                    Match.Status.POSTPONED: 'postponed',
+                    Match.Status.CANCELLED: 'cancelled',
+                }.get(match.status)
+            if kind is None and (
+                previous['scheduled_start'] != match.scheduled_start
+                or previous['scheduled_end'] != match.scheduled_end
+                or previous['venue_id'] != match.venue_id
+            ):
+                kind = 'rescheduled' if previous['scheduled_start'] else 'scheduled'
+            if kind:
+                from sms.services import describe_summary, notify_match
+                summary = notify_match(match, kind, created_by=request.user)
+                level = messages.SUCCESS if summary['sent'] else messages.WARNING
+                messages.add_message(request, level, describe_summary(summary))
         messages.success(request, 'Match schedule updated.')
         return redirect('match_schedule', event_id=match.event_id)
-    return render(request, 'sports/match_form.html', {'form': form, 'match': match})
+
+    from sms.services import is_configured
+    return render(request, 'sports/match_form.html', {
+        'form': form,
+        'match': match,
+        'sms_configured': is_configured(),
+    })
 
 
 @management_required
@@ -449,6 +497,7 @@ def record_match_result_view(request, match_id):
         2: request.POST.get('score_2'),
     }
     wants_json = request.POST.get('format') == 'json'
+    sms_summary = None
     try:
         record_match_result(match, scores, notes=request.POST.get('notes', ''))
         record_action_from_request(
@@ -457,8 +506,17 @@ def record_match_result_view(request, match_id):
             target=match,
             details=f'Result recorded for {match.event.name} - {match.label}',
         )
+        if request.POST.get('notify_sms') == 'on':
+            from sms.services import describe_summary, notify_match
+            sms_summary = notify_match(match, 'result', created_by=request.user)
+            if not wants_json:
+                level = messages.SUCCESS if sms_summary['sent'] else messages.WARNING
+                messages.add_message(request, level, describe_summary(sms_summary))
         if wants_json:
-            return JsonResponse({'ok': True, 'bracket': bracket_payload(match.event)})
+            payload = {'ok': True, 'bracket': bracket_payload(match.event)}
+            if sms_summary is not None:
+                payload['sms'] = describe_summary(sms_summary)
+            return JsonResponse(payload)
         messages.success(request, 'Match result recorded.')
     except ValueError as error:
         if wants_json:

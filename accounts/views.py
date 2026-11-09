@@ -205,11 +205,16 @@ def settings_view(request):
     preference, _ = NotificationPreference.objects.get_or_create(user=request.user)
     if request.method == 'POST':
         preference.email_enabled = request.POST.get('email_enabled') == 'on'
-        preference.save(update_fields=['email_enabled', 'updated_at'])
+        preference.sms_enabled = request.POST.get('sms_enabled') == 'on'
+        preference.save(update_fields=['email_enabled', 'sms_enabled', 'updated_at'])
         messages.success(request, 'Settings saved successfully.')
         return redirect('settings')
 
-    return render(request, 'accounts/settings.html', {'email_enabled': preference.email_enabled})
+    return render(request, 'accounts/settings.html', {
+        'email_enabled': preference.email_enabled,
+        'sms_enabled': preference.sms_enabled,
+        'account_phone': request.user.account_profile.phone if hasattr(request.user, 'account_profile') else '',
+    })
 
 
 @management_required

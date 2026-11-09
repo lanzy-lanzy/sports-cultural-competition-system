@@ -27,6 +27,20 @@
                             <span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span>
                         </label>
                     </div>
+                    <div class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                        <div>
+                            <p class="text-sm font-medium text-slate-800">SMS Notifications</p>
+                            <p class="text-xs text-slate-500">
+                                Receive match schedules, live updates, and results by text.
+                                {% if account_phone %}Sent to {{ account_phone }}.{% else %}Add a phone number to your profile first.{% endif %}
+                            </p>
+                        </div>
+                        <label class="relative inline-flex cursor-pointer items-center">
+                            <input type="checkbox" name="sms_enabled" {% if sms_enabled %}checked{% endif %} class="peer sr-only">
+                            <div class="h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-cyan-600"></div>
+                            <span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span>
+                        </label>
+                    </div>
                     <div>
                         <label for="theme" class="mb-1.5 block text-sm font-medium text-slate-700">Theme Preference</label>
                         <select id="theme" class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">

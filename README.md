@@ -61,8 +61,60 @@ All are optional in development (sensible defaults are provided).
 | `DJANGO_ALLOWED_HOSTS` | `*`                                        | Comma-separated host list                 |
 | `DJANGO_EMAIL_BACKEND` | `django.core.mail.backends.console.Email`  | Email backend (console prints to terminal)|
 | `DEFAULT_FROM_EMAIL`   | `noreply@jhcsc-competition.local`          | Default sender address                    |
+| `SEMAPHORE_API_KEY`    | *(empty — SMS disabled)*                   | Semaphore API key for SMS notifications   |
+| `SEMAPHORE_SENDER_NAME`| *(empty — account default)*                | Approved Semaphore sender name            |
+| `SEMAPHORE_ENABLED`    | `True`                                     | Master switch for outgoing SMS            |
+| `SEMAPHORE_DRY_RUN`    | `False`                                    | Log SMS without sending or spending credits |
+| `SEMAPHORE_TIMEZONE`   | `Asia/Manila`                              | Time zone used in match SMS               |
+| `SEMAPHORE_NOTIFY_TEAM_PLAYERS` | `False`                           | Also text every active player, not just staff |
 
-No `.env.example` exists yet; add one mirroring the table above when deploying.
+Copy `.env.example` to `.env` and fill in the values you need.
+
+## SMS notifications (Semaphore)
+
+SMS is wired through [Semaphore](https://semaphore.co/docs) and works for both
+sports and cultural events that have scheduled matches.
+
+**Setup**
+
+1. Sign in at <https://semaphore.co/account>, copy the **API key**, and make sure
+   your **Sender Name** is registered/approved.
+2. Add them to `.env` (the file is gitignored):
+
+   ```env
+   SEMAPHORE_API_KEY=your-api-key
+   SEMAPHORE_SENDER_NAME=your-approved-sender
+   ```
+
+3. Restart the server, open **Management → SMS Updates**, and send a test message.
+   The same page shows delivery logs, failures, and your credit balance.
+
+**What gets sent automatically**
+
+- Saving a match with a new time/venue/status (checkbox on the edit form) texts the
+  contestants about the schedule change.
+- Moving a match to **Ongoing** texts "starting now"; changing it to **Postponed**
+  or **Cancelled** texts the new status.
+- Recording a result texts the final score and winner (checkbox on the result dialog).
+- The **SMS** button on the match schedule row sends the update again on demand.
+- `python manage.py send_match_reminders --hours 24` texts reminders for upcoming
+  matches. Run it hourly from Task Scheduler/cron; it skips matches already reminded
+  for the current schedule. Add `--include-players` to reach full rosters.
+
+Team events text the team manager/coach accounts; individual events text the
+participant. Every recipient can turn SMS off under **Settings → SMS Notifications**.
+Invalid numbers, opted-out users, and unconfigured gateways are skipped safely —
+saving a match never fails because Semaphore is unreachable.
+
+### Manual / scripted SMS
+
+```bash
+# Preview upcoming reminders without sending
+python manage.py send_match_reminders --hours 48 --dry-run
+
+# Send reminders now
+python manage.py send_match_reminders --hours 6 --competition 1
+```
 
 ## Database
 
