@@ -9,7 +9,9 @@ from django.views.decorators.http import require_POST
 
 from .models import Competition, Round, Criterion
 from scoring.services import calculate_rankings
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models.functions import Lower
+from sports.models import SportsEvent
 from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required
 
 
@@ -65,13 +67,92 @@ def _medal_points(post):
     }
 
 
+def _competition_search_q(category, term):
+    """Case insensitive search filter for the list page.
+
+    The database collation compares strings case sensitively, so the term is
+    matched against lowered columns instead of trusting LIKE's collation. The
+    competition name and description are always searched; cultural competitions
+    also match their event type and sports competitions their events, sport and
+    venue names. Sports matches use a subquery so a competition is never
+    duplicated or dropped by the event join.
+    """
+    needle = term.lower()
+    query = (
+        Q(search_name__contains=needle)
+        | Q(search_description__contains=needle)
+    )
+    if category == 'cultural':
+        return query | Q(search_event_type__contains=needle)
+
+    events = (
+        SportsEvent.objects
+        .annotate(
+            search_event=Lower('name'),
+            search_sport=Lower('sport_type__name'),
+            search_venue=Lower('venue__name'),
+        )
+        .filter(
+            Q(search_event__contains=needle)
+            | Q(search_sport__contains=needle)
+            | Q(search_venue__contains=needle),
+            competition=OuterRef('pk'),
+        )
+    )
+    return query | Exists(events)
+
+
+def _cultural_subcategories(queryset):
+    """Cultural sub-type chips built from the competitions currently in range."""
+    labels = dict(Competition.CulturalEventType.choices)
+    rows = (
+        queryset
+        .exclude(cultural_event_type='')
+        .values('cultural_event_type')
+        .annotate(n=Count('id'))
+        .order_by('cultural_event_type')
+    )
+    return [
+        {
+            'value': row['cultural_event_type'],
+            'label': labels.get(
+                row['cultural_event_type'],
+                row['cultural_event_type'].replace('_', ' ').title(),
+            ),
+            'count': row['n'],
+        }
+        for row in rows
+    ]
+
+
+def _sports_subcategories(queryset):
+    """Sport-type chips built from the events attached to the competitions in
+    range; a competition running two sports is counted under both."""
+    rows = (
+        queryset
+        .filter(sport_events__isnull=False)
+        .values('sport_events__sport_type_id', 'sport_events__sport_type__name')
+        .annotate(n=Count('id', distinct=True))
+        .order_by('sport_events__sport_type__name')
+    )
+    return [
+        {
+            'value': str(row['sport_events__sport_type_id']),
+            'label': row['sport_events__sport_type__name'],
+            'count': row['n'],
+        }
+        for row in rows
+    ]
+
+
 @login_required
 def competition_list(request):
-    # Sports and Socio Cultural competitions live in separate lists. Sports is
+    # Sports and Socio Cultural competitions live in separate tabs. Sports is
     # the default so the two categories are never mixed on one page.
     category = (request.GET.get('category') or 'sports').strip().lower()
     if category not in ('sports', 'cultural'):
         category = 'sports'
+    is_cultural = category == 'cultural'
 
     competitions = Competition.objects.all()
     if get_user_role(request.user) not in MANAGEMENT_ROLES:
@@ -82,10 +163,39 @@ def competition_list(request):
         cultural=Count('id', filter=Q(kind=Competition.Kind.CULTURAL)),
     )
 
-    if category == 'cultural':
+    if is_cultural:
         competitions = competitions.filter(kind=Competition.Kind.CULTURAL)
     else:
         competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
+
+    # The search is applied before the chips are counted so every counter
+    # describes what the user would actually get when clicking it.
+    query = (request.GET.get('q') or '').strip()
+    if query:
+        competitions = competitions.annotate(
+            search_name=Lower('name'),
+            search_description=Lower('description'),
+            search_event_type=Lower('cultural_event_type'),
+        ).filter(_competition_search_q(category, query))
+
+    subcategories = (
+        _cultural_subcategories(competitions)
+        if is_cultural else _sports_subcategories(competitions)
+    )
+    all_count = competitions.count()
+
+    # Only accept a sub-category that exists in the current range.
+    sub = (request.GET.get('sub') or '').strip()
+    selected_sub = next(
+        (item['value'] for item in subcategories if item['value'] == sub), ''
+    )
+    if selected_sub:
+        if is_cultural:
+            competitions = competitions.filter(cultural_event_type=selected_sub)
+        else:
+            competitions = competitions.filter(
+                sport_events__sport_type_id=int(selected_sub)
+            )
 
     competitions = competitions.order_by('-id').annotate(
         rounds_count=Count('rounds', distinct=True),
@@ -97,6 +207,15 @@ def competition_list(request):
         'category': category,
         'sports_count': counts['sports'] or 0,
         'cultural_count': counts['cultural'] or 0,
+        'subcategories': subcategories,
+        'selected_sub': selected_sub,
+        'selected_sub_label': next(
+            (item['label'] for item in subcategories if item['value'] == selected_sub), ''
+        ),
+        'query': query,
+        'all_count': all_count,
+        'result_count': page_obj.paginator.count,
+        'is_filtered': bool(query) or bool(selected_sub),
     })
 
 

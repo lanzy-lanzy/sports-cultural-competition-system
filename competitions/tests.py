@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from .models import Competition, Round, Criterion
 from scoring.models import CompetitionResult
+from sports.models import SportType, SportsEvent, Venue
 from accounts.models import UserProfile
 
 
@@ -353,3 +354,149 @@ class SocioCulturalManagementTest(TestCase):
         self.assertEqual(response.context['category'], 'sports')
         rows = list(response.context['page_obj'])
         self.assertEqual([c.id for c in rows], [self.sports.id])
+
+
+class CompetitionListFilterTest(TestCase):
+    """The Competitions page groups each tab by sub-category and takes a
+    free text search, both travelling in the query string."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'a@a.com', 'pass')
+        self.client.login(username='admin', password='pass')
+
+        self.basketball = SportType.objects.create(name='Basketball')
+        self.volleyball = SportType.objects.create(name='Volleyball')
+        self.gym = Venue.objects.create(name='Main Gymnasium')
+
+        self.hoops = Competition.objects.create(
+            name='Intramural Basketball', description='Five a side',
+            kind=Competition.Kind.SPORTS, status='ACTIVE',
+            start_date='2026-01-01 00:00:00', end_date='2026-01-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.net = Competition.objects.create(
+            name='Intramural Volleyball', description='Six a side',
+            kind=Competition.Kind.SPORTS, status='ACTIVE',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.himig = Competition.objects.create(
+            name='Himig Campus', description='Solo singing',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            status='ACTIVE',
+            start_date='2026-03-01 00:00:00', end_date='2026-03-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.latin = Competition.objects.create(
+            name='Latin American Dance', description='Dance sport',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.DANCE,
+            status='ACTIVE',
+            start_date='2026-04-01 00:00:00', end_date='2026-04-02 00:00:00',
+            created_by=self.admin,
+        )
+        SportsEvent.objects.create(
+            competition=self.hoops, sport_type=self.basketball,
+            name='Basketball - Open', venue=self.gym,
+        )
+        SportsEvent.objects.create(
+            competition=self.net, sport_type=self.volleyball,
+            name='Volleyball - Open',
+        )
+
+    def test_sports_tab_chips_group_by_sport_type(self):
+        response = self.client.get(reverse('competition_list'))
+        chips = response.context['subcategories']
+        self.assertEqual([c['label'] for c in chips], ['Basketball', 'Volleyball'])
+        self.assertEqual([c['count'] for c in chips], [1, 1])
+        self.assertEqual(response.context['all_count'], 2)
+        self.assertEqual(response.context['selected_sub'], '')
+        self.assertFalse(response.context['is_filtered'])
+
+    def test_sports_tab_chip_filters_to_one_discipline(self):
+        response = self.client.get(
+            reverse('competition_list'), {'sub': str(self.basketball.id)},
+        )
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.hoops.id])
+        self.assertEqual(response.context['selected_sub_label'], 'Basketball')
+        self.assertTrue(response.context['is_filtered'])
+        # The other chip stays reachable, so counters keep showing the tab.
+        self.assertEqual(response.context['all_count'], 2)
+
+    def test_cultural_tab_chips_group_by_event_type(self):
+        response = self.client.get(
+            reverse('competition_list'), {'category': 'cultural'},
+        )
+        chips = response.context['subcategories']
+        self.assertEqual([c['value'] for c in chips], ['DANCE', 'SINGING'])
+        self.assertEqual([c['label'] for c in chips],
+                         ['Dance Competition', 'Singing Competition'])
+
+        response = self.client.get(
+            reverse('competition_list'),
+            {'category': 'cultural', 'sub': 'DANCE'},
+        )
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.latin.id])
+
+    def test_search_matches_name_sport_and_venue(self):
+        expected = {
+            'basketball': [self.hoops.id],
+            'volley': [self.net.id],
+            'gymnasium': [self.hoops.id],
+            'five a': [self.hoops.id],
+        }
+        for term, ids in expected.items():
+            with self.subTest(term=term):
+                response = self.client.get(reverse('competition_list'), {'q': term})
+                self.assertEqual([c.id for c in response.context['page_obj']], ids)
+                self.assertEqual(response.context['query'], term)
+                self.assertTrue(response.context['is_filtered'])
+
+    def test_search_narrows_the_chip_counters(self):
+        response = self.client.get(
+            reverse('competition_list'), {'category': 'cultural', 'q': 'sing'},
+        )
+        chips = response.context['subcategories']
+        self.assertEqual([c['value'] for c in chips], ['SINGING'])
+        self.assertEqual(response.context['all_count'], 1)
+        self.assertEqual(response.context['result_count'], 1)
+
+    def test_search_and_subcategory_combine(self):
+        response = self.client.get(
+            reverse('competition_list'),
+            {'category': 'cultural', 'q': 'latin', 'sub': 'DANCE'},
+        )
+        rows = list(response.context['page_obj'])
+        self.assertEqual([c.id for c in rows], [self.latin.id])
+        self.assertEqual(response.context['selected_sub'], 'DANCE')
+
+    def test_unknown_subcategory_is_ignored(self):
+        response = self.client.get(
+            reverse('competition_list'), {'category': 'cultural', 'sub': 'NOT-A-TYPE'},
+        )
+        self.assertEqual(response.context['selected_sub'], '')
+        self.assertEqual(len(response.context['page_obj']), 2)
+
+        response = self.client.get(reverse('competition_list'), {'sub': '999999'})
+        self.assertEqual(response.context['selected_sub'], '')
+        self.assertEqual(len(response.context['page_obj']), 2)
+
+    def test_spectator_only_sees_published_competitions(self):
+        spectator = User.objects.create_user('viewer', 'v@v.com', 'pass')
+        profile, _ = UserProfile.objects.get_or_create(user=spectator)
+        profile.role = UserProfile.Role.SPECTATOR
+        profile.save()
+        Competition.objects.create(
+            name='Draft Ball Games', description='hidden',
+            kind=Competition.Kind.SPORTS, status='DRAFT',
+            start_date='2026-05-01 00:00:00', end_date='2026-05-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.client.force_login(spectator)
+        response = self.client.get(reverse('competition_list'), {'q': 'ball'})
+        rows = list(response.context['page_obj'])
+        self.assertNotIn('Draft Ball Games', [c.name for c in rows])
+        self.assertEqual(response.context['sports_count'], 2)

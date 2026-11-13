@@ -45,24 +45,82 @@
     </div>
 </div>
 
-<!-- ===== Category tabs: sports and socio-cultural stay apart ===== -->
-<div class="mb-6 flex flex-wrap items-center gap-2">
-    <a href="{% url 'competition_list' %}?category=sports"
-       class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition {% if category == 'sports' %}border-cyan-600 bg-cyan-600 text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700{% endif %}">
-        Sports
-        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if category == 'sports' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-500{% endif %}">{{ sports_count }}</span>
-    </a>
-    <a href="{% url 'competition_list' %}?category=cultural"
-       class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition {% if category == 'cultural' %}border-violet-600 bg-violet-600 text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700{% endif %}">
-        Socio Cultural
-        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if category == 'cultural' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-500{% endif %}">{{ cultural_count }}</span>
-    </a>
-    {% if category == 'cultural' and can_manage %}
-    <a href="{% url 'socio_cultural_management' %}" class="ml-auto inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700">
-        Open cultural hub
-    </a>
-    {% endif %}
-</div>
+<!-- ===== Filter bar: category tabs, sub-category chips and search ===== -->
+<section class="mb-6 rounded-md border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3.5">
+        <!-- Main categories: sports and socio-cultural stay apart -->
+        <div class="inline-flex self-start gap-1 rounded-md bg-slate-100 p-1" role="group" aria-label="Competition category">
+            <a href="{% querystring category='sports' sub=None q=None page=None %}"
+               class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition {% if category == 'sports' %}bg-white text-pine-deep shadow-sm{% else %}text-slate-500 hover:text-ink{% endif %}">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21l8 0" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 17l0 4" /><path stroke-linecap="round" stroke-linejoin="round" d="M7 4l10 0" /><path stroke-linecap="round" stroke-linejoin="round" d="M17 4v8a5 5 0 0 1 -10 0v-8" /></svg>
+                Sports
+                <span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold {% if category == 'sports' %}bg-moss text-pine-deep{% else %}bg-white text-slate-500{% endif %}">{{ sports_count }}</span>
+            </a>
+            <a href="{% querystring category='cultural' sub=None q=None page=None %}"
+               class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition {% if category == 'cultural' %}bg-white text-pine-deep shadow-sm{% else %}text-slate-500 hover:text-ink{% endif %}">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18V5l12 -2v13" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 18a3 3 0 1 1 -6 0a3 3 0 0 1 6 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 16a3 3 0 1 1 -6 0a3 3 0 0 1 6 0z" /></svg>
+                Socio Cultural
+                <span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold {% if category == 'cultural' %}bg-moss text-pine-deep{% else %}bg-white text-slate-500{% endif %}">{{ cultural_count }}</span>
+            </a>
+        </div>
+
+        <!-- Search across the whole list -->
+        <form method="get" action="{% url 'competition_list' %}" class="relative w-full sm:max-w-sm" role="search">
+            <input type="hidden" name="category" value="{{ category }}">
+            {% if selected_sub %}<input type="hidden" name="sub" value="{{ selected_sub }}">{% endif %}
+            <label for="comp-search" class="sr-only">Search competitions</label>
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6 -6" />
+            </svg>
+            <input type="search" id="comp-search" name="q" value="{{ query }}" autocomplete="off"
+                   placeholder="{% if category == 'cultural' %}Search name or description{% else %}Search name, sport or venue{% endif %}"
+                   class="w-full rounded-md border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-9 text-sm text-slate-800 placeholder-slate-400 transition focus:border-pine/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-moss">
+            <button type="submit" class="sr-only">Search</button>
+            {% if query %}
+            <a href="{% querystring q=None page=None %}" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear search">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12" /></svg>
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Inline sub-categories: sports by discipline, cultural by event type -->
+    <div class="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
+        <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{% if category == 'cultural' %}Event type{% else %}Discipline{% endif %}</span>
+        <a href="{% querystring sub=None page=None %}"
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_sub %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+            All <span class="{% if not selected_sub %}text-white/80{% else %}text-slate-400{% endif %}">{{ all_count }}</span>
+        </a>
+        {% for item in subcategories %}
+        <a href="{% querystring sub=item.value page=None %}"
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_sub == item.value %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+            {{ item.label }} <span class="{% if selected_sub == item.value %}text-white/80{% else %}text-slate-400{% endif %}">{{ item.count }}</span>
+        </a>
+        {% empty %}
+        <span class="text-xs text-slate-400">No sub-categories to filter yet.</span>
+        {% endfor %}
+
+        <div class="ml-auto flex items-center gap-3">
+            {% if is_filtered %}
+            <a href="{% querystring sub=None q=None page=None %}" class="text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset filters</a>
+            {% endif %}
+            {% if category == 'cultural' and can_manage %}
+            <a href="{% url 'socio_cultural_management' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">
+                Cultural hub
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6l-6 6" /></svg>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% if is_filtered %}
+<p class="-mt-3 mb-5 text-xs font-medium text-slate-500">
+    {{ result_count }} match{{ result_count|pluralize }}
+    {% if selected_sub_label %} in <span class="font-semibold text-pine-deep">{{ selected_sub_label }}</span>{% endif %}
+    {% if query %} for &ldquo;<span class="font-semibold text-pine-deep">{{ query }}</span>&rdquo;{% endif %}.
+</p>
+{% endif %}
 
 {% if page_obj %}
 
@@ -234,14 +292,25 @@
 
 {% else %}
 <div class="flex flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center backdrop-blur-sm">
-    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-cyan-100 text-cyan-600">
+    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-md {% if is_filtered %}bg-slate-100 text-slate-500{% else %}bg-moss text-pine{% endif %}">
+        {% if is_filtered %}
+        <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6 -6"/>
+        </svg>
+        {% else %}
         <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872"/>
         </svg>
+        {% endif %}
     </div>
-    <h3 class="font-display text-xl font-semibold text-slate-900">{% if category == 'cultural' %}No Socio Cultural Competitions Yet{% else %}No Sports Competitions Yet{% endif %}</h3>
-    <p class="mt-2 text-sm text-slate-500">
-        {% if category == 'cultural' %}
+    <h3 class="font-display text-xl font-semibold text-slate-900">
+        {% if is_filtered %}No Matches{% elif category == 'cultural' %}No Socio Cultural Competitions Yet{% else %}No Sports Competitions Yet{% endif %}
+    </h3>
+    <p class="mt-2 max-w-md text-sm text-slate-500">
+        {% if is_filtered %}
+            Nothing in this category matches the selected sub-category or the search text.
+        {% elif category == 'cultural' %}
             Create a cultural competition to manage its rounds, criteria, and results.
         {% elif can_manage %}
             Get started by creating your first sports competition.
@@ -249,7 +318,14 @@
             There are no current sports competitions to display.
         {% endif %}
     </p>
-    {% if can_manage %}<button type="button" onclick="openCreateComp()" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+    {% if is_filtered %}
+    <a href="{% querystring sub=None q=None page=None %}" class="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-pine/40 hover:text-pine-deep">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12M6 6l12 12"/>
+        </svg>
+        Clear filters
+    </a>
+    {% elif can_manage %}<button type="button" onclick="openCreateComp()" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
@@ -922,6 +998,34 @@
         document.querySelectorAll('form').forEach(function (form) {
             if (form.querySelector('.category-card')) updateCategoryUI(form);
         });
+        initSearch();
     });
+
+    // Search as you type: the list reloads once the user pauses, and the
+    // filter state (category, sub-category) travels with the query string.
+    function initSearch() {
+        const input = document.getElementById('comp-search');
+        if (!input) return;
+        const form = input.closest('form');
+        const typed = input.value.trim();
+        let timer = null;
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (input.value.trim() !== typed) form.submit();
+            }, 500);
+        });
+
+        // "/" focuses the search box, the usual shortcut for a list like this.
+        document.addEventListener('keydown', function (e) {
+            const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+            if (e.key === '/' && !typing) {
+                e.preventDefault();
+                input.focus();
+                input.select();
+            }
+        });
+    }
 </script>
 {% endblock %}
