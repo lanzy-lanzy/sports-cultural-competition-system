@@ -43,6 +43,14 @@ class SmsMessage(models.Model):
         blank=True,
         related_name='sms_messages',
     )
+    round = models.ForeignKey(
+        'competitions.Round',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sms_messages',
+        help_text='Set for socio-cultural sends, which have no match.',
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

@@ -4,168 +4,336 @@
 {% block header_title %}SMS Updates{% endblock %}
 
 {% block content %}
-<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+<!-- ===== Page header ===== -->
+<div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
     <div>
         <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Semaphore &middot; SMS gateway</p>
         <h1 class="mt-1 font-display text-3xl font-bold text-ink">SMS updates</h1>
         <p class="mt-2 max-w-2xl text-sm text-slate-500">
-            Schedule changes, match starts, live updates, and final results are texted to
-            team managers/coaches and individual participants. Every message is logged below.
+            Every scheduled match and socio-cultural round is listed below. Choose the
+            update, then text one session at a time or cover a whole competition in a
+            single click.
         </p>
     </div>
-    <div class="flex flex-wrap items-center gap-3">
-        <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:border-teal-200">Match board</a>
-        <a href="{% url 'sports_hub' %}" class="rounded-md bg-campus px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-105">Sports hub</a>
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold
+            {% if configured %}border-emerald-200 bg-emerald-50 text-emerald-700{% elif enabled %}border-amber-200 bg-amber-50 text-amber-700{% else %}border-slate-200 bg-slate-50 text-slate-500{% endif %}">
+            <span class="h-1.5 w-1.5 rounded-full {% if configured %}bg-emerald-500{% elif enabled %}bg-amber-500{% else %}bg-slate-400{% endif %}"></span>
+            {% if configured %}Gateway connected{% elif enabled %}API key missing{% else %}SMS disabled{% endif %}
+        </span>
+        {% if dry_run %}<span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">Dry run</span>{% endif %}
+        <a href="{% url 'match_board' %}" class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">Match board</a>
+        <a href="{% url 'sports_hub' %}" class="rounded-md bg-pine px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep">Sports hub</a>
     </div>
 </div>
 
-<div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-    <div class="rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-        <div class="flex flex-wrap items-start justify-between gap-3">
+{% if not configured %}
+<div class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 sm:px-5">
+    <span class="font-bold">SMS is not connected.</span>
+    Add <code class="rounded bg-white/70 px-1">SEMAPHORE_API_KEY</code> and
+    <code class="rounded bg-white/70 px-1">SEMAPHORE_SENDER_NAME</code> to
+    <code class="rounded bg-white/70 px-1">.env</code>, then restart the server.
+    Sends below stay logged in the message list until the gateway works.
+</div>
+{% endif %}
+
+<!-- ===== Schedule filter bar ===== -->
+<section class="mb-6 rounded-md border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div class="inline-flex self-start gap-1 rounded-md bg-slate-100 p-1" role="group" aria-label="Schedule window">
+            {% for option in scope_options %}
+            <a href="{% querystring scope=option.value page=None %}"
+               class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition {% if scope == option.value %}bg-white text-pine-deep shadow-sm{% else %}text-slate-500 hover:text-ink{% endif %}">
+                {{ option.label }}
+                <span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold {% if scope == option.value %}bg-moss text-pine-deep{% else %}bg-white text-slate-500{% endif %}">{{ option.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        <p class="text-xs font-medium text-slate-500">
+            {{ row_total }} session{{ row_total|pluralize }} in view
+            {% if selected_competition_label %}&middot; <span class="font-semibold text-pine-deep">{{ selected_competition_label }}</span>{% endif %}
+        </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
+        <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Competition</span>
+        <a href="{% querystring competition=None page=None %}"
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_competition %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+            All
+        </a>
+        {% for option in competition_options %}
+        <a href="{% querystring competition=option.id page=None %}"
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_competition == option.id %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+            <span class="h-1.5 w-1.5 rounded-full {% if selected_competition == option.id %}bg-white/80{% elif option.kind == 'CULTURAL' %}bg-amber-400{% else %}bg-emerald-500{% endif %}"
+                  title="{% if option.kind == 'CULTURAL' %}Socio-cultural{% else %}Sports{% endif %}"></span>
+            {{ option.label|title }} <span class="{% if selected_competition == option.id %}text-white/80{% else %}text-slate-400{% endif %}">{{ option.count }}</span>
+        </a>
+        {% empty %}
+        <span class="text-xs text-slate-400">Nothing is scheduled yet, so there is nobody to text.</span>
+        {% endfor %}
+        {% if is_filtered %}
+        <a href="{% querystring scope=None competition=None page=None %}" class="ml-auto text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset filters</a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ===== Competitions and their matches ===== -->
+{% for group in groups %}
+<section class="mb-5 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <header class="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-moss/80 via-moss/30 to-white px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                <span class="rounded-full px-2 py-0.5 {% if group.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700{% elif group.status == 'COMPLETED' %}bg-slate-200 text-slate-600{% elif group.status == 'CANCELLED' %}bg-rose-100 text-rose-600{% else %}bg-amber-100 text-amber-700{% endif %}">{{ group.status }}</span>
+                <span>{{ group.competition.start_date|date:'M j, Y' }} &ndash; {{ group.competition.end_date|date:'M j, Y' }}</span>
+            </div>
+            <h2 class="mt-2 font-display text-xl font-bold text-ink">{{ group.competition.name|title }}</h2>
+            <p class="mt-1 text-xs text-slate-500">{{ group.event_total }} event{{ group.event_total|pluralize }} &middot; {{ group.match_total }} match{{ group.match_total|pluralize:"es" }} in this view</p>
+        </div>
+
+        <form method="post" action="{% url 'sms_bulk_notify' %}" class="flex shrink-0 flex-wrap items-end gap-2"
+              data-confirm="Send one SMS per match ({{ group.match_total }} match{{ group.match_total|pluralize:"es" }}) to every manager and participant with a number on file?">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            <input type="hidden" name="competition_id" value="{{ group.competition.id }}">
             <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Gateway status</p>
-                <div class="mt-2 flex flex-wrap items-center gap-2">
-                    {% if configured %}
-                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Connected</span>
-                    {% elif enabled %}
-                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">API key missing</span>
-                    {% else %}
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">Disabled</span>
-                    {% endif %}
-                    {% if dry_run %}<span class="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold text-sky-700">Dry run</span>{% endif %}
+                <label class="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Bulk send</label>
+                {% include 'sms/partials/kind_select.html' with selected='scheduled' aria_label='Bulk update type for this competition' %}
+            </div>
+            <button type="submit" {% if not group.bulk_allowed %}disabled{% endif %}
+                    class="inline-flex h-9 items-center gap-2 rounded-md bg-pine px-4 text-xs font-bold text-white shadow-sm transition hover:bg-pine-deep disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                    title="Texts every match shown for this competition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13" /><path stroke-linecap="round" stroke-linejoin="round" d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                Text {{ group.match_total }} match{{ group.match_total|pluralize:"es" }}
+            </button>
+            <p class="w-full text-right text-[10px] text-slate-400" data-kind-hint></p>
+        </form>
+    </header>
+
+    {% if not group.bulk_allowed %}
+    <p class="border-b border-amber-100 bg-amber-50 px-4 py-2 text-[11px] text-amber-800 sm:px-5">
+        This view holds more than {{ max_bulk }} matches, so the competition-wide send is off.
+        Use the per-event buttons below or switch the view to Today.
+    </p>
+    {% endif %}
+
+    <div class="divide-y divide-slate-100">
+        {% for event_group in group.events %}
+        <div class="px-4 py-3.5 sm:px-5">
+            <div class="mb-2.5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-pine-deep ring-1 ring-slate-200">{{ event_group.event.sport_type.name }}</span>
+                    <h3 class="truncate text-sm font-semibold text-ink">{{ event_group.event.name }}</h3>
+                    <a href="{% url 'match_schedule' event_group.event.id %}" class="text-[11px] font-semibold text-slate-400 transition hover:text-pine-deep">Open schedule &rarr;</a>
                 </div>
+                <form method="post" action="{% url 'sms_bulk_notify' %}" class="flex items-center gap-2"
+                      data-confirm="Text all {{ event_group.match_total }} match{{ event_group.match_total|pluralize:"es" }} in {{ event_group.event.name }}?">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="scope" value="{{ scope }}">
+                    <input type="hidden" name="event_id" value="{{ event_group.event.id }}">
+                    {% include 'sms/partials/kind_select.html' with selected='scheduled' compact=True aria_label='Bulk update type for this event' %}
+                    <button type="submit" class="inline-flex h-8 items-center gap-1.5 rounded-md border border-pine/30 bg-moss/70 px-3 text-[11px] font-bold text-pine-deep transition hover:bg-moss"
+                            title="Text every match in {{ event_group.event.name }}">
+                        Event ({{ event_group.match_total }})
+                    </button>
+                </form>
             </div>
-            <form method="post" class="shrink-0">
+
+            <ul class="divide-y divide-slate-100 overflow-hidden rounded-md border border-slate-200">
+                {% for row in event_group.rows %}
+                <li class="flex flex-col gap-3 bg-white px-3 py-3 transition hover:bg-moss/25 sm:flex-row sm:items-center sm:gap-4 sm:px-4">
+                    <div class="w-[92px] shrink-0">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ row.match.scheduled_start|date:'D, M j'|default:'Time TBA' }}</p>
+                        <p class="font-display text-base font-bold text-ink">{{ row.match.scheduled_start|date:'g:i A'|default:'TBA' }}</p>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold text-slate-800">{{ row.match.contestants_display }}</p>
+                        <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+                            <span class="font-semibold text-slate-600">{{ row.match.label }}</span>
+                            {% if row.match.group %}<span class="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">Group {{ row.match.group }}</span>{% endif %}
+                            <span>{{ row.match.venue|default:'Venue to be announced' }}</span>
+                        </p>
+                    </div>
+
+                    <div class="flex shrink-0 items-center gap-3 sm:w-[168px] sm:justify-end">
+                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif row.match.status == 'ONGOING' %}bg-moss text-pine-deep{% elif row.match.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% elif row.match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ row.match.get_status_display }}</span>
+                        {% if row.last_sent %}
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400" title="Last SMS for this match on {{ row.last_sent|date:'M j, Y H:i' }}">texted {{ row.last_sent|timesince }} ago</span>
+                        {% else %}
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">not sent</span>
+                        {% endif %}
+                    </div>
+
+                    <form method="post" action="{% url 'sms_notify_match' row.match.id %}" class="flex shrink-0 items-center gap-2 border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        {% include 'sms/partials/kind_select.html' with selected=row.suggested compact=True aria_label='Update type for this match' %}
+                        <button type="submit" class="inline-flex h-8 items-center gap-1.5 rounded-md bg-ink px-3.5 text-[11px] font-bold text-white transition hover:bg-pine-deep"
+                                title="Text this match only">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13" /><path stroke-linecap="round" stroke-linejoin="round" d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                            Send
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endfor %}
+
+<!-- ===== Socio-cultural competitions and their rounds ===== -->
+{% for group in cultural_groups %}
+<section class="mb-5 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <header class="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-amber-50 via-white to-white px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                <span class="rounded-full px-2 py-0.5 {% if group.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700{% elif group.status == 'COMPLETED' %}bg-slate-200 text-slate-600{% elif group.status == 'CANCELLED' %}bg-rose-100 text-rose-600{% else %}bg-amber-100 text-amber-700{% endif %}">{{ group.status }}</span>
+                <span class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Socio-cultural</span>
+                <span>{{ group.event_type }}</span>
+                <span>{{ group.competition.start_date|date:'M j, Y' }} &ndash; {{ group.competition.end_date|date:'M j, Y' }}</span>
+            </div>
+            <h2 class="mt-2 font-display text-xl font-bold text-ink">{{ group.competition.name|title }}</h2>
+            <p class="mt-1 text-xs text-slate-500">
+                {{ group.round_total }} round{{ group.round_total|pluralize }} in this view
+                &middot;
+                {% if group.contestant_total %}{{ group.contestant_total }} registered contestant{{ group.contestant_total|pluralize }}{% else %}no contestants registered yet{% endif %}
+            </p>
+        </div>
+
+        <form method="post" action="{% url 'sms_bulk_notify' %}" class="flex shrink-0 flex-wrap items-end gap-2"
+              data-confirm="Text every registered contestant of {{ group.competition.name|title }} once per round ({{ group.round_total }} round{{ group.round_total|pluralize }})?">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            <input type="hidden" name="competition_id" value="{{ group.competition.id }}">
+            <div>
+                <label class="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Bulk send</label>
+                {% include 'sms/partials/kind_select.html' with choices=cultural_kind_choices selected='scheduled' aria_label='Bulk update type for this cultural competition' %}
+            </div>
+            <button type="submit" {% if not group.bulk_allowed %}disabled{% endif %}
+                    class="inline-flex h-9 items-center gap-2 rounded-md bg-pine px-4 text-xs font-bold text-white shadow-sm transition hover:bg-pine-deep disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                    title="Texts every round shown for this competition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13" /><path stroke-linecap="round" stroke-linejoin="round" d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                Text {{ group.round_total }} round{{ group.round_total|pluralize }}
+            </button>
+            <p class="w-full text-right text-[10px] text-slate-400" data-kind-hint></p>
+        </form>
+    </header>
+
+    {% if not group.bulk_allowed %}
+    <p class="border-b border-amber-100 bg-amber-50 px-4 py-2 text-[11px] text-amber-800 sm:px-5">
+        This view holds more than {{ max_bulk }} rounds, so the competition-wide send is off.
+        Use the buttons below or switch the view to Today.
+    </p>
+    {% endif %}
+    {% if not group.contestant_total %}
+    <p class="border-b border-amber-100 bg-amber-50 px-4 py-2 text-[11px] text-amber-800 sm:px-5">
+        Nobody is registered for this competition yet, so a send here logs no message.
+        Approve registrations first and the contestants appear automatically.
+    </p>
+    {% endif %}
+
+    <ul class="divide-y divide-slate-100">
+        {% for row in group.rounds %}
+        <li class="flex flex-col gap-3 bg-white px-3 py-3 transition hover:bg-amber-50/60 sm:flex-row sm:items-center sm:gap-4 sm:px-4">
+            <div class="w-[92px] shrink-0">
+                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Round {{ row.round.order }}</p>
+                <p class="font-display text-base font-bold text-ink">{{ row.round.name|title }}</p>
+            </div>
+
+            <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-slate-800">{{ row.round.description|truncatechars:90|default:group.event_type }}</p>
+                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+                    <span>{{ row.round.competition.start_date|date:'D, M j, Y g:i A'|default:'Time to be announced' }}</span>
+                    {% if row.round.weight_percentage %}<span class="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">{{ row.round.weight_percentage }}% weight</span>{% endif %}
+                </p>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-3 sm:w-[168px] sm:justify-end">
+                <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.round.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif row.round.status == 'ONGOING' %}bg-moss text-pine-deep{% else %}bg-slate-100 text-slate-600{% endif %}">{{ row.round.get_status_display }}</span>
+                {% if row.last_sent %}
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400" title="Last SMS for this round on {{ row.last_sent|date:'M j, Y H:i' }}">texted {{ row.last_sent|timesince }} ago</span>
+                {% else %}
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">not sent</span>
+                {% endif %}
+            </div>
+
+            <form method="post" action="{% url 'sms_notify_round' row.round.id %}" class="flex shrink-0 items-center gap-2 border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="refresh_balance">
-                <button type="submit" class="rounded-md border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:border-teal-200">Check balance</button>
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% include 'sms/partials/kind_select.html' with choices=cultural_kind_choices selected=row.suggested compact=True aria_label='Update type for this round' %}
+                <button type="submit" class="inline-flex h-8 items-center gap-1.5 rounded-md bg-ink px-3.5 text-[11px] font-bold text-white transition hover:bg-pine-deep"
+                        title="Text every contestant of this round">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13" /><path stroke-linecap="round" stroke-linejoin="round" d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    Send
+                </button>
             </form>
-        </div>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endfor %}
 
-        <dl class="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                <dt class="text-slate-500">Sender name</dt>
-                <dd class="font-semibold text-slate-800">{{ sender_name|default:'Default on Semaphore account' }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                <dt class="text-slate-500">API key</dt>
-                <dd class="font-mono text-xs font-semibold text-slate-800">{{ masked_key|default:'Not set' }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                <dt class="text-slate-500">Match time zone</dt>
-                <dd class="font-semibold text-slate-800">{{ timezone_name }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                <dt class="text-slate-500">Team events text</dt>
-                <dd class="font-semibold text-slate-800">{% if notify_team_players %}Managers + players{% else %}Managers / coaches{% endif %}</dd>
-            </div>
-        </dl>
-
-        {% if balance %}
-        <p class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-            Semaphore balance: <strong>{{ balance.credit_balance }}</strong> credit(s)
-            {% if balance.account_name %}&middot; {{ balance.account_name }}{% endif %}
-            {% if balance.status %}&middot; {{ balance.status }}{% endif %}
-        </p>
-        {% elif balance_error %}
-        <p class="mt-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{{ balance_error }}</p>
-        {% endif %}
-
-        {% if not configured %}
-        <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-            <p class="font-bold">Finish setup</p>
-            <p class="mt-1">Add these lines to <code class="rounded bg-white/70 px-1 py-0.5">.env</code>, then restart the server:</p>
-            <pre class="mt-2 overflow-x-auto rounded bg-white/80 p-3 font-mono text-[11px] leading-relaxed">SEMAPHORE_API_KEY=your-api-key
-SEMAPHORE_SENDER_NAME=your-approved-sender</pre>
-            <p class="mt-2">Get both from <a class="font-bold underline" href="https://semaphore.co/account" target="_blank" rel="noopener">semaphore.co/account</a>. The sender name must already be approved.</p>
-        </div>
-        {% endif %}
+{% if not groups and not cultural_groups %}
+<section class="mb-6 rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+    <p class="font-display text-lg font-bold text-ink">Nothing to text in this view</p>
+    <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
+        SMS updates follow the schedule. Build the match bracket for a sports event, or
+        add rounds to a socio-cultural competition, then come back to notify everyone.
+    </p>
+    <div class="mt-5 flex flex-wrap justify-center gap-3">
+        <a href="{% querystring scope='all' competition=None %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">Show all schedules</a>
+        <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">Match board</a>
+        <a href="{% url 'socio_cultural_management' %}" class="rounded-md bg-pine px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep">Cultural events</a>
     </div>
+</section>
+{% endif %}
 
-    <div class="grid grid-cols-2 gap-4">
-        <div class="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Today</p>
-            <p class="mt-2 font-display text-3xl font-bold text-ink">{{ stats.today }}</p>
-            <p class="mt-1 text-xs text-slate-500">messages logged</p>
-        </div>
-        <div class="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Delivered</p>
-            <p class="mt-2 font-display text-3xl font-bold text-emerald-700">{{ stats.sent }}</p>
-            <p class="mt-1 text-xs text-slate-500">accepted by Semaphore</p>
-        </div>
-        <div class="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Failed</p>
-            <p class="mt-2 font-display text-3xl font-bold {% if stats.failed %}text-rose-600{% else %}text-ink{% endif %}">{{ stats.failed }}</p>
-            <p class="mt-1 text-xs text-slate-500">need attention</p>
-        </div>
-        <div class="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">All time</p>
-            <p class="mt-2 font-display text-3xl font-bold text-ink">{{ stats.total }}</p>
-            <p class="mt-1 text-xs text-slate-500">messages</p>
-        </div>
-    </div>
-</div>
 
-<div class="mb-6 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="mb-4">
-        <h2 class="font-display text-lg font-bold text-ink">Send a test message</h2>
-        <p class="mt-1 text-xs text-slate-500">Use your own mobile number. Test messages are logged with the “Test” category.</p>
-    </div>
-    <form method="post" class="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,220px)_1fr_auto] sm:items-end">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="test">
-        <div>
-            <label for="sms-number" class="mb-1.5 block text-xs font-semibold text-slate-600">Mobile number</label>
-            <input type="text" name="number" id="sms-number" required placeholder="0917 123 4567"
-                   class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
-        </div>
-        <div>
-            <label for="sms-message" class="mb-1.5 block text-xs font-semibold text-slate-600">Message</label>
-            <input type="text" name="message" id="sms-message" required maxlength="480"
-                   value="Competrack SMS is working. This is a test from the competition office."
-                   class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
-        </div>
-        <button type="submit" class="h-11 rounded-md bg-ink px-5 text-sm font-bold text-white hover:bg-campus">Send test</button>
-    </form>
-</div>
-
-<div class="rounded-md border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-end">
+<!-- ===== Message log ===== -->
+<section class="rounded-md border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5 lg:flex-row lg:items-end">
         <div>
             <h2 class="font-display text-lg font-bold text-ink">Message log</h2>
             <p class="mt-1 text-xs text-slate-500">Newest first. Showing the latest 100 matching messages.</p>
         </div>
         <form method="get" class="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            {% if selected_competition %}<input type="hidden" name="competition" value="{{ selected_competition }}">{% endif %}
             <div>
                 <label for="filter-category" class="sr-only">Category</label>
-                <select name="category" id="filter-category" class="h-9 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600">
+                <select name="category" id="filter-category" class="h-9 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 [color-scheme:dark]">
                     <option value="">All categories</option>
                     {% for value, label in categories %}
-                    <option value="{{ value }}" {% if filter_category == value %}selected{% endif %}>{{ label }}</option>
+                    <option class="bg-ink text-white" value="{{ value }}" {% if filter_category == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label for="filter-status" class="sr-only">Status</label>
-                <select name="status" id="filter-status" class="h-9 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600">
+                <select name="status" id="filter-status" class="h-9 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 [color-scheme:dark]">
                     <option value="">All statuses</option>
                     {% for value, label in statuses %}
-                    <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+                    <option class="bg-ink text-white" value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="h-9 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-600 hover:border-teal-200">Filter</button>
+            <button type="submit" class="h-9 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">Filter</button>
             {% if filter_category or filter_status %}
-            <a href="{% url 'sms_dashboard' %}" class="h-9 rounded-md px-2 py-2 text-xs font-semibold text-slate-400 hover:text-campus">Reset</a>
+            <a href="{% querystring category=None status=None %}" class="h-9 px-2 py-2 text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset</a>
             {% endif %}
         </form>
     </div>
 
     {% if messages_list %}
-    <div class="overflow-x-auto">
+    <div class="max-h-[460px] overflow-auto app-scrollbar">
         <table class="w-full text-left text-sm">
             <thead>
-                <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <tr class="border-b border-slate-200 bg-slate-50/90 text-xs font-bold uppercase tracking-wider text-slate-500 sticky top-0 z-10">
                     <th class="px-5 py-3">Recipient</th>
                     <th class="px-5 py-3">Message</th>
                     <th class="px-5 py-3">Type</th>
@@ -175,7 +343,7 @@ SEMAPHORE_SENDER_NAME=your-approved-sender</pre>
             </thead>
             <tbody>
                 {% for sms in messages_list %}
-                <tr class="border-b border-slate-100 align-top last:border-0 hover:bg-teal-50/40">
+                <tr class="border-b border-slate-100 align-top last:border-0 transition hover:bg-moss/25">
                     <td class="px-5 py-4">
                         <p class="font-semibold text-slate-800">{{ sms.recipient }}</p>
                         {% if sms.recipient_name %}<p class="mt-0.5 text-xs text-slate-500">{{ sms.recipient_name }}</p>{% endif %}
@@ -183,13 +351,18 @@ SEMAPHORE_SENDER_NAME=your-approved-sender</pre>
                     <td class="max-w-md px-5 py-4">
                         <p class="text-slate-600">{{ sms.body }}</p>
                         {% if sms.match_id %}
-                        <a href="{% url 'match_schedule' sms.match.event_id %}" class="mt-1 inline-block text-xs font-semibold text-campus hover:underline">{{ sms.match.event.name }} &middot; {{ sms.match.label }}</a>
+                        <a href="{% url 'match_schedule' sms.match.event_id %}" class="mt-1 inline-block text-xs font-semibold text-pine-deep hover:underline">{{ sms.match.event.name }} &middot; {{ sms.match.label }}</a>
+                        {% elif sms.round_id %}
+                        <a href="{% url 'manage_rounds' sms.round.competition_id %}" class="mt-1 inline-block text-xs font-semibold text-pine-deep hover:underline">{{ sms.round.competition.name }} &middot; {{ sms.round.name }}</a>
                         {% endif %}
                         {% if sms.error %}<p class="mt-1 text-xs font-medium text-rose-600">{{ sms.error }}</p>{% endif %}
                     </td>
-                    <td class="px-5 py-4 text-xs text-slate-500">{{ sms.get_category_display }}</td>
+                    <td class="px-5 py-4"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">{{ sms.get_category_display }}</span></td>
                     <td class="px-5 py-4">
-                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if sms.status == 'SENT' %}bg-emerald-100 text-emerald-700{% elif sms.status == 'FAILED' %}bg-rose-100 text-rose-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ sms.get_status_display }}</span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold {% if sms.status == 'SENT' %}text-emerald-700{% elif sms.status == 'FAILED' %}text-rose-600{% else %}text-slate-500{% endif %}">
+                            <span class="h-1.5 w-1.5 rounded-full {% if sms.status == 'SENT' %}bg-emerald-500{% elif sms.status == 'FAILED' %}bg-rose-500{% else %}bg-slate-400{% endif %}"></span>
+                            {{ sms.get_status_display }}
+                        </span>
                         {% if sms.provider_status %}<p class="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{{ sms.provider_status }}</p>{% endif %}
                     </td>
                     <td class="px-5 py-4 text-xs text-slate-500">{{ sms.created_at|date:'M j, Y H:i' }}</td>
@@ -201,8 +374,37 @@ SEMAPHORE_SENDER_NAME=your-approved-sender</pre>
     {% else %}
     <div class="px-6 py-14 text-center">
         <p class="font-display text-lg font-bold text-ink">No SMS messages yet</p>
-        <p class="mt-2 text-sm text-slate-500">Messages appear here when a match is scheduled, starts, finishes, or when you send a test.</p>
+        <p class="mt-2 text-sm text-slate-500">Every send from the schedule above is logged here with its delivery status.</p>
     </div>
     {% endif %}
-</div>
+</section>
+
+<script>
+(function () {
+    // Spell out the selected update next to the bulk controls.
+    document.addEventListener('change', function (event) {
+        var select = event.target.closest('select[name="kind"]');
+        if (!select || !select.form) { return; }
+        var hint = select.form.querySelector('[data-kind-hint]');
+        if (!hint) { return; }
+        var option = select.options[select.selectedIndex];
+        hint.textContent = option ? (option.dataset.hint || '') : '';
+    });
+
+    // Texting costs credits, so confirm bulk runs and block double submits.
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
+            event.preventDefault();
+            return;
+        }
+        var button = form.querySelector('button[type="submit"]');
+        if (!button || button.disabled) { return; }
+        button.disabled = true;
+        // Re-enable if the browser restores the page from cache (back button).
+        window.setTimeout(function () { button.disabled = false; }, 8000);
+        window.addEventListener('pageshow', function () { button.disabled = false; });
+    });
+}());
+</script>
 {% endblock %}

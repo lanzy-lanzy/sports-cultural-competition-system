@@ -12,18 +12,20 @@ from django.utils import timezone
 
 from accounts.models import UserProfile
 from announcements.models import NotificationPreference
-from competitions.models import Competition
-from participants.models import Participant
+from competitions.models import Competition, Round
+from participants.models import Participant, ParticipantCompetition
 from sports.models import EventEntry, Match, MatchEntry, SportsEvent, SportType, Venue
 from teams.models import Team, TeamMembership, TeamStaff
 
 from .models import SmsMessage
 from .services import (
+    build_cultural_schedule_message,
     build_result_message,
     build_schedule_message,
     describe_summary,
     normalize_phone_number,
     notify_match,
+    recipients_for_competition,
     recipients_for_match,
     send_bulk_sms,
     send_sms,
@@ -54,6 +56,12 @@ def provider_reply(recipients, status='Queued'):
         }
         for index, number in enumerate(recipients)
     ]
+
+
+def reply_for_queued_numbers(http_request, *args, **kwargs):
+    """Echo a delivery record for every number the payload carries."""
+    payload = parse.parse_qs(http_request.data.decode('utf-8'))
+    return FakeResponse(provider_reply(payload['number'][0].split(',')))
 
 
 def make_user(username, role=None, phone=''):
@@ -286,18 +294,39 @@ class SmsViewsTest(TestCase):
             side=2,
         )
 
-    @patch('sms.services.request.urlopen')
-    def test_dashboard_sends_test_message(self, urlopen):
-        urlopen.return_value = FakeResponse(provider_reply(['09170000000']))
-        response = self.client.post(reverse('sms_dashboard'), {
-            'action': 'test',
-            'number': '09170000000',
-            'message': 'Hello from Competrack.',
+    def test_dashboard_lists_matches_and_has_no_test_form(self):
+        Match.objects.create(event=self.event, name='Third Place Game')
+        response = self.client.get(reverse('sms_dashboard'), {'scope': 'all'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.competition.name.title())
+        self.assertContains(response, 'Basketball - Men')
+        self.assertContains(response, 'Team A')
+        self.assertContains(response, '2 matches in this view')
+        self.assertContains(response, 'Text 2 matches')
+        # The gateway is exercised on real schedules now, never on a test blast.
+        self.assertNotContains(response, 'name="number"')
+        self.assertNotContains(response, 'Send test')
+
+    def test_upcoming_view_hides_schedules_that_already_started(self):
+        past = Match.objects.create(
+            event=self.event,
+            name='Opening Game',
+            scheduled_start=timezone.now() - timedelta(hours=5),
+        )
+        upcoming = self.client.get(reverse('sms_dashboard'))
+        self.assertNotContains(upcoming, past.label)
+        everything = self.client.get(reverse('sms_dashboard'), {'scope': 'all'})
+        self.assertContains(everything, past.label)
+
+    def test_competition_filter_only_accepts_known_competitions(self):
+        response = self.client.get(reverse('sms_dashboard'), {
+            'scope': 'all', 'competition': self.competition.id,
         })
-        self.assertRedirects(response, reverse('sms_dashboard'))
-        log = SmsMessage.objects.get()
-        self.assertEqual(log.category, SmsMessage.Category.TEST)
-        self.assertEqual(log.status, SmsMessage.Status.SENT)
+        self.assertEqual(response.context['selected_competition'], self.competition.id)
+
+        unknown = self.client.get(reverse('sms_dashboard'), {'scope': 'all', 'competition': 987654})
+        self.assertIsNone(unknown.context['selected_competition'])
+        self.assertContains(unknown, 'Basketball - Men')
 
     def test_dashboard_shows_log(self):
         SmsMessage.objects.create(recipient='09171234567', body='Hello')
@@ -317,6 +346,129 @@ class SmsViewsTest(TestCase):
             SmsMessage.objects.filter(category=SmsMessage.Category.SCHEDULE).count(),
             2,
         )
+
+    @patch('sms.services.request.urlopen')
+    def test_match_notify_returns_to_the_sms_page_when_asked(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        next_url = f"{reverse('sms_dashboard')}?scope=all"
+        response = self.client.post(
+            reverse('sms_notify_match', args=[self.match.id]),
+            {'kind': 'result', 'next': next_url},
+        )
+        self.assertRedirects(response, next_url)
+        self.assertEqual(
+            SmsMessage.objects.filter(category=SmsMessage.Category.RESULT).count(),
+            2,
+        )
+
+    @patch('sms.services.request.urlopen')
+    def test_match_notify_ignores_a_foreign_next_url(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        response = self.client.post(
+            reverse('sms_notify_match', args=[self.match.id]),
+            {'kind': 'scheduled', 'next': 'https://example.com/other-site'},
+        )
+        self.assertRedirects(
+            response,
+            reverse('match_schedule', args=[self.event.id]),
+            fetch_redirect_response=False,
+        )
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_texts_every_match_of_the_competition(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        # A match without entries has nobody to text and must be skipped quietly.
+        Match.objects.create(event=self.event, name='Third Place Game')
+
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': self.competition.id,
+            'kind': 'reminder',
+            'scope': 'all',
+        })
+
+        self.assertRedirects(
+            response, f"{reverse('sms_dashboard')}?scope=all&competition={self.competition.id}",
+        )
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(
+            SmsMessage.objects.filter(category=SmsMessage.Category.REMINDER).count(),
+            2,
+        )
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_can_target_a_single_event(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        other_competition = Competition.objects.create(
+            name='Other Meet',
+            description='Second meet',
+            start_date='2026-04-01T08:00:00Z',
+            end_date='2026-04-02T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        other_event = SportsEvent.objects.create(
+            competition=other_competition,
+            sport_type=SportType.objects.create(name='Volleyball', team_based=True),
+            name='Volleyball - Women',
+            team_based=True,
+        )
+        Match.objects.create(event=other_event, name='Volleyball Final')
+
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'event_id': self.event.id, 'kind': 'scheduled', 'scope': 'all',
+        })
+
+        self.assertRedirects(
+            response, f"{reverse('sms_dashboard')}?scope=all&competition={self.competition.id}",
+        )
+        self.assertEqual(
+            SmsMessage.objects.filter(category=SmsMessage.Category.SCHEDULE).count(),
+            2,
+        )
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_rejects_an_unknown_update_type(self, urlopen):
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': self.competition.id, 'kind': 'test',
+        })
+        urlopen.assert_not_called()
+        self.assertEqual(SmsMessage.objects.count(), 0)
+        self.assertRedirects(response, f"{reverse('sms_dashboard')}?scope=upcoming")
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_needs_a_competition_or_event(self, urlopen):
+        response = self.client.post(reverse('sms_bulk_notify'), {'kind': 'reminder'})
+        urlopen.assert_not_called()
+        self.assertRedirects(response, f"{reverse('sms_dashboard')}?scope=upcoming")
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_warns_when_the_view_is_empty(self, urlopen):
+        empty = Competition.objects.create(
+            name='Empty Meet',
+            description='Nothing scheduled',
+            start_date='2026-04-01T08:00:00Z',
+            end_date='2026-04-02T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': empty.id, 'kind': 'reminder', 'scope': 'all',
+        })
+        urlopen.assert_not_called()
+        stored = [str(message) for message in response.wsgi_request._messages]
+        self.assertIn('nothing was texted', stored[0])
+
+    @patch('sms.views.MAX_BULK_MATCHES', 1)
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_refuses_more_matches_than_the_limit(self, urlopen):
+        Match.objects.create(event=self.event, name='Semifinal')
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': self.competition.id, 'kind': 'scheduled', 'scope': 'all',
+        })
+        urlopen.assert_not_called()
+        self.assertEqual(SmsMessage.objects.count(), 0)
+        stored = [str(message) for message in response.wsgi_request._messages]
+        self.assertIn('bulk send can carry', stored[0])
 
 
 @override_settings(
@@ -415,3 +567,209 @@ class MatchNotificationHooksTest(TestCase):
             describe_summary({'sent': 2, 'failed': 0, 'skipped': 0, 'error': '', 'detail': ''}),
             'SMS sent to 2 recipient(s).',
         )
+        self.assertEqual(
+            describe_summary({
+                'sent': 3, 'failed': 0, 'skipped': 0, 'error': '', 'detail': '',
+                'covered': '2 matches',
+            }),
+            '2 matches covered. SMS sent to 3 recipient(s).',
+        )
+
+
+@override_settings(
+    SEMAPHORE_API_KEY='test-key',
+    SEMAPHORE_SENDER_NAME='COMPTRACK',
+    SEMAPHORE_ENABLED=True,
+    SEMAPHORE_DRY_RUN=False,
+)
+class CulturalSmsServiceTest(TestCase):
+    """Socio-cultural events have no matches, so the round is the session."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        self.competition = Competition.objects.create(
+            name='Himig Ng Bayan: Solo Singing',
+            description='Search for the college voice.',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            start_date=timezone.now() + timedelta(days=2),
+            end_date=timezone.now() + timedelta(days=2, hours=8),
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.preliminary = Round.objects.create(
+            competition=self.competition, name='Preliminary Round',
+            description='One number per contestant.', order=1, status='PENDING',
+        )
+        Round.objects.create(
+            competition=self.competition, name='Final Round',
+            description='The panel decides the champion.', order=2, status='COMPLETED',
+        )
+        self.solo = Participant.objects.create(
+            name='Solo Contestant', email='solo@example.com', phone='09171234567', age=20,
+        )
+        ParticipantCompetition.objects.create(
+            participant=self.solo, competition=self.competition, number=1,
+        )
+        quiet_user = make_user('quiet', UserProfile.Role.PARTICIPANT, '09187654321')
+        NotificationPreference.objects.create(user=quiet_user, sms_enabled=False)
+        self.quiet = Participant.objects.create(
+            user=quiet_user, name='Quiet Contestant', email='quiet@example.com',
+            phone='09187654321', age=21,
+        )
+        ParticipantCompetition.objects.create(
+            participant=self.quiet, competition=self.competition, number=2,
+        )
+
+    def test_recipients_are_the_registered_contestants(self):
+        self.assertEqual(
+            recipients_for_competition(self.competition),
+            [('09171234567', 'Solo Contestant')],
+        )
+
+    def test_message_names_the_round_and_the_window(self):
+        body = build_cultural_schedule_message(self.preliminary)
+        self.assertIn('SCHEDULE', body)
+        self.assertIn('Preliminary Round', body)
+        self.assertIn('Himig Ng Bayan: Solo Singing', body)
+
+
+@override_settings(
+    SEMAPHORE_API_KEY='test-key',
+    SEMAPHORE_SENDER_NAME='COMPTRACK',
+    SEMAPHORE_ENABLED=True,
+    SEMAPHORE_DRY_RUN=False,
+)
+class CulturalSmsViewsTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        self.client.force_login(self.admin)
+        self.competition = Competition.objects.create(
+            name='Himig Ng Bayan',
+            description='Solo singing contest',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            start_date=timezone.now() + timedelta(days=2),
+            end_date=timezone.now() + timedelta(days=2, hours=8),
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.preliminary = Round.objects.create(
+            competition=self.competition, name='Preliminary Round',
+            description='One number per contestant.', order=1, status='PENDING',
+        )
+        self.final = Round.objects.create(
+            competition=self.competition, name='Final Round',
+            description='The panel decides the champion.', order=2, status='COMPLETED',
+        )
+        self.contestant = Participant.objects.create(
+            name='Solo Contestant', email='solo@example.com', phone='09171234567', age=20,
+        )
+        ParticipantCompetition.objects.create(
+            participant=self.contestant, competition=self.competition, number=1,
+        )
+        # A sports competition is kept so both families show up in one view.
+        self.sports = Competition.objects.create(
+            name='Sports Meet',
+            description='Annual sports meet',
+            kind=Competition.Kind.SPORTS,
+            start_date='2026-03-01T08:00:00Z',
+            end_date='2026-03-05T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        event = SportsEvent.objects.create(
+            competition=self.sports,
+            sport_type=SportType.objects.create(name='Basketball', team_based=True),
+            name='Basketball - Men',
+            team_based=True,
+        )
+        self.match = Match.objects.create(
+            event=event, name='Final', round_number=1,
+            scheduled_start=timezone.now() + timedelta(hours=2),
+        )
+
+    def test_dashboard_lists_cultural_rounds_next_to_matches(self):
+        response = self.client.get(reverse('sms_dashboard'), {'scope': 'all'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Himig Ng Bayan')
+        self.assertContains(response, 'Preliminary Round')
+        self.assertContains(response, 'Socio-cultural')
+        self.assertContains(response, 'Text 2 rounds')
+        self.assertContains(response, 'Basketball - Men')
+        self.assertEqual(len(response.context['cultural_groups']), 1)
+        self.assertEqual(len(response.context['groups']), 1)
+
+    def test_cultural_competition_is_offered_as_a_filter_chip(self):
+        response = self.client.get(reverse('sms_dashboard'))
+        chips = {
+            option['id']: option['kind']
+            for option in response.context['competition_options']
+        }
+        self.assertEqual(chips[self.competition.id], 'CULTURAL')
+        self.assertEqual(chips[self.sports.id], 'SPORTS')
+
+    def test_finished_cultural_competition_is_hidden_from_upcoming(self):
+        self.competition.end_date = timezone.now() - timedelta(days=1)
+        self.competition.save()
+        upcoming = self.client.get(reverse('sms_dashboard'))
+        self.assertNotContains(upcoming, 'Preliminary Round')
+        everything = self.client.get(reverse('sms_dashboard'), {'scope': 'all'})
+        self.assertContains(everything, 'Preliminary Round')
+
+    @patch('sms.services.request.urlopen')
+    def test_round_notify_texts_every_registered_contestant(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        response = self.client.post(
+            reverse('sms_notify_round', args=[self.preliminary.id]),
+            {'kind': 'reminder'},
+        )
+        self.assertRedirects(
+            response, reverse('manage_rounds', args=[self.competition.id]),
+        )
+        log = SmsMessage.objects.get()
+        self.assertEqual(log.recipient, '09171234567')
+        self.assertEqual(log.category, SmsMessage.Category.REMINDER)
+        self.assertEqual(log.round_id, self.preliminary.id)
+        self.assertIsNone(log.match_id)
+        self.assertIn('Preliminary Round', log.body)
+
+    @patch('sms.services.request.urlopen')
+    def test_round_notify_returns_to_the_sms_page_when_asked(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        next_url = f"{reverse('sms_dashboard')}?scope=all"
+        response = self.client.post(
+            reverse('sms_notify_round', args=[self.preliminary.id]),
+            {'kind': 'scheduled', 'next': next_url},
+            follow=False,
+        )
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_cultural_competition_texts_each_round(self, urlopen):
+        urlopen.side_effect = reply_for_queued_numbers
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': self.competition.id, 'kind': 'scheduled', 'scope': 'all',
+        })
+        self.assertRedirects(
+            response,
+            f"{reverse('sms_dashboard')}?scope=all&competition={self.competition.id}",
+        )
+        # One gateway call per round because every round has its own text.
+        self.assertEqual(urlopen.call_count, 2)
+        self.assertEqual(
+            SmsMessage.objects.filter(category=SmsMessage.Category.SCHEDULE).count(),
+            2,
+        )
+
+    @patch('sms.services.request.urlopen')
+    def test_bulk_notify_cultural_reports_missing_numbers(self, urlopen):
+        self.contestant.phone = ''
+        self.contestant.save()
+        response = self.client.post(reverse('sms_bulk_notify'), {
+            'competition_id': self.competition.id, 'kind': 'reminder', 'scope': 'all',
+        })
+        urlopen.assert_not_called()
+        stored = [str(message) for message in response.wsgi_request._messages]
+        self.assertIn('have a mobile number on file', stored[0])
+

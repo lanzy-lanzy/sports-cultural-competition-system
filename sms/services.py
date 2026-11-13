@@ -21,6 +21,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 
+from registrations.models import EventRegistration
+
 from .models import SmsMessage
 
 BALANCE_CACHE_KEY = 'sms:semaphore:account'
@@ -171,12 +173,14 @@ def _clean_message(body):
 
 
 def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
-                  match=None, created_by=None):
+                  match=None, round=None, created_by=None):
     """Send one message to many recipients through a single Semaphore call.
 
     ``recipients`` is an iterable of ``(phone, name)`` pairs. Invalid numbers
     are skipped. The returned summary contains counts suitable for a UI
-    message, and each recipient gets an :class:`SmsMessage` row.
+    message, and each recipient gets an :class:`SmsMessage` row. Pass ``match``
+    for a sports schedule or ``round`` for a socio-cultural session so the log
+    stays traceable.
     """
     summary = _empty_summary()
     body = _clean_message(body)
@@ -226,6 +230,7 @@ def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
                 status=SmsMessage.Status.SKIPPED,
                 provider_status='DRY_RUN',
                 match=match,
+                round=round,
                 created_by=created_by,
             )
         summary['skipped'] = len(numbers)
@@ -257,6 +262,7 @@ def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
                     status=SmsMessage.Status.FAILED,
                     error=str(exc),
                     match=match,
+                    round=round,
                     created_by=created_by,
                 )
                 for number in chunk
@@ -276,6 +282,7 @@ def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
                     status=SmsMessage.Status.FAILED,
                     error=summary['error'],
                     match=match,
+                    round=round,
                     created_by=created_by,
                 )
                 for number in chunk
@@ -304,6 +311,7 @@ def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
                     status=SmsMessage.Status.FAILED,
                     error='Semaphore did not return a delivery record for this number.',
                     match=match,
+                    round=round,
                     created_by=created_by,
                 ))
                 continue
@@ -325,6 +333,7 @@ def send_bulk_sms(recipients, body, *, category=SmsMessage.Category.MANUAL,
                 provider_status=provider_status[:30],
                 error='Rejected by the network.' if failed else '',
                 match=match,
+                round=round,
                 created_by=created_by,
             ))
         SmsMessage.objects.bulk_create(logs)
@@ -345,21 +354,30 @@ def send_sms(number, body, *, category=SmsMessage.Category.MANUAL,
     )
 
 
+def _plural(count, noun, plural=None):
+    """``'1 match'`` / ``'3 matches'`` for the bulk summary banners."""
+    if count == 1:
+        return f'1 {noun}'
+    return f'{count} {plural or noun + "s"}'
+
+
 def describe_summary(summary):
     """Short human-readable result for the messages framework."""
     if summary.get('error'):
         text = summary['error']
         if summary.get('sent'):
             text = f"{summary['sent']} message(s) sent. {text}"
-        return text
-    if summary.get('sent'):
+    elif summary.get('sent'):
         text = f"SMS sent to {summary['sent']} recipient(s)."
         if summary.get('failed'):
             text += f" {summary['failed']} failed."
         if summary.get('skipped'):
             text += f" {summary['skipped']} skipped."
-        return text
-    return summary.get('detail') or 'No SMS was sent.'
+    else:
+        text = summary.get('detail') or 'No SMS was sent.'
+    if summary.get('covered'):
+        text = f"{summary['covered']} covered. {text}"
+    return text
 
 
 def get_account_balance(force=False):
@@ -431,6 +449,21 @@ def _participant_recipient(collected, participant):
     _add_recipient(collected, phone, participant.name)
 
 
+def _add_team_recipients(collected, team, include_team_players):
+    """Add the team's staff (and optionally its active players) to ``collected``."""
+    for assignment in team.staff_assignments.all():
+        user = assignment.user
+        if not user.is_active or not _sms_allowed(user):
+            continue
+        name = user.get_full_name().strip() or user.username
+        _add_recipient(collected, _profile_phone(user), f'{name} ({team.name})')
+    if include_team_players:
+        for membership in team.memberships.all():
+            if membership.status != 'ACTIVE':
+                continue
+            _participant_recipient(collected, membership.participant)
+
+
 def recipients_for_match(match, include_team_players=None):
     """Return ``[(phone, name), ...]`` for everyone competing in ``match``.
 
@@ -454,20 +487,47 @@ def recipients_for_match(match, include_team_players=None):
     )
     for entry in entries:
         if entry.team_id:
-            for assignment in entry.team.staff_assignments.all():
-                user = assignment.user
-                if not user.is_active or not _sms_allowed(user):
-                    continue
-                name = user.get_full_name().strip() or user.username
-                _add_recipient(collected, _profile_phone(user), f'{name} ({entry.team.name})')
-            if include_team_players:
-                for membership in entry.team.memberships.all():
-                    if membership.status != 'ACTIVE':
-                        continue
-                    _participant_recipient(collected, membership.participant)
+            _add_team_recipients(collected, entry.team, include_team_players)
         else:
             _participant_recipient(collected, entry.participant)
     return [(phone, name) for phone, name in collected.items()]
+
+
+def recipients_for_competition(competition, include_team_players=None):
+    """Return ``[(phone, name), ...]`` for a socio-cultural competition.
+
+    Cultural events have no matches, so the audience is every participant
+    registered to the competition plus the staff of the delegations entered
+    through the review queue. Rejected entries and opted-out accounts are
+    skipped and duplicate numbers are collapsed.
+    """
+    if include_team_players is None:
+        include_team_players = bool(getattr(settings, 'SEMAPHORE_NOTIFY_TEAM_PLAYERS', False))
+
+    collected = {}
+    participants = (
+        competition.participants
+        .select_related('user')
+        .order_by('name')
+    )
+    for participant in participants:
+        _participant_recipient(collected, participant)
+
+    registrations = (
+        competition.registrations
+        .exclude(status=EventRegistration.Status.REJECTED)
+        .filter(team__isnull=False)
+        .select_related('team')
+        .prefetch_related(
+            'team__staff_assignments__user__account_profile',
+            'team__staff_assignments__user__notification_preferences',
+            'team__memberships__participant__user',
+        )
+    )
+    for registration in registrations:
+        _add_team_recipients(collected, registration.team, include_team_players)
+
+    return sorted(collected.items())
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +621,65 @@ def build_status_message(match, status):
     )
 
 
+def format_competition_window(competition):
+    """When a socio-cultural competition runs, for texts that have no match clock."""
+    start = _local_time(competition.start_date)
+    end = _local_time(competition.end_date)
+    if start is None:
+        return 'a time to be announced'
+    if end is None or start.date() == end.date():
+        return start.strftime('%b %d, %Y %I:%M %p').replace(' 0', ' ')
+    return (
+        f'{start.strftime("%b %d, %Y").replace(" 0", " ")} to '
+        f'{end.strftime("%b %d, %Y").replace(" 0", " ")}'
+    )
+
+
+def _session_name(round_obj):
+    return f'{round_obj.name} of {round_obj.competition.name}'
+
+
+def build_cultural_schedule_message(round_obj, change='scheduled'):
+    prefix = 'RESCHEDULED' if change == 'rescheduled' else 'SCHEDULE'
+    return (
+        f'[Competrack] {prefix}: {_session_name(round_obj)} runs '
+        f'{format_competition_window(round_obj.competition)}. '
+        'Please confirm your slot with your delegation head.'
+    )
+
+
+def build_cultural_reminder_message(round_obj):
+    return (
+        f'[Competrack] REMINDER: {_session_name(round_obj)} starts '
+        f'{format_competition_window(round_obj.competition)}. Please be early.'
+    )
+
+
+def build_cultural_start_message(round_obj):
+    return (
+        f'[Competrack] STARTING NOW: {_session_name(round_obj)}. '
+        'Contestants please report to the stage area.'
+    )
+
+
+def build_cultural_live_message(round_obj):
+    return f'[Competrack] LIVE: {_session_name(round_obj)} is ongoing.'
+
+
+def build_cultural_result_message(round_obj):
+    return (
+        f'[Competrack] RESULT: {_session_name(round_obj)} is finished. '
+        'Scores are posted on the scoreboard.'
+    )
+
+
+def build_cultural_status_message(round_obj, status):
+    return (
+        f'[Competrack] {status.upper()}: {_session_name(round_obj)}. '
+        'Watch for the new schedule.'
+    )
+
+
 _NOTIFY_KINDS = {
     'scheduled': (SmsMessage.Category.SCHEDULE, build_schedule_message),
     'rescheduled': (SmsMessage.Category.RESCHEDULE, lambda match: build_schedule_message(match, 'rescheduled')),
@@ -571,6 +690,54 @@ _NOTIFY_KINDS = {
     'postponed': (SmsMessage.Category.RESCHEDULE, lambda match: build_status_message(match, 'postponed')),
     'cancelled': (SmsMessage.Category.RESCHEDULE, lambda match: build_status_message(match, 'cancelled')),
 }
+
+# Kinds offered in the UI: (value, button label, who receives what). Every value
+# must exist in ``_NOTIFY_KINDS`` above, otherwise the picker silently fails.
+NOTIFY_KIND_CHOICES = (
+    ('scheduled', 'Schedule', 'Match details so teams know when and where to report.'),
+    ('rescheduled', 'Reschedule', 'New time or venue for an already announced match.'),
+    ('reminder', 'Reminder', 'Heads-up shortly before the match starts.'),
+    ('start', 'Start', 'The match is starting now.'),
+    ('live', 'Live', 'The match is ongoing.'),
+    ('result', 'Result', 'Final score and winner.'),
+    ('postponed', 'Postpone', 'The match is postponed pending a new schedule.'),
+    ('cancelled', 'Cancel', 'The match is cancelled.'),
+)
+
+NOTIFY_KIND_LABELS = {value: label for value, label, _ in NOTIFY_KIND_CHOICES}
+
+# Socio-cultural rounds reuse the same kind values so one picker and one
+# validation list serve both, but the wording talks about rounds and contestants.
+_CULTURAL_KINDS = {
+    'scheduled': (SmsMessage.Category.SCHEDULE, build_cultural_schedule_message),
+    'rescheduled': (
+        SmsMessage.Category.RESCHEDULE,
+        lambda round_obj: build_cultural_schedule_message(round_obj, 'rescheduled'),
+    ),
+    'reminder': (SmsMessage.Category.REMINDER, build_cultural_reminder_message),
+    'start': (SmsMessage.Category.MATCH_START, build_cultural_start_message),
+    'live': (SmsMessage.Category.MATCH_START, build_cultural_live_message),
+    'result': (SmsMessage.Category.RESULT, build_cultural_result_message),
+    'postponed': (
+        SmsMessage.Category.RESCHEDULE,
+        lambda round_obj: build_cultural_status_message(round_obj, 'postponed'),
+    ),
+    'cancelled': (
+        SmsMessage.Category.RESCHEDULE,
+        lambda round_obj: build_cultural_status_message(round_obj, 'cancelled'),
+    ),
+}
+
+CULTURAL_KIND_CHOICES = (
+    ('scheduled', 'Schedule', 'Round details so contestants know when to report.'),
+    ('rescheduled', 'Reschedule', 'New time for an already announced round.'),
+    ('reminder', 'Reminder', 'Heads-up shortly before the round starts.'),
+    ('start', 'Start', 'The round is starting now.'),
+    ('live', 'Live', 'The round is ongoing.'),
+    ('result', 'Result', 'The round is over and the scores are posted.'),
+    ('postponed', 'Postpone', 'The round is postponed pending a new schedule.'),
+    ('cancelled', 'Cancel', 'The round is cancelled.'),
+)
 
 
 def notify_match(match, kind, *, created_by=None, include_team_players=None):
@@ -616,3 +783,97 @@ def _notify_match(match, kind, *, created_by=None, include_team_players=None):
         match=match,
         created_by=created_by,
     )
+
+
+def notify_round(round_obj, kind, *, created_by=None):
+    """Build and send the SMS for one socio-cultural round.
+
+    Cultural events have no matches, so every registered contestant of the
+    competition receives the same text about this round. Never raises.
+    """
+    try:
+        return _notify_round(round_obj, kind, created_by=created_by)
+    except Exception as exc:  # pragma: no cover - defensive safety net
+        summary = _empty_summary()
+        summary['error'] = f'SMS could not be sent: {exc}'
+        return summary
+
+
+def _notify_round(round_obj, kind, *, created_by=None):
+    if kind not in _CULTURAL_KINDS:
+        summary = _empty_summary()
+        summary['error'] = f'Unknown SMS type: {kind}'
+        return summary
+
+    category, builder = _CULTURAL_KINDS[kind]
+    summary = _empty_summary()
+    recipients = recipients_for_competition(round_obj.competition)
+    if not recipients:
+        summary['detail'] = (
+            'No mobile numbers are on file for this competition. Register the '
+            'contestants with a phone number before sending.'
+        )
+        return summary
+
+    return send_bulk_sms(
+        recipients,
+        builder(round_obj),
+        category=category,
+        round=round_obj,
+        created_by=created_by,
+    )
+
+
+def notify_matches(matches, kind, *, created_by=None, include_team_players=None):
+    """Send one update type across a whole schedule (bulk notify).
+
+    Every match needs its own text because the time, venue and contestants
+    differ, so this walks the matches with :func:`notify_match` and merges the
+    individual reports into one summary. Never raises.
+    """
+    def send(match, session_kind):
+        return notify_match(
+            match,
+            session_kind,
+            created_by=created_by,
+            include_team_players=include_team_players,
+        )
+
+    return _notify_sessions(matches, kind, send, 'match', 'matches')
+
+
+def notify_rounds(rounds, kind, *, created_by=None):
+    """Send one update type across every round of a socio-cultural competition."""
+    def send(round_obj, session_kind):
+        return notify_round(round_obj, session_kind, created_by=created_by)
+
+    return _notify_sessions(rounds, kind, send, 'round', 'rounds')
+
+
+def _notify_sessions(targets, kind, send, noun, plural):
+    """Merge per-session reports into one bulk summary, used by both notifiers."""
+    summary = _empty_summary()
+    summary['without_numbers'] = 0
+    problems = []
+    covered = 0
+
+    for target in targets:
+        item = send(target, kind)
+        covered += 1
+        for key in ('recipients', 'sent', 'failed', 'skipped'):
+            summary[key] += int(item.get(key) or 0)
+        if item.get('error') and len(problems) < 3:
+            problems.append(str(item['error']))
+        if not item.get('sent') and not item.get('skipped') and item.get('detail'):
+            summary['without_numbers'] += 1
+
+    summary['covered'] = _plural(covered, noun, plural)
+    if problems and not summary['error']:
+        summary['error'] = '; '.join(problems)
+    if summary['without_numbers'] and not summary['sent']:
+        summary['detail'] = (
+            f"None of the {summary['without_numbers']} {plural} have a mobile "
+            'number on file. Add the number to the team manager/coach account or '
+            'the participant profile first.'
+        )
+    return summary

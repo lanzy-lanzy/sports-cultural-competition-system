@@ -36,7 +36,7 @@ NAV_GROUPS = {
         'event_standings', 'event_bracket',
     ],
     'match_board': ['match_board'],
-    'sms': ['sms_dashboard', 'sms_notify_match'],
+    'sms': ['sms_dashboard', 'sms_notify_match', 'sms_notify_round', 'sms_bulk_notify'],
     'cultural': ['socio_cultural_management'],
     'results': [
         'results_list', 'competition_results_detail', 'results_reveal',
