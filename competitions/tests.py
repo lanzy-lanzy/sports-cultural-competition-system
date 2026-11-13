@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Competition, Round, Criterion
+from .models import Competition, Round, Criterion, CulturalMainType, CulturalSubType
 from scoring.models import CompetitionResult
 from sports.models import SportType, SportsEvent, Venue
 from accounts.models import UserProfile
@@ -432,7 +432,7 @@ class CompetitionListFilterTest(TestCase):
         chips = response.context['subcategories']
         self.assertEqual([c['value'] for c in chips], ['DANCE', 'SINGING'])
         self.assertEqual([c['label'] for c in chips],
-                         ['Dance Competition', 'Singing Competition'])
+                         ['Dancing', 'Singing'])
 
         response = self.client.get(
             reverse('competition_list'),
@@ -500,3 +500,277 @@ class CompetitionListFilterTest(TestCase):
         rows = list(response.context['page_obj'])
         self.assertNotIn('Draft Ball Games', [c.name for c in rows])
         self.assertEqual(response.context['sports_count'], 2)
+
+
+class CulturalSubtypeTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'a@a.com', 'pass')
+        self.client.login(username='admin', password='pass')
+
+    def _add_subtype(self, **overrides):
+        data = {'name': 'Folk Dance', 'main_type': '__new__', 'new_main_type': 'Sayaw'}
+        data.update(overrides)
+        return self.client.post(reverse('add_cultural_subtype'), data)
+
+    def test_seeded_taxonomy_matches_legacy_choices(self):
+        for slug in Competition.CulturalEventType.values:
+            self.assertTrue(CulturalSubType.objects.filter(slug=slug).exists(), slug)
+
+    def test_add_subtype_creates_new_main_group(self):
+        resp = self._add_subtype()
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data['slug'], 'FOLK_DANCE')
+        self.assertEqual(data['name'], 'Folk Dance')
+        self.assertEqual(data['main_type'], 'Sayaw')
+        subtype = CulturalSubType.objects.get(slug='FOLK_DANCE')
+        self.assertEqual(subtype.main_type.name, 'Sayaw')
+
+    def test_add_subtype_under_existing_main_group(self):
+        main = CulturalMainType.objects.get(name='Performing Arts')
+        resp = self._add_subtype(name='Cheerdance', main_type=str(main.id), new_main_type='')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['main_type'], 'Performing Arts')
+        self.assertEqual(CulturalSubType.objects.get(slug='CHEERDANCE').main_type_id, main.id)
+
+    def test_add_subtype_reuses_existing_name_or_slug(self):
+        before = CulturalSubType.objects.count()
+        main = CulturalMainType.objects.get(name='Performing Arts')
+        # Same display name as the seeded "Dancing" (slug DANCE).
+        resp = self._add_subtype(name='dancing', main_type=str(main.id), new_main_type='')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['slug'], 'DANCE')
+        # Different name that collides with the seeded slug.
+        resp = self._add_subtype(name='Dance', main_type=str(main.id), new_main_type='')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['slug'], 'DANCE')
+        self.assertEqual(CulturalSubType.objects.count(), before)
+
+    def test_add_subtype_new_main_group_name_matching_is_case_insensitive(self):
+        resp = self._add_subtype(name='Hip Hop', new_main_type='performing arts')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['main_type'], 'Performing Arts')
+        self.assertEqual(CulturalMainType.objects.count(), 3)
+
+    def test_add_subtype_validates_input(self):
+        self.assertEqual(self._add_subtype(name='').status_code, 400)
+        self.assertEqual(self._add_subtype(name='   ').status_code, 400)
+        self.assertEqual(self._add_subtype(name='!!!').status_code, 400)
+        self.assertEqual(self._add_subtype(new_main_type='').status_code, 400)
+        self.assertEqual(
+            self._add_subtype(main_type='999999', new_main_type='').status_code, 400,
+        )
+        self.assertFalse(CulturalSubType.objects.filter(name='!!!').exists())
+
+    def test_add_subtype_requires_management_role(self):
+        spectator = User.objects.create_user('viewer', 'v@v.com', 'pass')
+        profile, _ = UserProfile.objects.get_or_create(user=spectator)
+        profile.role = UserProfile.Role.SPECTATOR
+        profile.save()
+        self.client.force_login(spectator)
+        resp = self._add_subtype()
+        self.assertEqual(resp.status_code, 403)
+
+    def test_create_competition_with_new_subtype(self):
+        self._add_subtype()
+        data = {
+            'name': 'Sayaw Festival', 'description': 'desc',
+            'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
+            'status': 'DRAFT', 'kind': 'CULTURAL', 'cultural_event_type': 'FOLK_DANCE',
+            'round_names[]': ['Finals'], 'round_orders[]': ['1'],
+            'round_weights[]': ['100'], 'round_statuses[]': ['PENDING'],
+            'criterion_names_1[]': ['Choreography'], 'criterion_descriptions_1[]': ['x'],
+            'criterion_max_scores_1[]': ['100'],
+        }
+        resp = self.client.post(reverse('create_competition'), data)
+        self.assertRedirects(resp, f"{reverse('competition_list')}?category=cultural")
+        comp = Competition.objects.get(name='SAYAW FESTIVAL')
+        self.assertEqual(comp.cultural_event_type, 'FOLK_DANCE')
+        self.assertEqual(comp.get_cultural_event_type_display(), 'Folk Dance')
+
+    def test_new_subtype_appears_in_create_and_edit_forms(self):
+        self._add_subtype()
+        resp = self.client.get(reverse('create_competition'))
+        self.assertContains(resp, 'Folk Dance')
+        self.assertContains(resp, 'Sayaw')
+
+        comp = Competition.objects.create(
+            name='Sayaw Festival', description='d', kind=Competition.Kind.CULTURAL,
+            cultural_event_type='FOLK_DANCE', status='DRAFT',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        resp = self.client.get(reverse('edit_competition', args=[comp.id]))
+        self.assertContains(resp, '<option value="FOLK_DANCE" selected>Folk Dance</option>')
+
+    def test_list_page_modals_include_new_subtype(self):
+        self._add_subtype()
+        resp = self.client.get(reverse('competition_list'), {'category': 'cultural'})
+        self.assertContains(resp, 'id="m-cultural_event_type"')
+        self.assertContains(resp, 'id="edit-cultural_event_type"')
+        self.assertContains(resp, 'id="m-subtype-add-toggle"')
+        self.assertContains(resp, 'id="edit-subtype-add-toggle"')
+        self.assertContains(resp, 'Folk Dance')
+        self.assertContains(resp, 'Sayaw')
+
+    def test_list_and_management_pages_use_new_subtype_label(self):
+        comp = Competition.objects.create(
+            name='Sayaw Festival', description='d', kind=Competition.Kind.CULTURAL,
+            cultural_event_type='FOLK_DANCE', status='ACTIVE',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        resp = self.client.get(reverse('competition_list'), {'category': 'cultural'})
+        chips = resp.context['subcategories']
+        self.assertEqual([c['label'] for c in chips], ['Folk Dance'])
+
+        resp = self.client.get(reverse('socio_cultural_management'))
+        self.assertContains(resp, 'Folk Dance')
+        resp = self.client.get(reverse('socio_cultural_management'), {'type': 'FOLK_DANCE'})
+        self.assertEqual([c.id for c in resp.context['cultural_competitions']], [comp.id])
+
+    def _edit_subtype(self, subtype, **overrides):
+        data = {'id': str(subtype.id), 'name': subtype.name, 'main_type': str(subtype.main_type_id)}
+        data.update(overrides)
+        return self.client.post(reverse('edit_cultural_subtype'), data)
+
+    def test_edit_subtype_renames_but_keeps_slug(self):
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        comp = Competition.objects.create(
+            name='Dance Fest', description='d', kind=Competition.Kind.CULTURAL,
+            cultural_event_type='DANCE', status='DRAFT',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        resp = self._edit_subtype(subtype, name='Modern Dance')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data['slug'], 'DANCE')
+        self.assertEqual(data['name'], 'Modern Dance')
+        subtype.refresh_from_db()
+        self.assertEqual(subtype.slug, 'DANCE')
+        self.assertEqual(comp.get_cultural_event_type_display(), 'Modern Dance')
+
+    def test_edit_subtype_moves_to_another_main_group(self):
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        other = CulturalMainType.objects.get(name='Other')
+        resp = self._edit_subtype(subtype, main_type=str(other.id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['main_type'], 'Other')
+        subtype.refresh_from_db()
+        self.assertEqual(subtype.main_type_id, other.id)
+        self.assertEqual(subtype.slug, 'DANCE')
+
+    def test_edit_subtype_rejects_duplicate_name_or_slug(self):
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        # Case-insensitive clash with the seeded "Singing" display name.
+        self.assertEqual(self._edit_subtype(subtype, name='singing').status_code, 400)
+        # New name whose slug collides with the seeded ESSAY_WRITING slug.
+        self.assertEqual(self._edit_subtype(subtype, name='Essay Writing').status_code, 400)
+        subtype.refresh_from_db()
+        self.assertEqual(subtype.name, 'Dancing')
+
+    def test_edit_subtype_validates_input(self):
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        self.assertEqual(self._edit_subtype(subtype, id='999999').status_code, 404)
+        self.assertEqual(self._edit_subtype(subtype, id='abc').status_code, 404)
+        self.assertEqual(self._edit_subtype(subtype, name='').status_code, 400)
+        self.assertEqual(self._edit_subtype(subtype, name='x' * 101).status_code, 400)
+        self.assertEqual(self._edit_subtype(subtype, main_type='999999').status_code, 400)
+
+    def test_delete_unused_subtype(self):
+        self._add_subtype()
+        subtype = CulturalSubType.objects.get(slug='FOLK_DANCE')
+        resp = self.client.post(reverse('delete_cultural_subtype'), {'id': str(subtype.id)})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {'deleted': True, 'id': subtype.id, 'slug': 'FOLK_DANCE'})
+        self.assertFalse(CulturalSubType.objects.filter(slug='FOLK_DANCE').exists())
+
+    def test_delete_subtype_blocked_when_in_use(self):
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        Competition.objects.create(
+            name='Dance Fest', description='d', kind=Competition.Kind.CULTURAL,
+            cultural_event_type='DANCE', status='DRAFT',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        resp = self.client.post(reverse('delete_cultural_subtype'), {'id': str(subtype.id)})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('1 competition(s) still use it', resp.json()['error'])
+        self.assertTrue(CulturalSubType.objects.filter(slug='DANCE').exists())
+
+    def test_edit_main_group_renames(self):
+        main = CulturalMainType.objects.get(name='Performing Arts')
+        resp = self.client.post(reverse('edit_cultural_main_type'),
+                                {'id': str(main.id), 'name': 'Stage Arts'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['name'], 'Stage Arts')
+        main.refresh_from_db()
+        self.assertEqual(main.name, 'Stage Arts')
+
+    def test_edit_main_group_validates_input(self):
+        main = CulturalMainType.objects.get(name='Other')
+        performing = CulturalMainType.objects.get(name='Performing Arts')
+        resp = self.client.post(reverse('edit_cultural_main_type'),
+                                {'id': str(main.id), 'name': 'performing arts'})
+        self.assertEqual(resp.status_code, 400)
+        resp = self.client.post(reverse('edit_cultural_main_type'),
+                                {'id': str(main.id), 'name': ''})
+        self.assertEqual(resp.status_code, 400)
+        resp = self.client.post(reverse('edit_cultural_main_type'),
+                                {'id': '999999', 'name': 'X'})
+        self.assertEqual(resp.status_code, 404)
+        main.refresh_from_db()
+        self.assertEqual(main.name, 'Other')
+        self.assertTrue(CulturalMainType.objects.filter(id=performing.id).exists())
+
+    def test_delete_empty_main_group(self):
+        main = CulturalMainType.objects.create(name='Temporary Group')
+        resp = self.client.post(reverse('delete_cultural_main_type'), {'id': str(main.id)})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {'deleted': True, 'id': main.id})
+        self.assertFalse(CulturalMainType.objects.filter(name='Temporary Group').exists())
+
+    def test_delete_main_group_with_subtypes_blocked(self):
+        main = CulturalMainType.objects.get(name='Performing Arts')
+        resp = self.client.post(reverse('delete_cultural_main_type'), {'id': str(main.id)})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('still has sub-types', resp.json()['error'])
+        self.assertTrue(CulturalMainType.objects.filter(id=main.id).exists())
+
+    def test_edit_delete_endpoints_require_management_role(self):
+        spectator = User.objects.create_user('viewer2', 'v2@v.com', 'pass')
+        profile, _ = UserProfile.objects.get_or_create(user=spectator)
+        profile.role = UserProfile.Role.SPECTATOR
+        profile.save()
+        self.client.force_login(spectator)
+        subtype = CulturalSubType.objects.get(slug='DANCE')
+        main = CulturalMainType.objects.get(name='Other')
+        for url, data in [
+            (reverse('edit_cultural_subtype'), {'id': str(subtype.id), 'name': 'X', 'main_type': str(main.id)}),
+            (reverse('delete_cultural_subtype'), {'id': str(subtype.id)}),
+            (reverse('edit_cultural_main_type'), {'id': str(main.id), 'name': 'X'}),
+            (reverse('delete_cultural_main_type'), {'id': str(main.id)}),
+        ]:
+            self.assertEqual(self.client.post(url, data).status_code, 403, url)
+
+    def test_manage_panel_renders_in_forms(self):
+        Competition.objects.create(
+            name='Dance Fest', description='d', kind=Competition.Kind.CULTURAL,
+            cultural_event_type='DANCE', status='DRAFT',
+            start_date='2026-02-01 00:00:00', end_date='2026-02-02 00:00:00',
+            created_by=self.admin,
+        )
+        resp = self.client.get(reverse('create_competition'))
+        self.assertContains(resp, 'id="subtype-manage-panel"')
+        self.assertContains(resp, 'id="subtype-manage-toggle"')
+        self.assertContains(resp, 'id="manage-group-template"')
+        self.assertContains(resp, 'id="manage-sub-template"')
+        self.assertContains(resp, 'Used by 1')
+        self.assertContains(resp, 'Unused')
+
+        resp = self.client.get(reverse('competition_list'), {'category': 'cultural'})
+        self.assertContains(resp, 'id="m-subtype-manage-toggle"')
+        self.assertContains(resp, 'id="edit-subtype-manage-toggle"')
+        self.assertContains(resp, 'id="m-subtype-manage-panel"')
+        self.assertContains(resp, 'id="edit-subtype-manage-panel"')

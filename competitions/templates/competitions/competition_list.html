@@ -415,29 +415,7 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="cultural-subtype-wrap hidden md:col-span-2">
-                            <label for="m-cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Socio Cultural Sub-type <span class="text-rose-500">*</span></label>
-                            <select id="m-cultural_event_type" name="cultural_event_type" required disabled
-                                    class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
-                                <option value="">— Select a sub-type —</option>
-                                <optgroup label="Performing Arts">
-                                    <option value="DANCE">Dancing</option>
-                                    <option value="SINGING">Singing</option>
-                                    <option value="TALENT_SHOW">Talent Show</option>
-                                    <option value="CULTURAL_PRESENTATION">Cultural Presentation</option>
-                                    <option value="COSTUME">Costume</option>
-                                </optgroup>
-                                <optgroup label="Literary &amp; Academic Arts">
-                                    <option value="ESSAY_WRITING">Essay Writing (Literary Arts)</option>
-                                    <option value="SPOKEN_POETRY">Spoken Poetry</option>
-                                    <option value="QUIZ_BEE">Quiz Bee</option>
-                                    <option value="POSTER_MAKING">Poster Making</option>
-                                </optgroup>
-                                <optgroup label="Other">
-                                    <option value="OTHER">Other cultural event</option>
-                                </optgroup>
-                            </select>
-                        </div>
+                        {% include 'competitions/partials/cultural_subtype_field.html' with prefix='m-' is_cultural=False selected_subtype='' %}
                         <div class="md:col-span-2">
                             <label for="m-description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                             <textarea id="m-description" name="description" rows="3" placeholder="Describe your competition..."
@@ -660,29 +638,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="cultural-subtype-wrap hidden">
-                    <label for="edit-cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Socio Cultural Sub-type <span class="text-rose-500">*</span></label>
-                    <select id="edit-cultural_event_type" name="cultural_event_type" required disabled
-                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
-                        <option value="">— Select a sub-type —</option>
-                        <optgroup label="Performing Arts">
-                            <option value="DANCE">Dancing</option>
-                            <option value="SINGING">Singing</option>
-                            <option value="TALENT_SHOW">Talent Show</option>
-                            <option value="CULTURAL_PRESENTATION">Cultural Presentation</option>
-                            <option value="COSTUME">Costume</option>
-                        </optgroup>
-                        <optgroup label="Literary &amp; Academic Arts">
-                            <option value="ESSAY_WRITING">Essay Writing (Literary Arts)</option>
-                            <option value="SPOKEN_POETRY">Spoken Poetry</option>
-                            <option value="QUIZ_BEE">Quiz Bee</option>
-                            <option value="POSTER_MAKING">Poster Making</option>
-                        </optgroup>
-                        <optgroup label="Other">
-                            <option value="OTHER">Other cultural event</option>
-                        </optgroup>
-                    </select>
-                </div>
+                {% include 'competitions/partials/cultural_subtype_field.html' with prefix='edit-' is_cultural=False selected_subtype='' %}
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                     <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
                     <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Competition</button>

@@ -1,13 +1,18 @@
+import re
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction, models
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .models import Competition, Round, Criterion
+from .models import (
+    Competition, Round, Criterion, CulturalMainType, CulturalSubType,
+    cultural_subtype_groups, cultural_subtype_labels,
+)
 from scoring.services import calculate_rankings
 from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.functions import Lower
@@ -47,7 +52,10 @@ def _validate_category_fields(post):
     if kind not in Competition.Kind.values:
         errors.append('Select the competition category: Sports or Socio Cultural.')
     elif kind == Competition.Kind.CULTURAL:
-        if event_type not in Competition.CulturalEventType.values:
+        if (
+            event_type not in Competition.CulturalEventType.values
+            and not CulturalSubType.objects.filter(slug=event_type).exists()
+        ):
             errors.append(
                 'Select a Socio Cultural sub-type (for example dancing, singing, or literary arts).'
             )
@@ -56,6 +64,16 @@ def _validate_category_fields(post):
         event_type = ''
 
     return kind, event_type, errors
+
+
+def _subtype_form_context(kind, selected):
+    """Shared context for the cultural sub-type field on create/edit forms."""
+    return {
+        'subtype_groups': cultural_subtype_groups(),
+        'selected_subtype': selected or '',
+        'is_cultural': kind == Competition.Kind.CULTURAL,
+        'can_manage_subtypes': True,
+    }
 
 
 def _medal_points(post):
@@ -104,7 +122,7 @@ def _competition_search_q(category, term):
 
 def _cultural_subcategories(queryset):
     """Cultural sub-type chips built from the competitions currently in range."""
-    labels = dict(Competition.CulturalEventType.choices)
+    labels = cultural_subtype_labels()
     rows = (
         queryset
         .exclude(cultural_event_type='')
@@ -216,6 +234,8 @@ def competition_list(request):
         'all_count': all_count,
         'result_count': page_obj.paginator.count,
         'is_filtered': bool(query) or bool(selected_sub),
+        'subtype_groups': cultural_subtype_groups(),
+        'can_manage_subtypes': get_user_role(request.user) in MANAGEMENT_ROLES,
     })
 
 
@@ -237,8 +257,9 @@ def socio_cultural_management(request):
     )
 
     # Event-type chips act as a quick filter without leaving the page.
+    labels = cultural_subtype_labels()
     selected_type = request.GET.get('type', '')
-    if selected_type not in Competition.CulturalEventType.values:
+    if selected_type not in labels:
         selected_type = ''
     if selected_type:
         competitions = competitions.filter(cultural_event_type=selected_type)
@@ -246,7 +267,10 @@ def socio_cultural_management(request):
     type_counts = [
         {
             'value': row['cultural_event_type'],
-            'label': dict(Competition.CulturalEventType.choices)[row['cultural_event_type']],
+            'label': labels.get(
+                row['cultural_event_type'],
+                row['cultural_event_type'].replace('_', ' ').title(),
+            ),
             'count': row['n'],
         }
         for row in (
@@ -305,6 +329,7 @@ def create_competition(request):
             return render(request, 'competitions/create_competition.html', {
                 'form_data': request.POST,
                 'category_errors': category_errors,
+                **_subtype_form_context(kind, request.POST.get('cultural_event_type')),
             })
         try:
             with transaction.atomic():
@@ -361,9 +386,12 @@ def create_competition(request):
             return redirect(_competition_list_url(kind))
         except Exception as e:
             messages.error(request, f'Error creating competition: {str(e)}')
-            return render(request, 'competitions/create_competition.html')
+            return render(request, 'competitions/create_competition.html', {
+                'form_data': request.POST,
+                **_subtype_form_context(kind, event_type),
+            })
 
-    return render(request, 'competitions/create_competition.html')
+    return render(request, 'competitions/create_competition.html', _subtype_form_context('', ''))
 
 
 @management_required
@@ -381,6 +409,9 @@ def edit_competition(request, competition_id):
             return render(request, 'competitions/edit_competition.html', {
                 'competition': competition,
                 'category_errors': category_errors,
+                **_subtype_form_context(
+                    request.POST.get('kind'), request.POST.get('cultural_event_type'),
+                ),
             })
 
         title = request.POST.get('title')
@@ -403,7 +434,179 @@ def edit_competition(request, competition_id):
         messages.success(request, 'Competition updated successfully!')
         return redirect('competition_detail', competition_id=competition.id)
 
-    return render(request, 'competitions/edit_competition.html', {'competition': competition})
+    return render(request, 'competitions/edit_competition.html', {
+        'competition': competition,
+        **_subtype_form_context(competition.kind, competition.cultural_event_type),
+    })
+
+
+def _subtype_slug(name):
+    return re.sub(r'[^A-Z0-9]+', '_', name.upper()).strip('_')[:30].strip('_')
+
+
+@management_required
+@require_POST
+def add_cultural_subtype(request):
+    """Create a cultural sub-type (and optionally its main group) from the
+    competition form so staff are not limited to the seeded list."""
+    name = (request.POST.get('name') or '').strip()
+    main_id = (request.POST.get('main_type') or '').strip()
+    new_main_name = (request.POST.get('new_main_type') or '').strip()
+
+    if not name:
+        return JsonResponse({'error': 'Enter a sub-type name.'}, status=400)
+    if len(name) > 100:
+        return JsonResponse({'error': 'Sub-type name is too long (max 100 characters).'}, status=400)
+
+    slug = _subtype_slug(name)
+    if not slug:
+        return JsonResponse({'error': 'Use letters or numbers in the sub-type name.'}, status=400)
+
+    # LIKE is case sensitive in this database, so match names through Lower().
+    existing = (
+        CulturalSubType.objects
+        .annotate(lower_name=Lower('name'))
+        .filter(Q(lower_name=name.lower()) | Q(slug=slug))
+        .select_related('main_type')
+        .first()
+    )
+    if existing:
+        return JsonResponse({
+            'id': existing.id, 'slug': existing.slug, 'name': existing.name,
+            'main_id': existing.main_type_id, 'main_type': existing.main_type.name,
+        })
+
+    if main_id == '__new__':
+        if not new_main_name:
+            return JsonResponse({'error': 'Enter a name for the new main group.'}, status=400)
+        if len(new_main_name) > 100:
+            return JsonResponse({'error': 'Main group name is too long (max 100 characters).'}, status=400)
+        main = (
+            CulturalMainType.objects
+            .annotate(lower_name=Lower('name'))
+            .filter(lower_name=new_main_name.lower())
+            .first()
+        )
+        if main is None:
+            main = CulturalMainType.objects.create(name=new_main_name)
+    else:
+        main = CulturalMainType.objects.filter(id=main_id).first() if main_id.isdigit() else None
+        if main is None:
+            return JsonResponse({'error': 'Pick a main group or add a new one.'}, status=400)
+
+    subtype = CulturalSubType.objects.create(main_type=main, name=name, slug=slug)
+    return JsonResponse({
+        'id': subtype.id, 'slug': subtype.slug, 'name': subtype.name,
+        'main_id': main.id, 'main_type': main.name,
+    })
+
+
+@management_required
+@require_POST
+def edit_cultural_subtype(request):
+    """Rename a sub-type or move it to another main group. The slug never
+    changes so competitions already using it keep their classification."""
+    subtype_id = (request.POST.get('id') or '').strip()
+    subtype = CulturalSubType.objects.filter(id=subtype_id).first() if subtype_id.isdigit() else None
+    if subtype is None:
+        return JsonResponse({'error': 'Sub-type not found.'}, status=404)
+
+    name = (request.POST.get('name') or '').strip()
+    if not name:
+        return JsonResponse({'error': 'Enter a sub-type name.'}, status=400)
+    if len(name) > 100:
+        return JsonResponse({'error': 'Sub-type name is too long (max 100 characters).'}, status=400)
+
+    main_id = (request.POST.get('main_type') or '').strip()
+    main = CulturalMainType.objects.filter(id=main_id).first() if main_id.isdigit() else None
+    if main is None:
+        return JsonResponse({'error': 'Pick a main group.'}, status=400)
+
+    # LIKE is case sensitive in this database, so match names through Lower().
+    clash = (
+        CulturalSubType.objects
+        .annotate(lower_name=Lower('name'))
+        .filter(Q(lower_name=name.lower()) | Q(slug=_subtype_slug(name)))
+        .exclude(id=subtype.id)
+        .exists()
+    )
+    if clash:
+        return JsonResponse({'error': 'A sub-type with this name already exists.'}, status=400)
+
+    subtype.name = name
+    subtype.main_type = main
+    subtype.save()
+    return JsonResponse({
+        'id': subtype.id, 'slug': subtype.slug, 'name': subtype.name,
+        'main_id': main.id, 'main_type': main.name,
+    })
+
+
+@management_required
+@require_POST
+def delete_cultural_subtype(request):
+    subtype_id = (request.POST.get('id') or '').strip()
+    subtype = CulturalSubType.objects.filter(id=subtype_id).first() if subtype_id.isdigit() else None
+    if subtype is None:
+        return JsonResponse({'error': 'Sub-type not found.'}, status=404)
+
+    used = Competition.objects.filter(cultural_event_type=subtype.slug).count()
+    if used:
+        return JsonResponse({
+            'error': f'Cannot delete "{subtype.name}": {used} competition(s) still use it. '
+                     'Edit those competitions first.',
+        }, status=400)
+
+    slug = subtype.slug
+    subtype.delete()
+    return JsonResponse({'deleted': True, 'id': int(subtype_id), 'slug': slug})
+
+
+@management_required
+@require_POST
+def edit_cultural_main_type(request):
+    main_id = (request.POST.get('id') or '').strip()
+    main = CulturalMainType.objects.filter(id=main_id).first() if main_id.isdigit() else None
+    if main is None:
+        return JsonResponse({'error': 'Main group not found.'}, status=404)
+
+    name = (request.POST.get('name') or '').strip()
+    if not name:
+        return JsonResponse({'error': 'Enter a main group name.'}, status=400)
+    if len(name) > 100:
+        return JsonResponse({'error': 'Main group name is too long (max 100 characters).'}, status=400)
+
+    clash = (
+        CulturalMainType.objects
+        .annotate(lower_name=Lower('name'))
+        .filter(lower_name=name.lower())
+        .exclude(id=main.id)
+        .exists()
+    )
+    if clash:
+        return JsonResponse({'error': 'A main group with this name already exists.'}, status=400)
+
+    main.name = name
+    main.save()
+    return JsonResponse({'id': main.id, 'name': main.name})
+
+
+@management_required
+@require_POST
+def delete_cultural_main_type(request):
+    main_id = (request.POST.get('id') or '').strip()
+    main = CulturalMainType.objects.filter(id=main_id).first() if main_id.isdigit() else None
+    if main is None:
+        return JsonResponse({'error': 'Main group not found.'}, status=404)
+
+    if main.subtypes.exists():
+        return JsonResponse({
+            'error': f'Cannot delete "{main.name}": it still has sub-types. '
+                     'Move or delete them first.',
+        }, status=400)
+
+    main.delete()
+    return JsonResponse({'deleted': True, 'id': int(main_id)})
 
 
 @management_required

@@ -92,31 +92,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="cultural-subtype-wrap md:col-span-2 {% if form_data.kind != 'CULTURAL' %}hidden{% endif %}">
-                    <label for="cultural_event_type" class="mb-1.5 block text-sm font-medium text-slate-700">Socio Cultural Sub-type <span class="text-rose-500">*</span></label>
-                    <select id="cultural_event_type" name="cultural_event_type" required
-                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100"
-                            {% if form_data.kind != 'CULTURAL' %}disabled{% endif %}>
-                        <option value="">— Select a sub-type —</option>
-                        <optgroup label="Performing Arts">
-                            <option value="DANCE" {% if form_data.cultural_event_type == 'DANCE' %}selected{% endif %}>Dancing</option>
-                            <option value="SINGING" {% if form_data.cultural_event_type == 'SINGING' %}selected{% endif %}>Singing</option>
-                            <option value="TALENT_SHOW" {% if form_data.cultural_event_type == 'TALENT_SHOW' %}selected{% endif %}>Talent Show</option>
-                            <option value="CULTURAL_PRESENTATION" {% if form_data.cultural_event_type == 'CULTURAL_PRESENTATION' %}selected{% endif %}>Cultural Presentation</option>
-                            <option value="COSTUME" {% if form_data.cultural_event_type == 'COSTUME' %}selected{% endif %}>Costume</option>
-                        </optgroup>
-                        <optgroup label="Literary &amp; Academic Arts">
-                            <option value="ESSAY_WRITING" {% if form_data.cultural_event_type == 'ESSAY_WRITING' %}selected{% endif %}>Essay Writing (Literary Arts)</option>
-                            <option value="SPOKEN_POETRY" {% if form_data.cultural_event_type == 'SPOKEN_POETRY' %}selected{% endif %}>Spoken Poetry</option>
-                            <option value="QUIZ_BEE" {% if form_data.cultural_event_type == 'QUIZ_BEE' %}selected{% endif %}>Quiz Bee</option>
-                            <option value="POSTER_MAKING" {% if form_data.cultural_event_type == 'POSTER_MAKING' %}selected{% endif %}>Poster Making</option>
-                        </optgroup>
-                        <optgroup label="Other">
-                            <option value="OTHER" {% if form_data.cultural_event_type == 'OTHER' %}selected{% endif %}>Other cultural event</option>
-                        </optgroup>
-                    </select>
-                    <p class="mt-1 text-xs text-slate-400">Socio Cultural covers dancing, singing, literary arts and other cultural events.</p>
-                </div>
+                {% include 'competitions/partials/cultural_subtype_field.html' %}
                 <div class="md:col-span-2">
                     <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
                     <div class="grid grid-cols-3 gap-4">

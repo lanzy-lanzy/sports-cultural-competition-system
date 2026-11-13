@@ -1,0 +1,510 @@
+{# Cultural sub-type select backed by the DB taxonomy, with inline add/edit/delete of sub-types and their main groups. #}
+{# Context: subtype_groups, selected_subtype, is_cultural, can_manage_subtypes, prefix (for pages with several forms). #}
+{% with p=prefix|default:'' %}
+<div id="{{ p }}subtype-field" class="cultural-subtype-wrap md:col-span-2 {% if not is_cultural %}hidden{% endif %}">
+    <div class="mb-1.5 flex items-center justify-between">
+        <label for="{{ p }}cultural_event_type" class="block text-sm font-medium text-slate-700">Socio Cultural Sub-type <span class="text-rose-500">*</span></label>
+        {% if can_manage_subtypes %}
+        <div class="flex items-center gap-1.5">
+            <button type="button" id="{{ p }}subtype-add-toggle"
+                    class="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700 shadow-sm transition-colors hover:border-violet-300 hover:bg-violet-50">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Add sub-type
+            </button>
+            <button type="button" id="{{ p }}subtype-manage-toggle"
+                    class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487z"/>
+                </svg>
+                Manage
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    <select id="{{ p }}cultural_event_type" name="cultural_event_type" required
+            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100"
+            {% if not is_cultural %}disabled{% endif %}>
+        <option value="">— Select a sub-type —</option>
+        {% for group in subtype_groups %}
+        <optgroup label="{{ group.name }}" data-group-id="{{ group.id }}">
+            {% for sub in group.subtypes %}
+            <option value="{{ sub.slug }}" {% if sub.slug == selected_subtype %}selected{% endif %}>{{ sub.name }}</option>
+            {% endfor %}
+        </optgroup>
+        {% endfor %}
+    </select>
+    <p class="mt-1 text-xs text-slate-400">{% if can_manage_subtypes %}Can't find the sub-type? Use "Add sub-type" to create it, or "Manage" to rename, move or delete entries.{% else %}Socio Cultural covers dancing, singing, literary arts and other cultural events.{% endif %}</p>
+
+    {% if can_manage_subtypes %}
+    <div id="{{ p }}subtype-add-panel" class="mt-3 hidden rounded-md border border-violet-200 bg-violet-50/60 p-4">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+                <label for="{{ p }}new_subtype_name" class="mb-1 block text-xs font-medium text-slate-600">New sub-type name</label>
+                <input type="text" id="{{ p }}new_subtype_name" maxlength="100" placeholder="e.g. Folk Dance"
+                       class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+            </div>
+            <div>
+                <label for="{{ p }}subtype_main_group" class="mb-1 block text-xs font-medium text-slate-600">Main group</label>
+                <select id="{{ p }}subtype_main_group"
+                        class="js-main-group-select w-full cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+                    {% for group in subtype_groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="__new__">+ New main group…</option>
+                </select>
+            </div>
+            <div id="{{ p }}new-main-group-wrap" class="hidden sm:col-span-2">
+                <label for="{{ p }}new_main_group_name" class="mb-1 block text-xs font-medium text-slate-600">New main group name</label>
+                <input type="text" id="{{ p }}new_main_group_name" maxlength="100" placeholder="e.g. Visual Arts"
+                       class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+            </div>
+        </div>
+        <p id="{{ p }}subtype-add-error" class="mt-2 hidden text-sm text-rose-600" role="alert"></p>
+        <div class="mt-3 flex items-center gap-2">
+            <button type="button" id="{{ p }}subtype-add-confirm"
+                    class="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60">
+                Add sub-type
+            </button>
+            <button type="button" id="{{ p }}subtype-add-cancel"
+                    class="rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <div id="{{ p }}subtype-manage-panel" class="mt-3 hidden rounded-md border border-slate-200 bg-slate-50/60 p-4">
+        <p class="mb-2 text-xs font-medium text-slate-600">Main groups and sub-types. Renaming keeps existing competitions linked; entries in use cannot be deleted.</p>
+        <p id="{{ p }}subtype-manage-error" class="mb-2 hidden text-sm text-rose-600" role="alert"></p>
+        <div id="{{ p }}subtype-manage-list" class="max-h-72 space-y-3 overflow-y-auto pr-1">
+            {% for group in subtype_groups %}
+            <div class="manage-group rounded-md border border-slate-200 bg-white" data-group-id="{{ group.id }}">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+                    <span class="group-name text-sm font-semibold text-slate-800">{{ group.name }}</span>
+                    <span class="flex items-center gap-1">
+                        <button type="button" class="group-rename rounded px-2 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-50">Rename</button>
+                        <button type="button" class="group-delete rounded px-2 py-1 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">Delete</button>
+                    </span>
+                </div>
+                <div class="group-rename-form hidden items-center gap-2 border-b border-slate-100 px-3 py-2">
+                    <input type="text" maxlength="100" value="{{ group.name }}"
+                           class="group-rename-input w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+                    <button type="button" class="group-rename-save rounded-md bg-violet-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60">Save</button>
+                    <button type="button" class="group-rename-cancel rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300">Cancel</button>
+                </div>
+                <div class="group-subs divide-y divide-slate-100">
+                    {% for sub in group.subtypes %}
+                    <div class="manage-sub px-3 py-2" data-sub-id="{{ sub.id }}" data-slug="{{ sub.slug }}">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="sub-name text-sm text-slate-700">{{ sub.name }}</span>
+                            <span class="flex shrink-0 items-center gap-1">
+                                <span class="sub-usage mr-1 text-xs text-slate-400">{% if sub.usage %}Used by {{ sub.usage }}{% else %}Unused{% endif %}</span>
+                                <button type="button" class="sub-edit rounded px-2 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-50">Edit</button>
+                                <button type="button" class="sub-delete rounded px-2 py-1 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">Delete</button>
+                            </span>
+                        </div>
+                        <div class="sub-edit-form mt-2 hidden grid-cols-1 gap-2 sm:grid-cols-2">
+                            <input type="text" maxlength="100" value="{{ sub.name }}"
+                                   class="sub-edit-name w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+                            <select class="sub-edit-main js-main-group-select w-full cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+                                {% for g in subtype_groups %}
+                                <option value="{{ g.id }}" {% if g.id == group.id %}selected{% endif %}>{{ g.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="flex gap-2 sm:col-span-2">
+                                <button type="button" class="sub-edit-save rounded-md bg-violet-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60">Save</button>
+                                <button type="button" class="sub-edit-cancel rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300">Cancel</button>
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-3 flex justify-end">
+            <button type="button" id="{{ p }}subtype-manage-close"
+                    class="rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300">
+                Close
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if can_manage_subtypes %}
+<template id="{{ p }}manage-group-template">
+    <div class="manage-group rounded-md border border-slate-200 bg-white" data-group-id="">
+        <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+            <span class="group-name text-sm font-semibold text-slate-800"></span>
+            <span class="flex items-center gap-1">
+                <button type="button" class="group-rename rounded px-2 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-50">Rename</button>
+                <button type="button" class="group-delete rounded px-2 py-1 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">Delete</button>
+            </span>
+        </div>
+        <div class="group-rename-form hidden items-center gap-2 border-b border-slate-100 px-3 py-2">
+            <input type="text" maxlength="100" value=""
+                   class="group-rename-input w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+            <button type="button" class="group-rename-save rounded-md bg-violet-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60">Save</button>
+            <button type="button" class="group-rename-cancel rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300">Cancel</button>
+        </div>
+        <div class="group-subs divide-y divide-slate-100"></div>
+    </div>
+</template>
+
+<template id="{{ p }}manage-sub-template">
+    <div class="manage-sub px-3 py-2" data-sub-id="" data-slug="">
+        <div class="flex items-center justify-between gap-2">
+            <span class="sub-name text-sm text-slate-700"></span>
+            <span class="flex shrink-0 items-center gap-1">
+                <span class="sub-usage mr-1 text-xs text-slate-400">Unused</span>
+                <button type="button" class="sub-edit rounded px-2 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-50">Edit</button>
+                <button type="button" class="sub-delete rounded px-2 py-1 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">Delete</button>
+            </span>
+        </div>
+        <div class="sub-edit-form mt-2 hidden grid-cols-1 gap-2 sm:grid-cols-2">
+            <input type="text" maxlength="100" value=""
+                   class="sub-edit-name w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100">
+            <select class="sub-edit-main js-main-group-select w-full cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm transition focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-100"></select>
+            <span class="flex gap-2 sm:col-span-2">
+                <button type="button" class="sub-edit-save rounded-md bg-violet-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60">Save</button>
+                <button type="button" class="sub-edit-cancel rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300">Cancel</button>
+            </span>
+        </div>
+    </div>
+</template>
+
+<script>
+    (function () {
+        const p = '{{ p|escapejs }}';
+        const root = document.getElementById(p + 'subtype-field');
+        const select = document.getElementById(p + 'cultural_event_type');
+        const addToggle = document.getElementById(p + 'subtype-add-toggle');
+        const addPanel = document.getElementById(p + 'subtype-add-panel');
+        const nameInput = document.getElementById(p + 'new_subtype_name');
+        const mainSelect = document.getElementById(p + 'subtype_main_group');
+        const newMainWrap = document.getElementById(p + 'new-main-group-wrap');
+        const newMainInput = document.getElementById(p + 'new_main_group_name');
+        const addError = document.getElementById(p + 'subtype-add-error');
+        const addConfirm = document.getElementById(p + 'subtype-add-confirm');
+        const addCancel = document.getElementById(p + 'subtype-add-cancel');
+        const manageToggle = document.getElementById(p + 'subtype-manage-toggle');
+        const managePanel = document.getElementById(p + 'subtype-manage-panel');
+        const manageError = document.getElementById(p + 'subtype-manage-error');
+        const manageList = document.getElementById(p + 'subtype-manage-list');
+        const manageClose = document.getElementById(p + 'subtype-manage-close');
+        const urls = {
+            add: '{% url "add_cultural_subtype" %}',
+            editSub: '{% url "edit_cultural_subtype" %}',
+            deleteSub: '{% url "delete_cultural_subtype" %}',
+            editMain: '{% url "edit_cultural_main_type" %}',
+            deleteMain: '{% url "delete_cultural_main_type" %}',
+        };
+
+        function showError(el, message) {
+            el.textContent = message;
+            el.classList.remove('hidden');
+        }
+
+        function hideError(el) {
+            el.textContent = '';
+            el.classList.add('hidden');
+        }
+
+        function post(url, params) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            return fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new URLSearchParams(params),
+            }).then(function (response) {
+                return response.json().then(function (data) {
+                    return { ok: response.ok, data: data };
+                });
+            });
+        }
+
+        function mainSelects() {
+            return root.querySelectorAll('.js-main-group-select');
+        }
+
+        function optgroupFor(mainId) {
+            return select.querySelector('optgroup[data-group-id="' + mainId + '"]');
+        }
+
+        function ensureOptgroup(mainId, mainName) {
+            let group = optgroupFor(mainId);
+            if (!group) {
+                group = document.createElement('optgroup');
+                group.label = mainName;
+                group.dataset.groupId = mainId;
+                select.appendChild(group);
+            }
+            return group;
+        }
+
+        function addMainOptionEverywhere(mainId, mainName) {
+            mainSelects().forEach(function (sel) {
+                if (!sel.querySelector('option[value="' + mainId + '"]')) {
+                    const option = document.createElement('option');
+                    option.value = mainId;
+                    option.textContent = mainName;
+                    const newOption = sel.querySelector('option[value="__new__"]');
+                    if (newOption) sel.insertBefore(option, newOption);
+                    else sel.appendChild(option);
+                }
+            });
+        }
+
+        function fillMainSelect(sel, selectedId) {
+            sel.innerHTML = '';
+            mainSelect.options && Array.from(mainSelect.options).forEach(function (source) {
+                if (source.value === '__new__') return;
+                const option = document.createElement('option');
+                option.value = source.value;
+                option.textContent = source.textContent;
+                sel.appendChild(option);
+            });
+            sel.value = String(selectedId);
+        }
+
+        function ensureSubtypeOption(slug, name, mainId, mainName) {
+            let option = select.querySelector('option[value="' + slug + '"]');
+            if (!option) {
+                option = document.createElement('option');
+                option.value = slug;
+                option.textContent = name;
+                ensureOptgroup(mainId, mainName).appendChild(option);
+            }
+            select.value = slug;
+        }
+
+        function cloneTemplate(id) {
+            return document.getElementById(p + id).content.firstElementChild.cloneNode(true);
+        }
+
+        function addManageRow(sub, mainId, mainName) {
+            let groupBlock = manageList.querySelector('.manage-group[data-group-id="' + mainId + '"]');
+            if (!groupBlock) {
+                groupBlock = cloneTemplate('manage-group-template');
+                groupBlock.dataset.groupId = mainId;
+                groupBlock.querySelector('.group-name').textContent = mainName;
+                manageList.appendChild(groupBlock);
+            }
+            const row = cloneTemplate('manage-sub-template');
+            row.dataset.subId = sub.id;
+            row.dataset.slug = sub.slug;
+            row.querySelector('.sub-name').textContent = sub.name;
+            fillMainSelect(row.querySelector('.sub-edit-main'), mainId);
+            groupBlock.querySelector('.group-subs').appendChild(row);
+        }
+
+        // --- Add sub-type ---
+
+        addToggle.addEventListener('click', function () {
+            addPanel.classList.toggle('hidden');
+            managePanel.classList.add('hidden');
+            hideError(addError);
+            if (!addPanel.classList.contains('hidden')) nameInput.focus();
+        });
+
+        addCancel.addEventListener('click', function () {
+            addPanel.classList.add('hidden');
+            hideError(addError);
+        });
+
+        mainSelect.addEventListener('change', function () {
+            newMainWrap.classList.toggle('hidden', mainSelect.value !== '__new__');
+        });
+
+        addConfirm.addEventListener('click', function () {
+            hideError(addError);
+            const name = nameInput.value.trim();
+            if (!name) {
+                showError(addError, 'Enter a sub-type name.');
+                nameInput.focus();
+                return;
+            }
+            const isNewMain = mainSelect.value === '__new__';
+            const newMain = newMainInput.value.trim();
+            if (isNewMain && !newMain) {
+                showError(addError, 'Enter a name for the new main group.');
+                newMainInput.focus();
+                return;
+            }
+
+            addConfirm.disabled = true;
+            post(urls.add, { name: name, main_type: mainSelect.value, new_main_type: newMain })
+                .then(function (result) {
+                    if (!result.ok) {
+                        showError(addError, result.data.error || 'Could not add the sub-type.');
+                        return;
+                    }
+                    addMainOptionEverywhere(result.data.main_id, result.data.main_type);
+                    mainSelect.value = String(result.data.main_id);
+                    newMainWrap.classList.add('hidden');
+                    ensureSubtypeOption(result.data.slug, result.data.name, result.data.main_id, result.data.main_type);
+                    addManageRow(result.data, result.data.main_id, result.data.main_type);
+                    nameInput.value = '';
+                    newMainInput.value = '';
+                    addPanel.classList.add('hidden');
+                })
+                .catch(function () {
+                    showError(addError, 'Could not add the sub-type. Please try again.');
+                })
+                .finally(function () {
+                    addConfirm.disabled = false;
+                });
+        });
+
+        // --- Manage sub-types and main groups ---
+
+        manageToggle.addEventListener('click', function () {
+            managePanel.classList.toggle('hidden');
+            addPanel.classList.add('hidden');
+            hideError(manageError);
+        });
+
+        manageClose.addEventListener('click', function () {
+            managePanel.classList.add('hidden');
+            hideError(manageError);
+        });
+
+        function withPending(button, action) {
+            button.disabled = true;
+            action().catch(function () {
+                showError(manageError, 'Something went wrong. Please try again.');
+            }).finally(function () {
+                button.disabled = false;
+            });
+        }
+
+        managePanel.addEventListener('click', function (event) {
+            const button = event.target.closest('button');
+            if (!button || !managePanel.contains(button)) return;
+            const groupBlock = button.closest('.manage-group');
+            const subRow = button.closest('.manage-sub');
+            hideError(manageError);
+
+            if (button.classList.contains('group-rename')) {
+                const form = groupBlock.querySelector('.group-rename-form');
+                form.classList.remove('hidden');
+                form.classList.add('flex');
+                const input = form.querySelector('.group-rename-input');
+                input.value = groupBlock.querySelector('.group-name').textContent;
+                input.focus();
+            } else if (button.classList.contains('group-rename-cancel')) {
+                const form = groupBlock.querySelector('.group-rename-form');
+                form.classList.add('hidden');
+                form.classList.remove('flex');
+            } else if (button.classList.contains('group-rename-save')) {
+                const form = groupBlock.querySelector('.group-rename-form');
+                const name = form.querySelector('.group-rename-input').value.trim();
+                if (!name) {
+                    showError(manageError, 'Enter a main group name.');
+                    return;
+                }
+                const id = groupBlock.dataset.groupId;
+                withPending(button, function () {
+                    return post(urls.editMain, { id: id, name: name }).then(function (result) {
+                        if (!result.ok) {
+                            showError(manageError, result.data.error || 'Could not rename the main group.');
+                            return;
+                        }
+                        groupBlock.querySelector('.group-name').textContent = result.data.name;
+                        const group = optgroupFor(id);
+                        if (group) group.label = result.data.name;
+                        mainSelects().forEach(function (sel) {
+                            const option = sel.querySelector('option[value="' + id + '"]');
+                            if (option) option.textContent = result.data.name;
+                        });
+                        form.classList.add('hidden');
+                        form.classList.remove('flex');
+                    });
+                });
+            } else if (button.classList.contains('group-delete')) {
+                const id = groupBlock.dataset.groupId;
+                const name = groupBlock.querySelector('.group-name').textContent;
+                if (!window.confirm('Delete main group "' + name + '"?')) return;
+                withPending(button, function () {
+                    return post(urls.deleteMain, { id: id }).then(function (result) {
+                        if (!result.ok) {
+                            showError(manageError, result.data.error || 'Could not delete the main group.');
+                            return;
+                        }
+                        groupBlock.remove();
+                        const group = optgroupFor(id);
+                        if (group) group.remove();
+                        mainSelects().forEach(function (sel) {
+                            const option = sel.querySelector('option[value="' + id + '"]');
+                            if (option) option.remove();
+                        });
+                    });
+                });
+            } else if (button.classList.contains('sub-edit')) {
+                const form = subRow.querySelector('.sub-edit-form');
+                form.classList.remove('hidden');
+                form.classList.add('grid');
+                form.querySelector('.sub-edit-name').value = subRow.querySelector('.sub-name').textContent;
+                form.querySelector('.sub-edit-main').value = groupBlock.dataset.groupId;
+                form.querySelector('.sub-edit-name').focus();
+            } else if (button.classList.contains('sub-edit-cancel')) {
+                const form = subRow.querySelector('.sub-edit-form');
+                form.classList.add('hidden');
+                form.classList.remove('grid');
+            } else if (button.classList.contains('sub-edit-save')) {
+                const form = subRow.querySelector('.sub-edit-form');
+                const name = form.querySelector('.sub-edit-name').value.trim();
+                const mainId = form.querySelector('.sub-edit-main').value;
+                if (!name) {
+                    showError(manageError, 'Enter a sub-type name.');
+                    return;
+                }
+                withPending(button, function () {
+                    return post(urls.editSub, { id: subRow.dataset.subId, name: name, main_type: mainId }).then(function (result) {
+                        if (!result.ok) {
+                            showError(manageError, result.data.error || 'Could not update the sub-type.');
+                            return;
+                        }
+                        subRow.querySelector('.sub-name').textContent = result.data.name;
+                        const option = select.querySelector('option[value="' + result.data.slug + '"]');
+                        if (option) {
+                            option.textContent = result.data.name;
+                            const target = ensureOptgroup(result.data.main_id, result.data.main_type);
+                            if (option.parentElement !== target) target.appendChild(option);
+                        }
+                        if (String(result.data.main_id) !== groupBlock.dataset.groupId) {
+                            const targetBlock = manageList.querySelector('.manage-group[data-group-id="' + result.data.main_id + '"]');
+                            if (targetBlock) targetBlock.querySelector('.group-subs').appendChild(subRow);
+                        }
+                        form.querySelector('.sub-edit-main').value = String(result.data.main_id);
+                        form.classList.add('hidden');
+                        form.classList.remove('grid');
+                    });
+                });
+            } else if (button.classList.contains('sub-delete')) {
+                const slug = subRow.dataset.slug;
+                const name = subRow.querySelector('.sub-name').textContent;
+                if (!window.confirm('Delete sub-type "' + name + '"?')) return;
+                withPending(button, function () {
+                    return post(urls.deleteSub, { id: subRow.dataset.subId }).then(function (result) {
+                        if (!result.ok) {
+                            showError(manageError, result.data.error || 'Could not delete the sub-type.');
+                            return;
+                        }
+                        subRow.remove();
+                        const option = select.querySelector('option[value="' + slug + '"]');
+                        if (option) option.remove();
+                        if (select.value === slug) select.value = '';
+                    });
+                });
+            }
+        });
+    })();
+</script>
+{% endif %}
+{% endwith %}

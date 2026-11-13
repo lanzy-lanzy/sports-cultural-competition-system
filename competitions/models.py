@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.db import models
+from django.db.models import Count
 from django.contrib.auth.models import User
 
 
@@ -35,10 +36,9 @@ class Competition(models.Model):
     )
     cultural_event_type = models.CharField(
         max_length=30,
-        choices=CulturalEventType.choices,
         blank=True,
         default='',
-        help_text='Only used for cultural competitions.',
+        help_text='Only used for cultural competitions. Stores a CulturalSubType slug.',
     )
     gold_points = models.DecimalField(
         max_digits=5, decimal_places=2, default=Decimal('10'),
@@ -67,6 +67,68 @@ class Competition(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_cultural_event_type_display(self):
+        return cultural_subtype_labels().get(
+            self.cultural_event_type, self.cultural_event_type
+        )
+
+
+class CulturalMainType(models.Model):
+    """Main group a cultural sub-type belongs to (e.g. Performing Arts)."""
+
+    class Meta:
+        db_table = 'competition_app_cultural_main_type'
+        ordering = ['id']
+
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CulturalSubType(models.Model):
+    """Selectable cultural sub-type; its slug is stored on Competition.cultural_event_type."""
+
+    class Meta:
+        db_table = 'competition_app_cultural_sub_type'
+        ordering = ['id']
+
+    main_type = models.ForeignKey(CulturalMainType, on_delete=models.CASCADE, related_name='subtypes')
+    name = models.CharField(max_length=100)
+    slug = models.CharField(max_length=30, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+def cultural_subtype_labels():
+    """Slug → display name; the legacy enum stays as a fallback for old data."""
+    labels = dict(Competition.CulturalEventType.choices)
+    labels.update(CulturalSubType.objects.values_list('slug', 'name'))
+    return labels
+
+
+def cultural_subtype_groups():
+    """Main groups with their sub-types (and how many competitions use each),
+    in creation order, for the form select and manage panel."""
+    usage = dict(
+        Competition.objects
+        .exclude(cultural_event_type='')
+        .values_list('cultural_event_type')
+        .annotate(n=Count('id'))
+    )
+    return [
+        {
+            'id': main.id,
+            'name': main.name,
+            'subtypes': [
+                {'id': sub.id, 'slug': sub.slug, 'name': sub.name, 'usage': usage.get(sub.slug, 0)}
+                for sub in main.subtypes.all()
+            ],
+        }
+        for main in CulturalMainType.objects.prefetch_related('subtypes')
+    ]
 
 
 class Round(models.Model):
