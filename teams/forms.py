@@ -13,6 +13,29 @@ INPUT_CLASS = (
 )
 
 
+class TeamRosterFilterForm(forms.Form):
+    q = forms.CharField(
+        required=False, max_length=200, label='Search players',
+        widget=forms.TextInput(attrs={'placeholder': 'Name, participant ID, or jersey number'}),
+    )
+    status = forms.ChoiceField(
+        required=False, label='Membership status',
+        choices=[('', 'All membership statuses'), *TeamMembership.Status.choices],
+    )
+    category = forms.ChoiceField(
+        required=False, choices=[('', 'All categories'), *Participant.Category.choices],
+    )
+    gender = forms.ChoiceField(
+        required=False,
+        choices=[('', 'All genders'), *Participant._meta.get_field('gender').choices],
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = INPUT_CLASS
+
+
 class TeamForm(forms.ModelForm):
     class Meta:
         model = Team

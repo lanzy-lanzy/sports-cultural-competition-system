@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts.access import MANAGEMENT_ROLES, get_user_role, role_required
 from accounts.models import UserProfile
-from .forms import TeamForm, TeamMembershipForm, TeamStaffForm
+from .forms import TeamForm, TeamMembershipForm, TeamRosterFilterForm, TeamStaffForm
 from .models import Team, TeamMembership, TeamStaff
 
 
@@ -93,9 +95,39 @@ def edit_team(request, team_id):
 @team_editor_required
 def team_detail(request, team_id):
     team = _get_accessible_team(request.user, team_id)
+    memberships = team.memberships.select_related('participant').order_by(
+        'participant__name', 'pk',
+    )
+    total_members = memberships.count()
+    filter_form = TeamRosterFilterForm(request.GET)
+    if filter_form.is_valid():
+        filters = filter_form.cleaned_data
+        query = filters['q']
+        if query:
+            search = Q(participant__name__icontains=query) | Q(
+                participant__participant_id__icontains=query,
+            )
+            if query.isascii() and query.isdecimal() and len(query) <= 10:
+                search |= Q(member_number=int(query))
+            memberships = memberships.filter(search)
+        if filters['status']:
+            memberships = memberships.filter(status=filters['status'])
+        if filters['category']:
+            memberships = memberships.filter(participant__category=filters['category'])
+        if filters['gender']:
+            memberships = memberships.filter(participant__gender=filters['gender'])
+    else:
+        memberships = memberships.none()
+    page_obj = Paginator(memberships, 25).get_page(request.GET.get('page'))
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
     return render(request, 'teams/team_detail.html', {
         'team': team,
-        'memberships': team.memberships.select_related('participant'),
+        'memberships': page_obj.object_list,
+        'page_obj': page_obj,
+        'total_members': total_members,
+        'filter_form': filter_form,
+        'filter_query': query_params.urlencode(),
         'staff_assignments': team.staff_assignments.select_related('user'),
         'membership_form': TeamMembershipForm(team=team),
         'staff_form': TeamStaffForm(),

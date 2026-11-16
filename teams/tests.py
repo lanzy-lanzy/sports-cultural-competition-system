@@ -219,3 +219,75 @@ class AdminTeamApprovalTest(TestCase):
         )
         form = EventEntryForm(event=event)
         self.assertIn(team, form.fields['team'].queryset)
+
+
+class TeamRosterSearchTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = User.objects.create_superuser('roster-admin', '', 'pass')
+        cls.team = Team.objects.create(name='SOCJE', category='SPORTS', created_by=cls.admin)
+        cls.other_team = Team.objects.create(name='SAFES', category='SPORTS', created_by=cls.admin)
+        cls.alex = Participant.objects.create(name='Alex Player', phone='0917', gender='male')
+        cls.bella = Participant.objects.create(name='Bella Player', phone='0918', gender='female', category='JUNIOR')
+        cls.outsider = Participant.objects.create(name='Alex Outside', phone='0919')
+        TeamMembership.objects.create(team=cls.team, participant=cls.alex, member_number=12)
+        TeamMembership.objects.create(team=cls.team, participant=cls.bella, member_number=7, status='INACTIVE')
+        TeamMembership.objects.create(team=cls.other_team, participant=cls.outsider, member_number=12)
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+        self.url = reverse('team_detail', args=[self.team.pk])
+
+    def test_default_roster_includes_active_and_inactive_members_only_for_team(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, 'Alex Player')
+        self.assertContains(response, 'Bella Player')
+        self.assertNotContains(response, 'Alex Outside')
+        self.assertEqual(response.context['total_members'], 2)
+        self.assertContains(response, 'Inactive member')
+        self.assertContains(response, self.alex.participant_id)
+
+    def test_search_name_identifier_and_jersey_number(self):
+        for query in ('  aLeX  ', self.alex.participant_id.lower(), '12'):
+            with self.subTest(query=query):
+                response = self.client.get(self.url, {'q': query})
+                self.assertEqual([m.participant_id for m in response.context['memberships']], [self.alex.pk])
+                self.assertEqual(response.context['total_members'], 2)
+
+    def test_filters_combine_with_search(self):
+        response = self.client.get(self.url, {
+            'q': 'Player', 'status': 'INACTIVE', 'category': 'JUNIOR', 'gender': 'female',
+        })
+        self.assertEqual([m.participant_id for m in response.context['memberships']], [self.bella.pk])
+        response = self.client.get(self.url, {'status': 'ACTIVE', 'gender': 'female'})
+        self.assertContains(response, 'No players match these filters')
+        self.assertEqual(response.context['page_obj'].paginator.count, 0)
+
+    def test_invalid_filter_is_reported(self):
+        response = self.client.get(self.url, {'status': 'unknown'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['filter_form'].errors)
+        self.assertEqual(response.context['page_obj'].paginator.count, 0)
+
+    def test_pagination_keeps_filters_and_handles_invalid_page(self):
+        for index in range(26):
+            participant = Participant.objects.create(name=f'Extra Player {index:02}', phone='0')
+            TeamMembership.objects.create(team=self.team, participant=participant)
+        response = self.client.get(self.url, {'q': 'Player', 'page': 'bad'})
+        self.assertEqual(len(response.context['memberships']), 25)
+        self.assertContains(response, '?q=Player&amp;page=2')
+        response = self.client.get(self.url, {'q': 'Player', 'page': '999'})
+        self.assertEqual(response.context['page_obj'].number, 2)
+        self.assertEqual(len(response.context['memberships']), 3)
+
+    def test_manager_can_search_assigned_team_but_not_other_teams(self):
+        manager = User.objects.create_user('roster-manager', password='pass')
+        manager.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        manager.account_profile.save()
+        TeamStaff.objects.create(team=self.team, user=manager, role='MANAGER')
+        self.client.force_login(manager)
+        self.assertContains(self.client.get(self.url, {'q': 'Alex'}), 'Alex Player')
+        response = self.client.get(reverse('team_detail', args=[self.other_team.pk]), {'q': 'Alex'})
+        self.assertEqual(response.status_code, 404)
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
