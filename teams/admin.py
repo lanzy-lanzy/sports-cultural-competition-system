@@ -6,6 +6,8 @@ from .models import Team, TeamMembership, TeamStaff
 class TeamMembershipInline(admin.TabularInline):
     model = TeamMembership
     extra = 0
+    # Event assignment uses the workspace's eligibility-aware service.
+    exclude = ('events',)
 
 
 class TeamStaffInline(admin.TabularInline):

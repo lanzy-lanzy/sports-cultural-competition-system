@@ -1,6 +1,6 @@
 NAV_GROUPS = {
     'dashboard': ['dashboard'],
-    'portal': ['portal_home'],
+    'portal': ['portal_home', 'team_manager_dashboard'],
     'users': ['user_management', 'update_user_access'],
     'judge_dashboard': ['judge_dashboard'],
     'judge_profile': ['judge_profile'],
@@ -20,7 +20,8 @@ NAV_GROUPS = {
     'teams': [
         'team_list', 'create_team', 'team_detail', 'edit_team',
         'add_team_member', 'remove_team_member', 'add_team_staff',
-        'remove_team_staff', 'update_team_status',
+        'remove_team_staff', 'update_team_status', 'bulk_delete_teams',
+        'bulk_delete_members', 'update_member_events',
     ],
     'judges': [
         'judge_management', 'manage_judges', 'assign_judges',
@@ -59,7 +60,7 @@ NAV_GROUPS = {
         'mark_all_notifications_read',
     ],
     'registrations': [
-        'registration_list', 'create_registration', 'my_registrations',
+        'registration_list', 'create_registration', 'my_registrations', 'register_for_event',
         'registration_review', 'registration_review_queue',
     ],
     'protests': [

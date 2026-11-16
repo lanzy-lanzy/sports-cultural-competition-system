@@ -1,14 +1,15 @@
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts.access import MANAGEMENT_ROLES, get_user_role, role_required
 from accounts.models import UserProfile
-from .forms import TeamForm, TeamMembershipForm, TeamRosterFilterForm, TeamStaffForm
+from .forms import TeamForm, TeamMembershipForm, TeamMemberEventsForm, TeamRosterFilterForm, TeamStaffForm
 from .models import Team, TeamMembership, TeamStaff
 
 
@@ -35,7 +36,7 @@ def _require_management(user):
 @team_editor_required
 def team_list(request):
     teams = _accessible_teams(request.user).order_by('name')
-    return render(request, 'teams/team_list.html', {'teams': teams})
+    return render(request, 'teams/team_list.html', {'teams': teams, 'can_delete_teams': get_user_role(request.user) in MANAGEMENT_ROLES})
 
 
 @team_editor_required
@@ -96,7 +97,7 @@ def edit_team(request, team_id):
 def team_detail(request, team_id):
     team = _get_accessible_team(request.user, team_id)
     from sports.services import compute_team_standings
-    memberships = team.memberships.select_related('participant').order_by(
+    memberships = team.memberships.select_related('participant').prefetch_related('events__competition').order_by(
         'participant__name', 'pk',
     )
     total_members = memberships.count()
@@ -120,6 +121,8 @@ def team_detail(request, team_id):
     else:
         memberships = memberships.none()
     page_obj = Paginator(memberships, 25).get_page(request.GET.get('page'))
+    for membership in page_obj.object_list:
+        membership.events_form = TeamMemberEventsForm(membership=membership, prefix=f'member-{membership.pk}')
     query_params = request.GET.copy()
     query_params.pop('page', None)
     return render(request, 'teams/team_detail.html', {
@@ -139,19 +142,101 @@ def team_detail(request, team_id):
 
 @team_editor_required
 @require_POST
+@transaction.atomic
 def add_team_member(request, team_id):
     team = _get_accessible_team(request.user, team_id)
     form = TeamMembershipForm(request.POST, team=team)
     if form.is_valid():
-        membership = form.save(commit=False)
-        membership.team = team
-        membership.save()
-        membership.participant.team_name = team.name
-        membership.participant.save(update_fields=['team_name'])
-        messages.success(request, f'{membership.participant.name} was added to the roster.')
+        try:
+            with transaction.atomic():
+                Team.objects.select_for_update().get(pk=team.pk)
+                membership = form.save(commit=False)
+                membership.team = team
+                membership.save()
+                membership.participant.team_name = team.name
+                membership.participant.save(update_fields=['team_name'])
+                from .services import set_member_events
+                set_member_events(membership, form.cleaned_data['events'], request.user)
+        except ValidationError as error:
+            messages.error(request, ' '.join(error.messages))
+        except IntegrityError:
+            messages.error(request, 'That player or jersey number is already assigned. Refresh the roster and try again.')
+        else:
+            messages.success(request, f'{membership.participant.name} was added to the roster.')
     else:
-        messages.error(request, 'The participant could not be added. Check the roster details.')
+        messages.error(request, ' '.join(str(error) for errors in form.errors.values() for error in errors))
     return redirect('team_detail', team_id=team.id)
+
+
+@team_editor_required
+@require_POST
+def update_member_events(request, team_id, membership_id):
+    team = _get_accessible_team(request.user, team_id)
+    membership = get_object_or_404(TeamMembership.objects.select_related('team', 'participant'), pk=membership_id, team=team)
+    form = TeamMemberEventsForm(request.POST, membership=membership, prefix=f'member-{membership.pk}')
+    if form.is_valid():
+        from .services import set_member_events
+        try:
+            set_member_events(membership, form.cleaned_data['events'], request.user)
+        except ValidationError as error:
+            form.add_error('events', error)
+        else:
+            messages.success(request, f'Event assignments updated for {membership.participant.name}.')
+            return redirect('team_detail', team_id=team.pk)
+    return render(request, 'teams/member_events.html', {'team': team, 'membership': membership, 'form': form}, status=400)
+
+
+def _selected_ids(request):
+    values = request.POST.getlist('selected')
+    if not values or len(values) > 500:
+        raise ValidationError('Select between 1 and 500 items.')
+    try:
+        ids = {int(value) for value in values}
+    except (ValueError, TypeError):
+        raise ValidationError('Invalid selection.')
+    if any(pk < 1 for pk in ids):
+        raise ValidationError('Invalid selection.')
+    return ids
+
+
+@team_editor_required
+@require_POST
+def bulk_delete_teams(request):
+    _require_management(request.user)
+    from .services import force_delete_teams
+    try:
+        ids = _selected_ids(request)
+        items = list(_accessible_teams(request.user).filter(pk__in=ids))
+        if len(items) != len(ids):
+            raise ValidationError('Select valid teams.')
+        if request.POST.get('confirm') != 'yes':
+            return render(request, 'teams/bulk_delete_confirm.html', {'items': items, 'kind': 'teams', 'cancel_url': 'team_list'})
+        count = force_delete_teams(ids, request.user)
+        messages.success(request, f'{count} team(s) permanently deleted.')
+    except ValidationError as error:
+        messages.error(request, ' '.join(error.messages))
+    except ProtectedError:
+        messages.error(request, 'These teams have protected award records. Reopen the affected events and withdraw medals before deleting teams. Nothing was deleted.')
+    return redirect('team_list')
+
+
+@team_editor_required
+@require_POST
+def bulk_delete_members(request, team_id):
+    team = _get_accessible_team(request.user, team_id)
+    from .services import force_delete_memberships
+    try:
+        ids = _selected_ids(request)
+        items = list(team.memberships.filter(pk__in=ids).select_related('participant'))
+        if len(items) != len(ids):
+            raise ValidationError('Select members belonging to this team.')
+        if request.POST.get('confirm') != 'yes':
+            return render(request, 'teams/bulk_delete_confirm.html', {'items': items, 'kind': 'members', 'team': team})
+        count = force_delete_memberships(team, ids, request.user)
+        messages.success(request, f'{count} roster membership(s) permanently removed. Player profiles were retained.')
+    except ValidationError as error:
+        messages.error(request, ' '.join(error.messages))
+    return redirect('team_detail', team_id=team.pk)
 
 
 @team_editor_required

@@ -1,13 +1,13 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}My Registrations - Competrack{% endblock %}
-{% block header_title %}My Registrations{% endblock %}
+{% block title %}{% if is_team_manager %}Team Registrations{% else %}My Registrations{% endif %} - Competrack{% endblock %}
+{% block header_title %}{% if is_team_manager %}Team Registrations{% else %}My Registrations{% endif %}{% endblock %}
 
 {% block content %}
 <div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
     <div>
-        <h1 class="font-display text-2xl font-semibold text-slate-900">My Registrations</h1>
-        <p class="mt-1 text-sm text-slate-500">Track the approval status of your competition and event registrations.</p>
+        <h1 class="font-display text-2xl font-semibold text-slate-900">{% if is_team_manager %}Team Registrations{% else %}My Registrations{% endif %}</h1>
+        <p class="mt-1 text-sm text-slate-500">{% if is_team_manager %}All submissions for your assigned teams, including entries made by other staff.{% else %}Track the approval status of your competition and event registrations.{% endif %}</p>
     </div>
     <a href="{% url 'register_for_event' %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl ui-button ui-button--primary">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
@@ -15,6 +15,12 @@
     </a>
 </div>
 
+{% if is_team_manager %}<a href="{% url 'team_manager_dashboard' %}" class="mb-4 inline-block text-sm font-semibold text-campus">&larr; Team dashboard</a>{% endif %}
+<form method="get" class="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
+    {% if is_team_manager %}<div><label for="registration-team" class="mb-1 block text-xs font-bold text-slate-600">Team</label><select id="registration-team" name="team" class="rounded-lg border border-slate-200 px-3 py-2.5 text-sm"><option value="">All my teams</option>{% for team in managed_teams %}<option value="{{ team.pk }}" {% if selected_team == team.pk|stringformat:'s' %}selected{% endif %}>{{ team.name }}</option>{% endfor %}</select></div>{% endif %}
+    <div><label for="registration-status" class="mb-1 block text-xs font-bold text-slate-600">Status</label><select id="registration-status" name="status" class="rounded-lg border border-slate-200 px-3 py-2.5 text-sm"><option value="">All statuses</option><option value="awaiting" {% if selected_status == 'awaiting' %}selected{% endif %}>Awaiting approval</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <button class="ui-button ui-button--primary">Filter registrations</button><a href="{% url 'my_registrations' %}" class="ui-button ui-button--secondary">Clear filters</a>
+</form>
 {% if registrations %}
 <div class="space-y-4">
     {% for registration in registrations %}
@@ -37,7 +43,7 @@
                     </span>
                 </div>
                 <p class="mt-1 text-sm text-slate-500">
-                    {% if registration.team %}Team: <span class="font-semibold text-slate-700">{{ registration.team.name }}</span>{% endif %}
+                    {% if registration.team %}Team: <span class="font-semibold text-slate-700">{% if is_team_manager %}<a href="{% url 'team_detail' registration.team_id %}">{{ registration.team.name }}</a>{% else %}{{ registration.team.name }}{% endif %}</span>{% endif %}
                     {% if registration.participant %}Participant: <span class="font-semibold text-slate-700">{{ registration.participant.name }}</span>{% endif %}
                 </p>
             </div>
@@ -49,6 +55,7 @@
         {% endif %}
 
         <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+            <span>Submitted by {{ registration.registrant.get_full_name|default:registration.registrant.username }}</span>
             {% if registration.requirements_document %}
             <a href="{{ registration.requirements_document.url }}" target="_blank" class="font-semibold text-cyan-700 hover:text-cyan-900">View requirements document</a>
             {% endif %}
@@ -63,9 +70,10 @@
 </div>
 {% else %}
 <div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center">
-    <h3 class="font-display text-xl font-semibold text-slate-900">No registrations yet</h3>
-    <p class="mt-2 text-sm text-slate-500">Register yourself or your team for a competition to get started.</p>
+    <h3 class="font-display text-xl font-semibold text-slate-900">No registrations found</h3>
+    <p class="mt-2 text-sm text-slate-500">Try clearing the filters or submit a new registration.</p>
     <a href="{% url 'register_for_event' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 ui-button ui-button--primary">Register now</a>
 </div>
 {% endif %}
+{% if page_obj.has_other_pages %}<nav aria-label="Registration pages" class="mt-5 flex items-center justify-between text-sm">{% if page_obj.has_previous %}<a class="ui-button ui-button--secondary" href="?{{ filter_query }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="ui-button ui-button--secondary" href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% else %}<span></span>{% endif %}</nav>{% endif %}
 {% endblock %}

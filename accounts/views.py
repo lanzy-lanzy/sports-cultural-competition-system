@@ -3,9 +3,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
@@ -20,6 +22,7 @@ from .access import (
     get_user_role,
     management_required,
     redirect_name_for_user,
+    role_required,
 )
 from .forms import ProfileForm, RegistrationForm, UserAccessForm
 from .models import UserProfile
@@ -167,12 +170,50 @@ def logout_view(request):
 
 @login_required
 def portal_home(request):
+    if get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER:
+        return team_manager_dashboard(request)
     competitions = Competition.objects.filter(status__in=['ACTIVE', 'COMPLETED']).order_by('-start_date')[:8]
     role = get_user_role(request.user)
     return render(request, 'accounts/portal_home.html', {
         'competitions': competitions,
         'account_role': role,
         'participant_has_profile': role == UserProfile.Role.PARTICIPANT and Participant.objects.filter(user=request.user).exists(),
+    })
+
+
+@role_required(UserProfile.Role.TEAM_MANAGER)
+def team_manager_dashboard(request):
+    from registrations.services import registrations_for_user
+    from sports.models import Match
+    from teams.models import Team, TeamMembership
+    teams = Team.objects.filter(staff_assignments__user=request.user).distinct().annotate(
+        player_count=Count('memberships', distinct=True),
+        event_count=Count('event_entries', distinct=True, filter=Q(event_entries__status='CONFIRMED')),
+        pending_count=Count('registrations', distinct=True, filter=Q(registrations__status__in=['PENDING', 'UNDER_REVIEW'])),
+    )
+    team_ids = teams.values('pk')
+    registrations = registrations_for_user(request.user)
+    counts = registrations.aggregate(
+        total=Count('pk'),
+        pending=Count('pk', filter=Q(status__in=['PENDING', 'UNDER_REVIEW'])),
+        approved=Count('pk', filter=Q(status='APPROVED')),
+        rejected=Count('pk', filter=Q(status='REJECTED')),
+    )
+    memberships = TeamMembership.objects.filter(team_id__in=team_ids)
+    upcoming = Match.objects.filter(
+        entries__team_id__in=team_ids,
+        status__in=[Match.Status.SCHEDULED, Match.Status.ONGOING],
+    ).filter(Q(scheduled_start__gte=timezone.now()) | Q(status=Match.Status.ONGOING)).distinct().select_related(
+        'event__competition', 'venue',
+    ).prefetch_related('entries__team', 'entries__participant').order_by('scheduled_start', 'pk')[:6]
+    return render(request, 'accounts/team_manager_dashboard.html', {
+        'managed_teams': teams,
+        'team_count': teams.count(),
+        'player_count': memberships.filter(status='ACTIVE', participant__status='ACTIVE').count(),
+        'event_assignment_count': memberships.filter(events__isnull=False).count(),
+        'registration_counts': counts,
+        'recent_registrations': registrations.select_related('team', 'sport_event', 'competition', 'registrant')[:8],
+        'upcoming_matches': upcoming,
     })
 
 

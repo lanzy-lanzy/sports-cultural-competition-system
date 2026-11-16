@@ -44,11 +44,15 @@ class EventRegistrationForm(forms.Form):
             ).distinct().order_by('name')
         if not is_team_manager or not self.fields['team'].queryset.exists():
             self.fields.pop('team')
+        elif is_team_manager:
+            self.fields['team'].required = True
         for field in self.fields.values():
             field.widget.attrs['class'] = INPUT_CLASS
 
     def clean(self):
         cleaned = super().clean()
+        if self.user and get_user_role(self.user) == UserProfile.Role.TEAM_MANAGER and 'team' not in self.fields:
+            raise forms.ValidationError('Create a team or ask an organizer to assign you as team staff before registering.')
         target_type = cleaned.get('target_type')
 
         if target_type == 'competition':
@@ -60,4 +64,8 @@ class EventRegistrationForm(forms.Form):
             if not sport_event:
                 self.add_error('sport_event', 'Select a sport event to register for.')
             cleaned['competition'] = sport_event.competition if sport_event else None
+        if cleaned.get('team') and cleaned.get('sport_event'):
+            from .models import EventRegistration
+            if EventRegistration.objects.filter(team=cleaned['team'], sport_event=cleaned['sport_event']).exists():
+                self.add_error('team', 'This team already has a registration for this event. Check Team Registrations for its status.')
         return cleaned

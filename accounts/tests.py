@@ -280,3 +280,104 @@ class NavigationRenderingTests(TestCase):
         self.assert_current_link(response, 'results_list')
         self.assertEqual(len(response.context['competition_results']), 1)
         self.assertContains(response, '10 competitions')
+
+
+class TeamManagerDashboardTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from teams.models import Team, TeamStaff, TeamMembership
+        from participants.models import Participant
+        from registrations.models import EventRegistration
+        cls.owner=User.objects.create_superuser('dash-owner','','pass')
+        cls.manager=User.objects.create_user('dash-manager',password='pass')
+        cls.manager.account_profile.role=UserProfile.Role.TEAM_MANAGER
+        cls.manager.account_profile.save()
+        cls.team=Team.objects.create(name='Managed delegation',category='SPORTS',status='APPROVED',created_by=cls.owner)
+        cls.other=Team.objects.create(name='Private delegation',category='SPORTS',status='APPROVED',created_by=cls.owner)
+        TeamStaff.objects.create(team=cls.team,user=cls.manager,role='MANAGER')
+        TeamStaff.objects.create(team=cls.team,user=cls.manager,role='COACH')
+        cls.competition=Competition.objects.create(name='Manager meet',description='Meet',start_date='2026-12-01T08:00:00Z',end_date='2026-12-05T17:00:00Z',status='ACTIVE',created_by=cls.owner)
+        cls.player=Participant.objects.create(name='Dashboard player',phone='0')
+        TeamMembership.objects.create(team=cls.team,participant=cls.player)
+        cls.registration=EventRegistration.objects.create(registrant=cls.owner,team=cls.team,competition=cls.competition,status='UNDER_REVIEW')
+        cls.foreign=EventRegistration.objects.create(registrant=cls.manager,team=cls.other,competition=cls.competition,status='APPROVED')
+
+    def setUp(self):
+        self.client.force_login(self.manager)
+
+    def test_dashboard_counts_and_team_registration_visibility(self):
+        response=self.client.get(reverse('team_manager_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.context['team_count'],1)
+        self.assertEqual(response.context['player_count'],1)
+        self.assertEqual(response.context['registration_counts'],{'total':1,'pending':1,'approved':0,'rejected':0})
+        self.assertContains(response,self.team.name)
+        self.assertNotContains(response,self.other.name)
+        self.assertEqual([r.pk for r in response.context['recent_registrations']],[self.registration.pk])
+        self.assertContains(response,reverse('team_detail',args=[self.team.pk])+'#team-roster')
+
+    def test_login_and_portal_show_manager_dashboard(self):
+        self.client.logout()
+        response=self.client.post(reverse('login'),{'username':'dash-manager','password':'pass'})
+        self.assertRedirects(response,reverse('team_manager_dashboard'))
+        self.assertTemplateUsed(self.client.get(reverse('portal_home')),'accounts/team_manager_dashboard.html')
+
+    def test_registrations_include_other_submitters_and_reject_foreign_filters(self):
+        response=self.client.get(reverse('my_registrations'))
+        self.assertEqual([r.pk for r in response.context['registrations']],[self.registration.pk])
+        self.assertContains(response,'Submitted by dash-owner')
+        self.assertContains(response,'Team Registrations')
+        response=self.client.get(reverse('my_registrations'),{'team':self.other.pk})
+        self.assertEqual(len(response.context['registrations']),0)
+        response=self.client.get(reverse('my_registrations'),{'status':'awaiting'})
+        self.assertEqual(len(response.context['registrations']),1)
+
+    def test_revoked_team_assignment_removes_access(self):
+        from teams.models import TeamStaff
+        TeamStaff.objects.filter(team=self.team,user=self.manager).delete()
+        response=self.client.get(reverse('team_manager_dashboard'))
+        self.assertEqual(response.context['team_count'],0)
+        self.assertEqual(response.context['registration_counts']['total'],0)
+        self.assertEqual(len(self.client.get(reverse('my_registrations')).context['registrations']),0)
+
+    def test_role_protection_and_team_preselection(self):
+        response=self.client.get(reverse('register_for_event'),{'team':self.team.pk})
+        self.assertEqual(response.context['form'].initial['team'],self.team.pk)
+        response=self.client.get(reverse('register_for_event'),{'team':self.other.pk})
+        self.assertNotIn('team',response.context['form'].initial)
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse('team_manager_dashboard')).status_code,403)
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse('team_manager_dashboard')).status_code,302)
+
+    def test_participant_registration_visibility_remains_personal(self):
+        from registrations.models import EventRegistration
+        participant=User.objects.create_user('dashboard-participant',password='pass')
+        participant.account_profile.role=UserProfile.Role.PARTICIPANT
+        participant.account_profile.save()
+        personal=EventRegistration.objects.create(registrant=participant,participant=self.player,competition=self.competition)
+        self.client.force_login(participant)
+        response=self.client.get(reverse('my_registrations'))
+        self.assertEqual([r.pk for r in response.context['registrations']],[personal.pk])
+
+    def test_upcoming_matches_are_scoped_and_not_duplicated_by_staff_roles(self):
+        from sports.models import SportType, SportsEvent, Match, MatchEntry
+        sport=SportType.objects.create(name='Dashboard basketball')
+        event=SportsEvent.objects.create(name='Dashboard event',sport_type=sport,competition=self.competition)
+        upcoming=Match.objects.create(event=event,scheduled_start=timezone.now()+timedelta(days=1))
+        private=Match.objects.create(event=event,scheduled_start=timezone.now()+timedelta(days=1))
+        MatchEntry.objects.create(match=upcoming,team=self.team,side=1)
+        MatchEntry.objects.create(match=private,team=self.other,side=1)
+        response=self.client.get(reverse('team_manager_dashboard'))
+        self.assertEqual([match.pk for match in response.context['upcoming_matches']],[upcoming.pk])
+
+    def test_duplicate_team_registration_returns_validation_error(self):
+        from sports.models import SportType, SportsEvent
+        from registrations.models import EventRegistration
+        sport=SportType.objects.create(name='Registration basketball')
+        event=SportsEvent.objects.create(name='Registration event',sport_type=sport,competition=self.competition)
+        EventRegistration.objects.create(registrant=self.owner,team=self.team,sport_event=event,competition=self.competition)
+        response=self.client.post(reverse('register_for_event'), {'target_type':'sport_event','sport_event':event.pk,'team':self.team.pk})
+        self.assertEqual(response.status_code,200)
+        self.assertIn('team',response.context['form'].errors)
+        self.assertEqual(EventRegistration.objects.filter(team=self.team,sport_event=event).count(),1)

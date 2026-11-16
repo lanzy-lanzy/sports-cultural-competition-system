@@ -38,7 +38,7 @@
         {% else %}<p class="px-6 py-8 text-center text-sm text-slate-500">No confirmed sports event entries for this team yet.</p>{% endif %}
     </section>
 
-    <div class="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
+    <div class="grid grid-cols-1 gap-6">
         <section id="team-roster" style="scroll-margin-top:110px" class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-6 py-5">
                 <a href="{% url 'team_list' %}" class="text-sm font-bold text-campus">&larr; All teams</a>
@@ -52,14 +52,16 @@
                 {% endfor %}
                 <div class="flex items-center gap-4 sm:col-span-2"><button type="submit" class="rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white tw-button tw-button-primary">Search players</button><a href="{% url 'team_detail' team.id %}" class="text-sm font-bold text-slate-600 tw-button tw-button-secondary">Clear filters</a></div>
             </form>
+            <form id="bulk-member-delete" method="post" action="{% url 'bulk_delete_members' team.pk %}" class="team-bulk-bar">{% csrf_token %}<label><input type="checkbox" data-select-all="bulk-member-delete"> Select visible members</label><span data-selection-count="bulk-member-delete" aria-live="polite">0 selected</span><button class="tw-button tw-button-danger" data-bulk-submit>Review force removal</button></form>
             {% if memberships %}
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <caption class="sr-only">Players assigned to {{ team.name }}</caption>
-                    <thead class="bg-slate-50 text-xs text-slate-500"><tr><th scope="col" class="px-5 py-3">Player</th><th scope="col" class="px-5 py-3">Details</th><th scope="col" class="px-5 py-3">Status</th><th scope="col" class="px-5 py-3">Actions</th></tr></thead>
+                    <thead class="bg-slate-50 text-xs text-slate-500"><tr><th scope="col" class="px-3 py-3"><span class="sr-only">Select member</span></th><th scope="col" class="px-5 py-3">Player</th><th scope="col" class="px-5 py-3">Details</th><th scope="col" class="px-5 py-3">Status</th><th scope="col" class="px-5 py-3">Actions</th></tr></thead>
                     <tbody class="divide-y divide-slate-100">
                         {% for membership in memberships %}
                         <tr>
+                            <td class="px-3 py-4 align-top"><input type="checkbox" name="selected" value="{{ membership.pk }}" form="bulk-member-delete" aria-label="Select {{ membership.participant.name }} for removal"></td>
                             <td class="px-5 py-4 align-top">
                                 <div class="flex items-center gap-3">
                                     {% if membership.participant.profile_image %}<img src="{{ membership.participant.profile_image.url }}" alt="" class="h-10 w-10 rounded-md object-cover">{% endif %}
@@ -67,9 +69,9 @@
                                 </div>
                                 {% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.id %}" class="mt-2 inline-block text-xs font-bold text-campus">View player profile</a>{% endif %}
                             </td>
-                            <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p></td>
+                            <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p><div class="mt-2 flex flex-wrap gap-1">{% for event in membership.events.all %}<span class="rounded-md bg-teal-50 px-2 py-1 text-campus">{{ event.name }}</span>{% empty %}<span>No sports events assigned</span>{% endfor %}</div></td>
                             <td class="px-5 py-4 align-top text-xs"><p class="font-bold text-ink">{{ membership.get_status_display }} member</p><p class="mt-1 text-slate-500">Player: {{ membership.participant.get_status_display }}</p></td>
-                            <td class="px-5 py-4 align-top"><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
+                            <td class="px-5 py-4 align-top"><details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-campus">Manage events</summary><form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">{% csrf_token %}<p class="text-xs text-slate-500">Select all events for this player. Only confirmed team or individual entries can be assigned.</p>{{ membership.events_form.events }}<button class="tw-button tw-button-primary">Save events</button></form></details><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -83,7 +85,7 @@
                 <div>{% if page_obj.has_next %}<a class="font-bold text-campus" href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div>
             </nav>
             {% endif %}
-            <form method="post" action="{% url 'add_team_member' team.id %}" class="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-[1fr_150px_auto] items-end">{% csrf_token %}<div><label for="{{ membership_form.participant.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Player</label>{{ membership_form.participant }}{% for error in membership_form.participant.errors %}<p class="text-xs text-rose-600">{{ error }}</p>{% endfor %}</div><div><label for="{{ membership_form.member_number.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Jersey number</label>{{ membership_form.member_number }}</div><button class="rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Add member</button></form>
+            <form method="post" action="{% url 'add_team_member' team.id %}" class="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-[1fr_150px_auto] items-end">{% csrf_token %}<div><label for="{{ membership_form.participant.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Player</label>{{ membership_form.participant }}{% for error in membership_form.participant.errors %}<p class="text-xs text-rose-600">{{ error }}</p>{% endfor %}</div><div><label for="{{ membership_form.member_number.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Jersey number</label>{{ membership_form.member_number }}</div><fieldset class="sm:col-span-3"><legend class="mb-2 text-xs font-bold text-slate-600">Sports events (optional; select multiple)</legend>{{ membership_form.events }}<p class="mt-2 text-xs text-slate-500">Confirm this team's event entries first. Eligibility and division rules are checked when saving.</p></fieldset><button class="rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Add member</button></form>
         </section>
 
         <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -95,3 +97,5 @@
 </div>
 </div>
 {% endblock %}
+
+{% block extra_scripts %}<script src="{% static_v 'js/team-management.js' %}" defer></script>{% endblock %}

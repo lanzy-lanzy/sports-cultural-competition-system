@@ -78,6 +78,10 @@ class TeamMembership(models.Model):
     )
     member_number = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    events = models.ManyToManyField(
+        'sports.SportsEvent', blank=True, related_name='assigned_team_members',
+        help_text='Sports events this roster member is assigned to.',
+    )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

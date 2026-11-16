@@ -14,9 +14,11 @@
 </div>
 
 {% if teams %}
+{% if can_delete_teams %}<form id="bulk-team-delete" method="post" action="{% url 'bulk_delete_teams' %}" class="team-bulk-bar">{% csrf_token %}<label><input type="checkbox" data-select-all="bulk-team-delete"> Select all teams</label><span data-selection-count="bulk-team-delete" aria-live="polite">0 selected</span><button class="tw-button tw-button-danger" data-bulk-submit>Review force deletion</button></form>{% endif %}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for team in teams %}
     <article class="relative overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+        {% if can_delete_teams %}<label class="team-bulk-choice"><input type="checkbox" name="selected" value="{{ team.pk }}" form="bulk-team-delete" aria-label="Select {{ team.name }} for deletion"> Select team</label>{% endif %}
         <div class="flex items-center gap-4 p-6">
             {% if team.logo %}<img src="{{ team.logo.url }}" alt="{{ team.name }} logo" class="h-16 w-16 rounded-md object-cover ring-1 ring-slate-200">{% else %}<div class="flex h-16 w-16 items-center justify-center rounded-md bg-campus font-display text-xl font-bold text-white">{{ team.name|make_list|first|upper }}</div>{% endif %}
             <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ team.code }}</p><h2 class="mt-1 truncate font-display text-lg font-bold text-ink"><a href="{% url 'team_detail' team.id %}" class="transition-colors hover:text-campus after:absolute after:inset-0 after:content-['']" aria-label="Open {{ team.name }} workspace">{{ team.name }}</a></h2><p class="mt-1 text-xs text-slate-500">{{ team.get_category_display }}</p></div>
@@ -31,3 +33,5 @@
 {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_scripts %}<script src="{% static_v 'js/team-management.js' %}" defer></script>{% endblock %}

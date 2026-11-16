@@ -291,3 +291,154 @@ class TeamRosterSearchTest(TestCase):
         self.assertEqual(response.status_code, 404)
         self.client.logout()
         self.assertEqual(self.client.get(self.url).status_code, 302)
+
+
+class TeamBulkAndEventsTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from competitions.models import Competition
+        from sports.models import EventEntry, SportsEvent, SportType
+        cls.admin = User.objects.create_superuser('bulk-admin', '', 'pass')
+        cls.manager = User.objects.create_user('bulk-manager', password='pass')
+        cls.manager.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        cls.manager.account_profile.save()
+        cls.team = Team.objects.create(name='Bulk Team', category='SPORTS', status='APPROVED', created_by=cls.admin)
+        cls.other = Team.objects.create(name='Other Bulk Team', category='SPORTS', status='APPROVED', created_by=cls.admin)
+        TeamStaff.objects.create(team=cls.team, user=cls.manager, role='MANAGER')
+        cls.players = [Participant.objects.create(name=f'Player {i}', phone='0', gender='male', team_name=cls.team.name) for i in range(3)]
+        cls.members = [TeamMembership.objects.create(team=cls.team, participant=p, member_number=i+1) for i,p in enumerate(cls.players[:2])]
+        cls.competition = Competition.objects.create(name='Bulk meet', description='Meet', start_date='2026-12-01T08:00:00Z', end_date='2026-12-05T17:00:00Z', created_by=cls.admin, status='ACTIVE')
+        cls.events = []
+        for name in ('Basketball', 'Volleyball'):
+            sport = SportType.objects.create(name=name)
+            event = SportsEvent.objects.create(name=name, competition=cls.competition, sport_type=sport, team_based=True, gender='male')
+            EventEntry.objects.create(event=event, team=cls.team, status='CONFIRMED')
+            cls.events.append(event)
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+
+    def test_member_bulk_preview_and_permanent_removal_retain_profiles(self):
+        member = self.members[0]
+        member.events.set(self.events)
+        url = reverse('bulk_delete_members', args=[self.team.pk])
+        selected = [m.pk for m in self.members]
+        preview = self.client.post(url, {'selected': selected})
+        self.assertEqual(preview.status_code, 200)
+        self.assertContains(preview, 'This cannot be undone')
+        self.assertEqual(self.team.memberships.count(), 2)
+        self.client.post(url, {'selected': selected, 'confirm':'yes'})
+        self.assertFalse(self.team.memberships.exists())
+        self.assertEqual(Participant.objects.count(), 3)
+        self.assertFalse(TeamMembership.events.through.objects.exists())
+        self.assertFalse(Participant.objects.filter(pk__in=[p.pk for p in self.players[:2]]).exclude(team_name='').exists())
+
+    def test_bad_bulk_selection_cannot_partially_delete(self):
+        url = reverse('bulk_delete_members', args=[self.team.pk])
+        for selected in ([], ['oops'], [self.members[0].pk, 999999]):
+            self.client.post(url, {'selected':selected,'confirm':'yes'})
+        self.assertEqual(self.team.memberships.count(), 2)
+
+    def test_bulk_team_delete_is_hard_and_cascades_memberships(self):
+        from sports.models import EventEntry
+        url = reverse('bulk_delete_teams')
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.client.post(url, {'selected':[self.team.pk,self.other.pk]})
+        self.assertEqual(Team.objects.count(), 2)
+        self.client.post(url, {'selected':[self.team.pk,self.other.pk],'confirm':'yes'})
+        self.assertEqual(Team.objects.count(), 0)
+        self.assertFalse(TeamMembership.objects.exists())
+        self.assertFalse(EventEntry.objects.exists())
+        self.assertEqual(Participant.objects.count(),3)
+
+    def test_award_protection_rolls_back_entire_bulk_delete(self):
+        from sports.models import EventAward, EventEntry
+        EventAward.objects.create(event=self.events[0], entry=EventEntry.objects.get(event=self.events[0],team=self.team), medal='gold')
+        self.client.post(reverse('bulk_delete_teams'), {'selected':[self.team.pk,self.other.pk], 'confirm':'yes'})
+        self.assertEqual(Team.objects.count(),2)
+        self.assertEqual(self.team.memberships.count(),2)
+        self.players[0].refresh_from_db()
+        self.assertEqual(self.players[0].team_name,self.team.name)
+
+    def test_manager_access_and_csrf(self):
+        from django.test import Client
+        self.client.force_login(self.manager)
+        self.assertEqual(self.client.post(reverse('bulk_delete_teams'),{'selected':[self.team.pk],'confirm':'yes'}).status_code,403)
+        foreign_member = TeamMembership.objects.create(team=self.other,participant=self.players[2])
+        self.client.post(reverse('bulk_delete_members',args=[self.team.pk]),{'selected':[self.members[0].pk,foreign_member.pk],'confirm':'yes'})
+        self.assertEqual(TeamMembership.objects.count(),3)
+        self.assertEqual(self.client.post(reverse('update_member_events',args=[self.other.pk,foreign_member.pk]),{}).status_code,404)
+        csrf_client=Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.admin)
+        self.assertEqual(csrf_client.post(reverse('bulk_delete_teams'),{'selected':[self.team.pk],'confirm':'yes'}).status_code,403)
+
+    def event_post(self, events):
+        member=self.members[0]
+        return self.client.post(reverse('update_member_events',args=[self.team.pk,member.pk]), {f'member-{member.pk}-events':[e.pk for e in events]})
+
+    def test_assign_replace_and_clear_multiple_events(self):
+        self.client.force_login(self.manager)
+        self.assertEqual(self.event_post(self.events).status_code,302)
+        self.assertEqual(self.members[0].events.count(),2)
+        self.assertEqual(self.event_post(self.events[:1]).status_code,302)
+        self.assertEqual(self.members[0].events.count(),1)
+        self.assertEqual(self.event_post([]).status_code,302)
+        self.assertFalse(self.members[0].events.exists())
+
+    def test_add_player_with_multiple_events(self):
+        response=self.client.post(reverse('add_team_member',args=[self.team.pk]), {'participant':self.players[2].pk,'member_number':3,'events':[e.pk for e in self.events]})
+        self.assertEqual(response.status_code,302)
+        self.assertEqual(TeamMembership.objects.get(participant=self.players[2]).events.count(),2)
+
+    def test_rejected_pending_eligibility_and_wrong_divisions_block_assignment(self):
+        from eligibility.models import EligibilityRecord
+        for status in ('PENDING','REJECTED'):
+            EligibilityRecord.objects.update_or_create(participant=self.players[0],competition=self.competition,defaults={'status':status})
+            self.assertEqual(self.event_post(self.events).status_code,400)
+            self.assertEqual(self.members[0].events.count(),0)
+        EligibilityRecord.objects.filter(participant=self.players[0]).update(status='APPROVED')
+        self.events[1].gender='female'
+        self.events[1].save()
+        self.assertEqual(self.event_post(self.events).status_code,400)
+        self.assertEqual(self.members[0].events.count(),0)
+        self.events[1].gender='male'
+        self.events[1].category='JUNIOR'
+        self.events[1].save()
+        self.assertEqual(self.event_post(self.events).status_code,400)
+
+    def test_foreign_event_closed_event_and_inactive_member_are_rejected(self):
+        from sports.models import EventEntry
+        EventEntry.objects.filter(event=self.events[1],team=self.team).delete()
+        self.assertEqual(self.event_post(self.events).status_code,400)
+        self.events[0].status='COMPLETED'
+        self.events[0].save()
+        self.assertEqual(self.event_post(self.events[:1]).status_code,400)
+        self.events[0].status='PLANNED'
+        self.events[0].save()
+        self.members[0].status='INACTIVE'
+        self.members[0].save()
+        self.assertEqual(self.event_post(self.events[:1]).status_code,400)
+
+    def test_closed_assignments_are_displayed_and_cannot_be_removed(self):
+        self.members[0].events.add(self.events[0])
+        self.events[0].status='COMPLETED'
+        self.events[0].save()
+        response=self.client.get(reverse('team_detail',args=[self.team.pk]))
+        self.assertContains(response,'Manage events')
+        self.assertEqual(self.event_post([]).status_code,400)
+        self.assertEqual(self.members[0].events.count(),1)
+
+    def test_invalid_add_cannot_create_partial_membership(self):
+        self.events[1].gender='female'
+        self.events[1].save()
+        self.client.post(reverse('add_team_member',args=[self.team.pk]), {'participant':self.players[2].pk,'member_number':3,'events':[e.pk for e in self.events]})
+        self.assertFalse(TeamMembership.objects.filter(participant=self.players[2]).exists())
+
+    def test_logo_cleanup_runs_after_successful_commit(self):
+        from unittest.mock import patch
+        self.team.logo='team_logos/bulk-test.png'
+        self.team.save()
+        with patch.object(Team._meta.get_field('logo').storage, 'delete') as delete:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.client.post(reverse('bulk_delete_teams'), {'selected':[self.team.pk],'confirm':'yes'})
+            delete.assert_called_once_with('team_logos/bulk-test.png')

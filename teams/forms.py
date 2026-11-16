@@ -1,8 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 from accounts.models import UserProfile
 from participants.models import Participant
+from sports.models import SportsEvent
 from .models import Team, TeamMembership, TeamStaff
 
 
@@ -79,22 +81,62 @@ class TeamStaffForm(forms.Form):
 
 class TeamMembershipForm(forms.ModelForm):
     participant = forms.ModelChoiceField(queryset=Participant.objects.none())
+    events = forms.ModelMultipleChoiceField(queryset=SportsEvent.objects.none(), required=False, widget=forms.CheckboxSelectMultiple, label='Sports events')
 
     class Meta:
         model = TeamMembership
-        fields = ('participant', 'member_number')
+        fields = ('participant', 'member_number', 'events')
 
     def __init__(self, *args, team, **kwargs):
         super().__init__(*args, **kwargs)
+        self.team = team
+        from .services import available_member_events
+        self.fields['events'].queryset = available_member_events(team)
+        self.fields['events'].label_from_instance = lambda event: f'{event.competition.name} — {event.name}'
         self.fields['participant'].queryset = Participant.objects.filter(
             team_membership__isnull=True,
             status='ACTIVE',
         ).order_by('name')
         for field in self.fields.values():
             field.widget.attrs['class'] = INPUT_CLASS
+        self.fields['events'].widget.attrs['class'] = 'team-event-options'
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('participant') is not None and 'events' in cleaned:
+            from .services import validate_member_events
+            member = TeamMembership(team=self.team, participant=cleaned['participant'])
+            try:
+                validate_member_events(member, list(cleaned['events']))
+            except forms.ValidationError as error:
+                self.add_error('events', error)
+        return cleaned
 
     def clean_member_number(self):
         member_number = self.cleaned_data.get('member_number')
         if member_number is not None and member_number > 999:
             raise forms.ValidationError('Member number must be between 1 and 999.')
         return member_number
+
+
+class TeamMemberEventsForm(forms.Form):
+    events = forms.ModelMultipleChoiceField(queryset=SportsEvent.objects.none(), required=False, widget=forms.CheckboxSelectMultiple)
+
+    def __init__(self, *args, membership, **kwargs):
+        super().__init__(*args, **kwargs)
+        from sports.models import SportsEvent
+        from .services import available_member_events
+        self.membership = membership
+        self.fields['events'].queryset = SportsEvent.objects.filter(
+            Q(pk__in=available_member_events(membership.team, membership.participant).values('pk'))
+            | Q(assigned_team_members=membership),
+        ).distinct().select_related('competition').order_by('competition__name', 'name')
+        self.fields['events'].initial = membership.events.all()
+        self.fields['events'].label_from_instance = lambda event: f'{event.competition.name} — {event.name}'
+        self.fields['events'].widget.attrs['class'] = 'team-event-options'
+
+    def clean_events(self):
+        from .services import validate_member_events
+        events = self.cleaned_data['events']
+        validate_member_events(self.membership, list(events))
+        return events

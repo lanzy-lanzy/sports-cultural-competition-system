@@ -13,6 +13,7 @@
     <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
         <form method="post" class="space-y-5">
             {% csrf_token %}
+            {% if form.non_field_errors %}<div role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
             <div>
                 <label for="{{ form.target_type.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Register for</label>
                 <select name="target_type" id="target-type-select" class="w-full cursor-pointer rounded-md border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
@@ -44,7 +45,9 @@
             {% else %}
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-slate-700">Team / delegation</label>
-                {% if participant_team %}
+                {% if account_role == 'TEAM_MANAGER' %}
+                <p class="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">No teams are assigned to you yet. <a href="{% url 'create_team' %}" class="font-semibold underline">Create a team</a> or ask an organizer to assign you as team staff before registering.</p>
+                {% elif participant_team %}
                 <div class="flex h-12 w-full items-center rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700">{{ participant_team.name }}</div>
                 <p class="mt-1 text-xs text-slate-400">You are registering as a member of this team. To change your team, use <a href="{% url 'my_participant_profile' %}" class="font-semibold text-campus hover:underline">My team</a>.</p>
                 {% else %}

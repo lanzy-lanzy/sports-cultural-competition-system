@@ -7,6 +7,19 @@ from sports.models import EventEntry
 from .models import EventRegistration
 
 
+def registrations_for_user(user):
+    """Managers see current team submissions from every staff member; individuals see their own."""
+    from accounts.access import get_user_role
+    from accounts.models import UserProfile
+    from django.db.models import Q
+    from teams.models import Team
+    registrations = EventRegistration.objects.all()
+    if get_user_role(user) == UserProfile.Role.TEAM_MANAGER:
+        team_ids = Team.objects.filter(staff_assignments__user=user).values('pk')
+        return registrations.filter(Q(team_id__in=team_ids) | Q(team__isnull=True, registrant=user))
+    return registrations.filter(registrant=user)
+
+
 @transaction.atomic
 def approve_registration(registration, reviewer, admin_notes=''):
     if registration.sport_event_id:

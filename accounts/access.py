@@ -74,5 +74,7 @@ def redirect_name_for_user(user):
         return 'dashboard'
     if role == UserProfile.Role.JUDGE:
         return 'judge_dashboard'
+    if role == UserProfile.Role.TEAM_MANAGER:
+        return 'team_manager_dashboard'
     return 'portal_home'
 

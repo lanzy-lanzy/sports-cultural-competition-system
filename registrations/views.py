@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -16,6 +17,7 @@ from .services import (
     delete_registration,
     reject_registration,
     start_review,
+    registrations_for_user,
     soft_delete_registration_template,
 )
 
@@ -26,6 +28,10 @@ def register_for_event(request):
         request.POST or None,
         user=request.user,
     )
+    team_ref = request.GET.get('team', '')
+    if request.method != 'POST' and (team_ref.isascii() and team_ref.isdecimal() and len(team_ref) <= 10) and 'team' in form.fields:
+        if form.fields['team'].queryset.filter(pk=int(team_ref)).exists():
+            form.initial['team'] = int(team_ref)
 
     if request.method == 'POST' and form.is_valid():
         participant = Participant.objects.filter(user=request.user).first()
@@ -38,15 +44,20 @@ def register_for_event(request):
             )
             return redirect('my_participant_profile')
 
-        EventRegistration.objects.create(
-            registrant=request.user,
-            competition=form.cleaned_data['competition'],
-            sport_event=form.cleaned_data['sport_event'],
-            team=team,
-            participant=None if team else participant,
-        )
-        messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
-        return redirect('my_registrations')
+        try:
+            with transaction.atomic():
+                EventRegistration.objects.create(
+                    registrant=request.user,
+                    competition=form.cleaned_data['competition'],
+                    sport_event=form.cleaned_data['sport_event'],
+                    team=team,
+                    participant=None if team else participant,
+                )
+        except IntegrityError:
+            form.add_error(None, 'This entry has already been submitted. Check your registrations for its status.')
+        else:
+            messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
+            return redirect('my_registrations')
 
     # A participant registers as an individual; their team affiliation already
     # comes from the "My team" selection, so surface it read-only for context.
@@ -67,10 +78,29 @@ def register_for_event(request):
 
 @role_required(UserProfile.Role.PARTICIPANT, UserProfile.Role.TEAM_MANAGER)
 def my_registrations(request):
-    registrations = EventRegistration.objects.filter(registrant=request.user).select_related(
-        'competition', 'sport_event', 'sport_event__sport_type', 'team', 'participant', 'reviewed_by',
+    registrations = registrations_for_user(request.user).select_related(
+        'competition', 'sport_event', 'sport_event__sport_type', 'team', 'participant', 'reviewed_by', 'registrant',
     )
-    return render(request, 'registrations/my_registrations.html', {'registrations': registrations})
+    from teams.models import Team
+    is_manager = get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER
+    teams = Team.objects.filter(staff_assignments__user=request.user).distinct() if is_manager else Team.objects.none()
+    team_ref = request.GET.get('team', '')
+    status = request.GET.get('status', '')
+    if team_ref:
+        registrations = registrations.filter(team_id=int(team_ref)) if (team_ref.isascii() and team_ref.isdecimal() and len(team_ref) <= 10) else registrations.none()
+    if status:
+        if status == 'awaiting':
+            registrations = registrations.filter(status__in=['PENDING', 'UNDER_REVIEW'])
+        else:
+            registrations = registrations.filter(status=status) if status in EventRegistration.Status.values else registrations.none()
+    page_obj = Paginator(registrations, 20).get_page(request.GET.get('page'))
+    params = request.GET.copy()
+    params.pop('page', None)
+    return render(request, 'registrations/my_registrations.html', {
+        'registrations': page_obj.object_list, 'page_obj': page_obj, 'filter_query': params.urlencode(),
+        'is_team_manager': is_manager, 'managed_teams': teams,
+        'selected_team': team_ref, 'selected_status': status, 'status_choices': EventRegistration.Status.choices,
+    })
 
 
 @management_required

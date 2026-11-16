@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% load static_version %}
+{% block extra_head %}<link rel="stylesheet" href="{% static_v 'css/teams.css' %}">{% endblock %}
+{% block title %}Assign sports events{% endblock %}
+{% block content %}
+<section class="team-ui mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6">
+    <h1 class="font-display text-2xl font-bold">Sports events for {{ membership.participant.name }}</h1>
+    <p class="mt-2 text-sm text-slate-500">{{ team.name }} · Select multiple events, or clear all to remove open-event assignments.</p>
+    <form method="post" class="mt-5 space-y-4">{% csrf_token %}{{ form.non_field_errors }}{{ form.events.errors }}{{ form.events }}<div class="flex gap-3"><button class="tw-button tw-button-primary">Save events</button><a class="tw-button tw-button-secondary" href="{% url 'team_detail' team.pk %}#team-roster">Back to roster</a></div></form>
+</section>
+{% endblock %}
