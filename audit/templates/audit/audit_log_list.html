@@ -11,7 +11,7 @@
     </div>
     <form method="post" action="{% url 'clear_audit_logs' %}" onsubmit="return confirm('Clear the entire audit log? This cannot be undone.')">
         {% csrf_token %}
-        <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Clear log</button>
+        <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 ui-button ui-button--danger">Clear log</button>
     </form>
 </div>
 
@@ -24,7 +24,7 @@
             <option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <button type="submit" class="cursor-pointer rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Search</button>
+        <button type="submit" class="cursor-pointer rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 ui-button ui-button--primary">Search</button>
     </form>
 </div>
 

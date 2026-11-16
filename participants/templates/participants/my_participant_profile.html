@@ -40,7 +40,7 @@
         </div>
         <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-5 sm:px-8">
             <span class="text-xs text-slate-500">Age classification: <strong class="text-ink">{% if participant %}{{ participant.age_classification }}{% else %}Complete your profile{% endif %}</strong></span>
-            <button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow">Save participant profile</button>
+            <button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Save participant profile</button>
         </div>
     </form>
 
@@ -60,7 +60,7 @@
                 </div>
                 <form method="post" action="{% url 'leave_my_team' %}" onsubmit="return confirm('Leave {{ team_membership.team.name }}?');">
                     {% csrf_token %}
-                    <button type="submit" class="cursor-pointer rounded-md border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50">Leave team</button>
+                    <button type="submit" class="cursor-pointer rounded-md border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 ui-button ui-button--danger">Leave team</button>
                 </form>
             </div>
             {% else %}
@@ -79,7 +79,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" id="team-select-submit" class="cursor-pointer rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow transition hover:brightness-105">Join team</button>
+                <button type="submit" id="team-select-submit" class="cursor-pointer rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow transition hover:brightness-105 ui-button ui-button--primary">Join team</button>
             </form>
             {% else %}
             <p class="text-sm text-slate-400">No other approved teams are available to join right now.</p>

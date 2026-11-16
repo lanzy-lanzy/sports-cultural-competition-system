@@ -24,16 +24,18 @@ def rank_table(event, rows, group=None):
             for row in cohort:
                 value = row.get(breaker, 0)
                 if breaker == 'head_to_head':
+                    from .services import _scored_opponents
                     value = 0
                     for match in event.matches.filter(status='COMPLETED').prefetch_related('entries'):
-                        if group and match.group != group:
+                        if group is not None and match.group != group:
                             continue
                         entries = list(match.entries.all())
                         if len(entries) != 2 or not all(identity(e) in ids for e in entries):
                             continue
-                        own = next((e for e in entries if identity(e) == identity(row['entry'])), None)
-                        if own:
-                            value += event.win_points if own.is_winner else event.draw_points if own.is_draw else event.loss_points
+                        opponents = _scored_opponents(match, row['entry'])
+                        if opponents:
+                            own, opponent = opponents
+                            value += event.win_points if own.score > opponent.score else event.draw_points if own.score == opponent.score else event.loss_points
                 row['_key'].append(value)
     resolution = event.tie_resolution or []
     if set(resolution) >= {r['entry'].pk for r in rows}:

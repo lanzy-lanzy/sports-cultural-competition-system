@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    {% load static_version %}
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Account Access{% endblock %} - Competrack</title>
     {% load static %}<script src="https://cdn.tailwindcss.com"></script>
@@ -27,6 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static_v 'css/buttons.css' %}">
 </head>
 <body class="min-h-screen bg-paper font-sans text-slate-600 antialiased">
     <main class="flex min-h-screen flex-col items-center justify-center px-4 py-10">

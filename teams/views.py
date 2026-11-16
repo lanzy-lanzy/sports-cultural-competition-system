@@ -95,6 +95,7 @@ def edit_team(request, team_id):
 @team_editor_required
 def team_detail(request, team_id):
     team = _get_accessible_team(request.user, team_id)
+    from sports.services import compute_team_standings
     memberships = team.memberships.select_related('participant').order_by(
         'participant__name', 'pk',
     )
@@ -123,6 +124,7 @@ def team_detail(request, team_id):
     query_params.pop('page', None)
     return render(request, 'teams/team_detail.html', {
         'team': team,
+        'sports_standings': compute_team_standings(team),
         'memberships': page_obj.object_list,
         'page_obj': page_obj,
         'total_members': total_members,

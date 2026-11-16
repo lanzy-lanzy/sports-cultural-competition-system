@@ -1,15 +1,41 @@
 ﻿{% extends 'base.html' %}
+{% load static_version %}
 
 {% block title %}{{ team.name }} - Team Workspace{% endblock %}
 {% block header_title %}Team Workspace{% endblock %}
 
+{% block extra_head %}<link rel="stylesheet" href="{% static_v 'css/teams.css' %}">{% endblock %}
+
 {% block content %}
+<div class="team-ui">
 <div class="space-y-6">
     <section class="overflow-hidden rounded-[2rem] bg-ink p-7 text-white shadow-soft sm:p-9">
         <div class="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
             <div class="flex items-center gap-5">{% if team.logo %}<img src="{{ team.logo.url }}" alt="{{ team.name }} logo" class="h-20 w-20 rounded-md bg-white object-cover p-1">{% else %}<div class="flex h-20 w-20 items-center justify-center rounded-md bg-campus font-display text-3xl font-bold">{{ team.name|make_list|first|upper }}</div>{% endif %}<div><p class="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">{{ team.code }}</p><h1 class="mt-1 font-display text-3xl font-bold">{{ team.name }}</h1><p class="mt-2 text-sm text-slate-300">{{ team.get_category_display }} &middot; {{ team.get_status_display }}</p></div></div>
-            <div class="flex flex-wrap gap-2"><a href="{% url 'edit_team' team.id %}" class="rounded-md border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Edit details</a>{% if can_approve_teams %}<form method="post" action="{% url 'update_team_status' team.id %}" class="flex gap-2">{% csrf_token %}<select name="status" class="rounded-md border border-white/15 bg-white/10 px-3 text-sm text-white [color-scheme:dark]"><option class="bg-ink text-white" value="PENDING">Pending</option><option class="bg-ink text-white" value="APPROVED">Approved</option><option class="bg-ink text-white" value="SUSPENDED">Suspended</option></select><button class="rounded-md bg-teal-400 px-4 py-2.5 text-sm font-bold text-ink">Update status</button></form>{% endif %}</div>
+            {% if can_approve_teams %}<form method="post" action="{% url 'update_team_status' team.id %}" class="team-header-actions">{% csrf_token %}{% else %}<div class="team-header-actions team-header-actions-simple">{% endif %}
+                <a href="{% url 'edit_team' team.id %}" class="tw-button tw-button-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6L16 3Z"/><path d="m13 6 5 5"/></svg>Edit details</a>
+                {% if can_approve_teams %}
+                    <label for="team-status" class="team-status-label">Team status</label><select id="team-status" name="status">
+                        {% for value, label in team.Status.choices %}<option value="{{ value }}" {% if team.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <button type="submit" class="tw-button tw-button-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Update status</button>
+                {% endif %}
+            {% if can_approve_teams %}</form>{% else %}</div>{% endif %}
         </div>
+    </section>
+
+    <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm" aria-labelledby="team-standings-title">
+        <div class="border-b border-slate-100 px-6 py-5"><h2 id="team-standings-title" class="font-display text-xl font-bold text-ink">Sports standings</h2><p class="mt-1 text-sm text-slate-500">Completed, scored matches only. Byes do not count as wins. Each tournament stage has its own record.</p></div>
+        {% if sports_standings %}
+        <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+            <caption class="sr-only">{{ team.name }} standings by event and stage</caption>
+            <thead class="bg-slate-50 text-xs text-slate-500"><tr><th scope="col" class="px-5 py-3">Event / stage</th><th scope="col" class="px-5 py-3">Rank</th><th scope="col" class="px-5 py-3">Played</th><th scope="col" class="px-5 py-3">Wins</th><th scope="col" class="px-5 py-3">Draws</th><th scope="col" class="px-5 py-3">Losses</th><th scope="col" class="px-5 py-3">Points</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">{% for row in sports_standings %}<tr>
+                <td class="px-5 py-4"><p class="font-bold text-ink">{% if can_approve_teams %}<a href="{% url 'event_standings' row.event.id %}" class="hover:text-campus">{{ row.event.name }}</a>{% else %}{{ row.event.name }}{% endif %}</p><p class="mt-1 text-xs text-slate-500">{{ row.event.competition.name }} &middot; {{ row.stage }}</p></td>
+                <td class="px-5 py-4"><span class="team-rank {% if row.rank == 1 and row.played %}team-rank-leading{% endif %}">{% if row.played %}{{ row.rank }}{% else %}&mdash;{% endif %}</span></td><td class="px-5 py-4">{{ row.played }}</td><td class="px-5 py-4 team-wins">{{ row.wins }}</td><td class="px-5 py-4">{{ row.draws|default:0 }}</td><td class="px-5 py-4">{{ row.losses }}</td><td class="px-5 py-4">{{ row.total_points|default_if_none:'—' }}</td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        {% else %}<p class="px-6 py-8 text-center text-sm text-slate-500">No confirmed sports event entries for this team yet.</p>{% endif %}
     </section>
 
     <div class="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
@@ -24,7 +50,7 @@
                 {% for field in filter_form %}
                 <div><label for="{{ field.id_for_label }}" class="mb-1 block text-xs font-bold text-slate-600">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ error }}</p>{% endfor %}</div>
                 {% endfor %}
-                <div class="flex items-center gap-4 sm:col-span-2"><button type="submit" class="rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white">Search players</button><a href="{% url 'team_detail' team.id %}" class="text-sm font-bold text-slate-600">Clear filters</a></div>
+                <div class="flex items-center gap-4 sm:col-span-2"><button type="submit" class="rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white tw-button tw-button-primary">Search players</button><a href="{% url 'team_detail' team.id %}" class="text-sm font-bold text-slate-600 tw-button tw-button-secondary">Clear filters</a></div>
             </form>
             {% if memberships %}
             <div class="overflow-x-auto">
@@ -43,7 +69,7 @@
                             </td>
                             <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p></td>
                             <td class="px-5 py-4 align-top text-xs"><p class="font-bold text-ink">{{ membership.get_status_display }} member</p><p class="mt-1 text-slate-500">Player: {{ membership.participant.get_status_display }}</p></td>
-                            <td class="px-5 py-4 align-top"><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
+                            <td class="px-5 py-4 align-top"><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -57,14 +83,15 @@
                 <div>{% if page_obj.has_next %}<a class="font-bold text-campus" href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div>
             </nav>
             {% endif %}
-            <form method="post" action="{% url 'add_team_member' team.id %}" class="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-[1fr_150px_auto]">{% csrf_token %}<div>{{ membership_form.participant }}{% for error in membership_form.participant.errors %}<p class="text-xs text-rose-600">{{ error }}</p>{% endfor %}</div><div>{{ membership_form.member_number }}</div><button class="rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus">Add member</button></form>
+            <form method="post" action="{% url 'add_team_member' team.id %}" class="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-[1fr_150px_auto] items-end">{% csrf_token %}<div><label for="{{ membership_form.participant.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Player</label>{{ membership_form.participant }}{% for error in membership_form.participant.errors %}<p class="text-xs text-rose-600">{{ error }}</p>{% endfor %}</div><div><label for="{{ membership_form.member_number.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Jersey number</label>{{ membership_form.member_number }}</div><button class="rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Add member</button></form>
         </section>
 
         <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-6 py-5"><h2 class="font-display text-xl font-bold text-ink">Coaches and managers</h2></div>
-            {% if staff_assignments %}<div class="divide-y divide-slate-100">{% for assignment in staff_assignments %}<div class="flex items-center justify-between gap-3 px-5 py-4"><div><p class="font-bold text-ink">{{ assignment.user.get_full_name|default:assignment.user.username }}</p><p class="text-xs text-slate-500">{{ assignment.get_role_display }}</p></div>{% if can_approve_teams %}<form method="post" action="{% url 'remove_team_staff' team.id assignment.id %}">{% csrf_token %}<button class="text-xs font-bold text-rose-600">Remove</button></form>{% endif %}</div>{% endfor %}</div>{% else %}<div class="px-5 py-8 text-center text-sm text-slate-500">No staff assigned.</div>{% endif %}
-            {% if can_approve_teams %}<form method="post" action="{% url 'add_team_staff' team.id %}" class="space-y-3 border-t border-slate-100 bg-slate-50/70 p-5">{% csrf_token %}{{ staff_form.user }}{{ staff_form.role }}<button class="w-full rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus">Assign staff</button></form>{% endif %}
+            {% if staff_assignments %}<div class="divide-y divide-slate-100">{% for assignment in staff_assignments %}<div class="flex items-center justify-between gap-3 px-5 py-4"><div><p class="font-bold text-ink">{{ assignment.user.get_full_name|default:assignment.user.username }}</p><p class="text-xs text-slate-500">{{ assignment.get_role_display }}</p></div>{% if can_approve_teams %}<form method="post" action="{% url 'remove_team_staff' team.id assignment.id %}">{% csrf_token %}<button class="text-xs font-bold text-rose-600 tw-button tw-button-danger">Remove</button></form>{% endif %}</div>{% endfor %}</div>{% else %}<div class="px-5 py-8 text-center text-sm text-slate-500">No staff assigned.</div>{% endif %}
+            {% if can_approve_teams %}<form method="post" action="{% url 'add_team_staff' team.id %}" class="space-y-3 border-t border-slate-100 bg-slate-50/70 p-5">{% csrf_token %}<div><label for="{{ staff_form.user.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Staff member</label>{{ staff_form.user }}</div><div><label for="{{ staff_form.role.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Role</label>{{ staff_form.role }}</div><button class="w-full rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Assign staff</button></form>{% endif %}
         </section>
     </div>
+</div>
 </div>
 {% endblock %}

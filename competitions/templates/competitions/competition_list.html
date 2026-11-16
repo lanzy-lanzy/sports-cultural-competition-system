@@ -21,14 +21,14 @@
         <!-- View toggle -->
         <div class="flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
             <button type="button" id="view-grid-btn" onclick="setView('grid')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="true">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                 </svg>
                 <span class="hidden sm:inline">Cards</span>
             </button>
             <button type="button" id="view-table-btn" onclick="setView('table')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="false">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                 </svg>
@@ -36,7 +36,7 @@
             </button>
         </div>
 
-        {% if can_manage %}<button type="button" onclick="openCreateComp()" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+        {% if can_manage %}<button type="button" onclick="openCreateComp()" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40 ui-button ui-button--primary">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
@@ -75,7 +75,7 @@
             <input type="search" id="comp-search" name="q" value="{{ query }}" autocomplete="off"
                    placeholder="{% if category == 'cultural' %}Search name or description{% else %}Search name, sport or venue{% endif %}"
                    class="w-full rounded-md border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-9 text-sm text-slate-800 placeholder-slate-400 transition focus:border-pine/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-moss">
-            <button type="submit" class="sr-only">Search</button>
+            <button type="submit" class="sr-only ui-button ui-button--secondary">Search</button>
             {% if query %}
             <a href="{% querystring q=None page=None %}" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear search">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12" /></svg>
@@ -88,12 +88,12 @@
     <div class="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
         <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{% if category == 'cultural' %}Event type{% else %}Discipline{% endif %}</span>
         <a href="{% querystring sub=None page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_sub %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_sub %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
             All <span class="{% if not selected_sub %}text-white/80{% else %}text-slate-400{% endif %}">{{ all_count }}</span>
         </a>
         {% for item in subcategories %}
         <a href="{% querystring sub=item.value page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_sub == item.value %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %}">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_sub == item.value %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
             {{ item.label }} <span class="{% if selected_sub == item.value %}text-white/80{% else %}text-slate-400{% endif %}">{{ item.count }}</span>
         </a>
         {% empty %}
@@ -105,7 +105,7 @@
             <a href="{% querystring sub=None q=None page=None %}" class="text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset filters</a>
             {% endif %}
             {% if category == 'cultural' and can_manage %}
-            <a href="{% url 'socio_cultural_management' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep">
+            <a href="{% url 'socio_cultural_management' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep ui-button ui-button--secondary ui-button--small">
                 Cultural hub
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6l-6 6" /></svg>
             </a>
@@ -176,7 +176,7 @@
 
             <!-- Actions -->
             <div class="relative z-[1] mt-4 grid {% if can_manage %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
-                <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">View</button>
                 {% if can_manage %}
                 <button type="button"
                         data-url="{% url 'edit_competition' competition.id %}"
@@ -188,8 +188,8 @@
                         data-kind="{{ competition.kind }}" data-tournament-format="{{ competition.tournament_format }}"
                         data-type="{{ competition.cultural_event_type }}"
                         onclick="openEditComp(this)"
-                        class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md bg-campus px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
+                        class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">Edit</button>
+                <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md bg-campus px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105 ui-button ui-button--primary ui-button--small">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
                 {% endif %}
             </div>
 
@@ -197,13 +197,13 @@
             <div class="relative z-[1] mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                 <form method="POST" action="{% url 'toggle_competition_status' competition.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="cursor-pointer text-xs font-medium text-slate-500 transition-colors duration-200 hover:text-cyan-700">Toggle status</button>
+                    <button type="submit" class="cursor-pointer text-xs font-medium text-slate-500 transition-colors duration-200 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">Toggle status</button>
                 </form>
                 <button type="button"
                         data-url="{% url 'delete_competition' competition.id %}"
                         data-name="{{ competition.name }}"
                         onclick="openDeleteComp(this)"
-                        class="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-rose-500 transition-colors duration-200 hover:text-rose-700">
+                        class="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-rose-500 transition-colors duration-200 hover:text-rose-700 ui-button ui-button--danger ui-button--small">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                     </svg>
@@ -259,7 +259,7 @@
                     <td class="px-4 py-4 text-center font-medium text-slate-700">{% if competition.kind == 'SPORTS' %}{{ competition.match_count }}{% else %}{{ competition.criteria_count }}{% endif %}</td>
                     <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center justify-end gap-1.5">
-                            <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                            <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">View</button>
                             {% if can_manage %}
                             <button type="button"
                                     data-url="{% url 'edit_competition' competition.id %}"
@@ -271,13 +271,13 @@
                                     data-kind="{{ competition.kind }}" data-tournament-format="{{ competition.tournament_format }}"
                                     data-type="{{ competition.cultural_event_type }}"
                                     onclick="openEditComp(this)"
-                                    class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                            <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="rounded-md bg-campus px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
+                                    class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">Edit</button>
+                            <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="rounded-md bg-campus px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105 ui-button ui-button--primary ui-button--small">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
                             <button type="button"
                                     data-url="{% url 'delete_competition' competition.id %}"
                                     data-name="{{ competition.name }}"
                                     onclick="openDeleteComp(this)"
-                                    class="cursor-pointer rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50">Delete</button>
+                                    class="cursor-pointer rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50 ui-button ui-button--danger ui-button--small">Delete</button>
                             {% endif %}
                         </div>
                     </td>
@@ -319,13 +319,13 @@
         {% endif %}
     </p>
     {% if is_filtered %}
-    <a href="{% querystring sub=None q=None page=None %}" class="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-pine/40 hover:text-pine-deep">
+    <a href="{% querystring sub=None q=None page=None %}" class="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-pine/40 hover:text-pine-deep ui-button ui-button--secondary">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12M6 6l12 12"/>
         </svg>
         Clear filters
     </a>
-    {% elif can_manage %}<button type="button" onclick="openCreateComp()" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+    {% elif can_manage %}<button type="button" onclick="openCreateComp()" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 ui-button ui-button--primary">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
@@ -350,7 +350,7 @@
                     <p class="text-xs text-slate-500">Set up details and a sports tournament format or cultural scoring rounds.</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -430,7 +430,7 @@
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="font-display text-sm font-semibold text-slate-900">Competition Rounds</h3>
                         <button type="button" onclick="addRound()"
-                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
+                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300 ui-button ui-button--secondary">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                             </svg>
@@ -443,8 +443,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">
+                    <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl ui-button ui-button--primary">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -466,7 +466,7 @@
                     <h4 class="text-sm font-semibold text-slate-900">Round Details</h4>
                 </div>
                 <button type="button" onclick="removeRound(this)"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">
+                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700 ui-button ui-button--danger">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                     </svg>
@@ -503,7 +503,7 @@
                 <div class="mb-2.5 flex items-center justify-between">
                     <h5 class="text-sm font-semibold text-slate-700">Scoring Criteria</h5>
                     <button type="button" onclick="addCriterion(this)"
-                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
+                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300 ui-button ui-button--secondary ui-button--small">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
@@ -536,7 +536,7 @@
                            class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 uppercase shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 </div>
                 <button type="button" onclick="removeCriterion(this)"
-                        class="mt-5 inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700">
+                        class="mt-5 inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-sm text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700 ui-button ui-button--danger">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -562,7 +562,7 @@
                     <p class="text-xs text-slate-500">Update the competition details.</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -642,8 +642,8 @@
                 {% include 'competitions/partials/cultural_subtype_field.html' with prefix='edit-' is_cultural=False selected_subtype='' %}
 {% include 'competitions/partials/tournament_format_field.html' %}
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Competition</button>
+                    <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl ui-button ui-button--primary">Update Competition</button>
                 </div>
             </form>
         </div>
@@ -664,8 +664,8 @@
         <form method="POST" id="delete-comp-form">
             {% csrf_token %}
             <div class="mt-6 flex justify-center gap-3">
-                <button type="button" onclick="closeModal('delete-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Delete</button>
+                <button type="button" onclick="closeModal('delete-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105 ui-button ui-button--danger">Delete</button>
             </div>
         </form>
     </div>
@@ -702,7 +702,7 @@
                         {% else %}bg-rose-500{% endif %}"></span>
                     {{ competition.get_status_display }}
                 </span>
-                <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -777,8 +777,8 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
-            <a href="{% url 'competition_detail' competition.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Open Full Page</a>
-            <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105">Close</button>
+            <a href="{% url 'competition_detail' competition.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Open Full Page</a>
+            <button type="button" onclick="closeModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 ui-button ui-button--primary">Close</button>
         </div>
     </div>
 </div>

@@ -11,9 +11,9 @@
         <p class="mt-2 text-sm text-slate-500">{{ competition.name|title }}</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'create_sport_event' competition.id %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Create sport event</a>
-        <a href="{% url 'match_board' %}?competition={{ competition.id }}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Match board</a>
-        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Competition</a>
+        <a href="{% url 'create_sport_event' competition.id %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Create sport event</a>
+        <a href="{% url 'match_board' %}?competition={{ competition.id }}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">Match board</a>
+        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">&larr; Competition</a>
     </div>
 </div>
 
@@ -34,7 +34,7 @@
             <div><p class="font-bold text-ink">{{ event.match_count }}</p><p class="text-[10px] uppercase text-slate-400">Matches</p></div>
             <div><p class="font-bold text-ink">{{ event.completed_count }}</p><p class="text-[10px] uppercase text-slate-400">Done</p></div>
         </div>
-        <div class="relative z-[1] p-4"><a href="{% url 'sport_event_detail' event.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Open event</a></div>
+        <div class="relative z-[1] p-4"><a href="{% url 'sport_event_detail' event.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Open event</a></div>
     </article>
     {% endfor %}
 </div>

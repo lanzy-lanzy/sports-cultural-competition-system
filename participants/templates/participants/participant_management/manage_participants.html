@@ -16,10 +16,10 @@
             </svg>
             Back to Participant Management
         </a>
-        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700">
+        <a href="{% url 'competition_detail' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary">
             Competition details
         </a>
-        <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700" title="Full-page assignment view (no-JavaScript fallback)">
+        <a href="{% url 'assign_participants' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary" title="Full-page assignment view (no-JavaScript fallback)">
             Advanced view
         </a>
     </div>

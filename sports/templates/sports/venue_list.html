@@ -11,8 +11,8 @@
         <p class="mt-2 text-sm text-slate-500">Assign locations, capacities, and availability to matches and events.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'venue_create' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add venue</a>
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
+        <a href="{% url 'venue_create' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Add venue</a>
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">&larr; Sports</a>
     </div>
 </div>
 
@@ -37,7 +37,7 @@
             <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if venue.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">{{ venue.is_active|yesno:'ACTIVE,INACTIVE' }}</span>
         </div>
         <div class="p-4">
-            <a href="{% url 'venue_edit' venue.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit venue</a>
+            <a href="{% url 'venue_edit' venue.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Edit venue</a>
         </div>
     </article>
     {% endfor %}

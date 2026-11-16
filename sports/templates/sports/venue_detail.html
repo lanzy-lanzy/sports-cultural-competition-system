@@ -94,7 +94,7 @@
     {% if events %}
     <div class="flex flex-wrap gap-3">
         {% for event in events %}
-        <a href="{% url 'sport_event_detail' event.id %}" class="rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-campus">
+        <a href="{% url 'sport_event_detail' event.id %}" class="rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-campus ui-button ui-button--secondary">
             {{ event.name }}
             <span class="ml-2 text-xs font-normal text-slate-400">{{ event.start_date|date:'M j' }}{% if event.end_date %} &ndash; {{ event.end_date|date:'M j' }}{% endif %}</span>
         </a>

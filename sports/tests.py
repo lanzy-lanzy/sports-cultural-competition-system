@@ -180,6 +180,77 @@ class RoundRobinStandingsTest(TestCase):
         self.assertEqual(standings[0]['total_points'], 9)
         self.assertEqual(len(standings), 4)
 
+    def _scored_match(self, first, second, scores, **kwargs):
+        match = Match.objects.create(event=self.event, status='COMPLETED', **kwargs)
+        for side, team, score, other in ((1, first, scores[0], scores[1]), (2, second, scores[1], scores[0])):
+            MatchEntry.objects.create(match=match, team=team, side=side, score=score, is_winner=score > other, is_draw=score == other)
+        return match
+
+    def test_wins_draws_losses_and_configured_points(self):
+        self.event.win_points, self.event.draw_points, self.event.loss_points = 5, 2, 1
+        self.event.save()
+        self._scored_match(self.teams[0], self.teams[1], (Decimal('10.50'), Decimal('8.25')))
+        self._scored_match(self.teams[0], self.teams[2], (Decimal('4.00'), Decimal('4.00')))
+        self._scored_match(self.teams[0], self.teams[3], (Decimal('0.00'), Decimal('1.00')), forfeited_side=1)
+        rows = compute_standings(self.event)
+        own = next(row for row in rows if row['entry'].team_id == self.teams[0].pk)
+        self.assertEqual((own['played'], own['wins'], own['draws'], own['losses'], own['total_points']), (3, 1, 1, 1, 8))
+        self.assertEqual((own['points_for'], own['points_against'], own['point_diff']), (Decimal('14.50'), Decimal('13.25'), Decimal('1.25')))
+        self.assertEqual(sum(row['wins'] for row in rows), sum(row['losses'] for row in rows))
+        for row in rows:
+            self.assertEqual(row['played'], row['wins'] + row['draws'] + row['losses'])
+
+    def test_unscored_incomplete_and_cancelled_matches_do_not_count(self):
+        for status in ('COMPLETED', 'SCHEDULED', 'ONGOING', 'CANCELLED', 'POSTPONED'):
+            match = Match.objects.create(event=self.event, status=status)
+            MatchEntry.objects.create(match=match, team=self.teams[0], side=1, score=None if status == 'COMPLETED' else 10)
+            MatchEntry.objects.create(match=match, team=self.teams[1], side=2, score=2)
+        bye = Match.objects.create(event=self.event, status='COMPLETED')
+        MatchEntry.objects.create(match=bye, team=self.teams[0], side=1, is_winner=True)
+        for row in compute_standings(self.event):
+            self.assertEqual((row['played'], row['wins'], row['draws'], row['losses'], row['total_points']), (0, 0, 0, 0, 0))
+
+    def test_elimination_bye_is_not_a_played_win(self):
+        self.event.format = 'SINGLE_ELIMINATION'
+        self.event.save()
+        bye = Match.objects.create(event=self.event, status='COMPLETED')
+        MatchEntry.objects.create(match=bye, team=self.teams[0], side=1, is_winner=True)
+        own = next(row for row in compute_standings(self.event) if row['entry'].team_id == self.teams[0].pk)
+        self.assertEqual((own['played'], own['wins'], own['losses']), (0, 0, 0))
+
+    def test_head_to_head_ignores_unscored_fixtures(self):
+        self.event.tiebreakers = ['head_to_head']
+        self.event.loss_points = 1
+        self.event.save()
+        match = Match.objects.create(event=self.event, status='COMPLETED')
+        for side, team in enumerate(self.teams[:2], 1):
+            MatchEntry.objects.create(match=match, team=team, side=side)
+        self.assertEqual([row['rank'] for row in compute_standings(self.event)], [1, 1, 1, 1])
+
+    def test_team_workspace_shows_current_records_without_other_team_records(self):
+        from sports.services import compute_team_standings
+        self._scored_match(self.teams[0], self.teams[1], (10, 2))
+        records = compute_team_standings(self.teams[0])
+        self.assertEqual(len(records), 1)
+        self.assertEqual((records[0]['wins'], records[0]['losses'], records[0]['rank']), (1, 0, 1))
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('team_detail', args=[self.teams[0].pk]))
+        self.assertContains(response, 'Sports standings')
+        self.assertEqual(response.context['sports_standings'][0]['wins'], 1)
+        self.assertTrue(all(row['entry'].team_id == self.teams[0].pk for row in response.context['sports_standings']))
+
+    def test_group_and_knockout_records_remain_separate(self):
+        from sports.services import compute_team_standings
+        self.event.format = 'GROUP_STAGE'
+        self.event.save()
+        self._scored_match(self.teams[0], self.teams[1], (10, 2), group='A')
+        self._scored_match(self.teams[0], self.teams[2], (2, 10), round_number=2)
+        own = next(row for row in compute_standings(self.event) if row['entry'].team_id == self.teams[0].pk)
+        self.assertEqual((own['wins'], own['losses']), (0, 1))
+        records = compute_team_standings(self.teams[0])
+        self.assertEqual([(r['stage'], r['wins'], r['losses']) for r in records], [('Group A', 1, 0), ('Knockout', 0, 1)])
+
+
 
 class SportsViewsTest(TestCase):
     def setUp(self):

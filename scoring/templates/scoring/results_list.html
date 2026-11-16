@@ -32,14 +32,14 @@
         <!-- View toggle -->
         <div class="flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
             <button type="button" id="view-grid-btn" onclick="setView('grid')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="true">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                 </svg>
                 <span>Cards</span>
             </button>
             <button type="button" id="view-table-btn" onclick="setView('table')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="false">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                 </svg>
@@ -136,7 +136,7 @@
                 {% endif %}
             {% endif %}
 
-            <a href="{% url 'competition_results_detail' result.competition.id %}" class="relative z-[2] mt-auto block w-full rounded-md border border-pine/20 bg-moss px-5 py-2.5 text-center text-sm font-semibold text-pine-deep transition hover:bg-pine hover:text-white">
+            <a href="{% url 'competition_results_detail' result.competition.id %}" class="relative z-[2] mt-auto block w-full rounded-md border border-pine/20 bg-moss px-5 py-2.5 text-center text-sm font-semibold text-pine-deep transition hover:bg-pine hover:text-white ui-button ui-button--secondary">
                 View Details <span aria-hidden="true">&rarr;</span>
             </a>
         </div>
@@ -199,7 +199,7 @@
                         {% endif %}
                     </td>
                     <td class="whitespace-nowrap px-6 py-4 text-right">
-                        <a href="{% url 'competition_results_detail' result.competition.id %}" class="inline-flex items-center gap-1.5 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-colors hover:border-cyan-300 hover:bg-cyan-100">
+                        <a href="{% url 'competition_results_detail' result.competition.id %}" class="inline-flex items-center gap-1.5 rounded-md border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 transition-colors hover:border-cyan-300 hover:bg-cyan-100 ui-button ui-button--secondary ui-button--small">
                             View Details
                         </a>
                     </td>
@@ -221,7 +221,7 @@
     </div>
     <h3 class="font-display text-xl font-semibold text-slate-900">No Results Available</h3>
     <p class="mt-2 max-w-md text-sm leading-6 text-slate-500">There are no competition results to display at this time. Published standings will appear here when they are ready.</p>
-    <a href="{% url 'competition_list' %}" class="mt-5 rounded-md bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep">Browse competitions</a>
+    <a href="{% url 'competition_list' %}" class="mt-5 rounded-md bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep ui-button ui-button--primary">Browse competitions</a>
 </div>
 {% endif %}
 </div>

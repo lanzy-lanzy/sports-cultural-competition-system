@@ -34,7 +34,7 @@
                 </span>
             </p>
         </div>
-        <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:border-teal-200 hover:text-ink">
+        <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:border-teal-200 hover:text-ink ui-button ui-button--secondary">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 14a3.5 3.5 0 0 0 5 0l3 -3a3.5 3.5 0 0 0 -5 -5l-.7 .5" /><path d="M14 10a3.5 3.5 0 0 0 -5 0l-3 3a3.5 3.5 0 0 0 5 5l.7 -.5" /></svg>
             All sport events
         </a>
@@ -84,7 +84,7 @@
                     <div class="sm:col-span-2">
                         <label for="{{ form.name.id_for_label }}" class="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
                             <span>Event name <span class="text-rose-500">*</span></span>
-                            <button type="button" id="use-suggested" class="normal-case tracking-normal text-[11px] font-semibold text-pine transition hover:text-pine-deep">Suggest a name &rarr;</button>
+                            <button type="button" id="use-suggested" class="normal-case tracking-normal text-[11px] font-semibold text-pine transition hover:text-pine-deep ui-button ui-button--secondary">Suggest a name &rarr;</button>
                         </label>
                         {{ form.name }}
                         {{ form.name.errors }}
@@ -184,10 +184,10 @@
 
             {# ---------- Actions ---------- #}
             <div class="flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row">
-                <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400">
+                <a href="{% url 'competition_sport_events' competition.id %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400 ui-button ui-button--secondary">
                     Cancel
                 </a>
-                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-pine-deep">
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-pine-deep ui-button ui-button--primary">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 15l-2 -2" /><path d="M19 6l-14 7a3 3 0 0 0 3 5l14 -7a3 3 0 0 0 -3 -5z" /><path d="M14 12l2 2" /></svg>
                     {% if event %}Save changes{% else %}Create event{% endif %}
                 </button>

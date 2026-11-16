@@ -39,9 +39,9 @@
                 <option value="cultural" {% if category == 'cultural' %}selected{% endif %}>Socio Cultural</option>
             </select>
         </div>
-        <noscript><button type="submit" class="h-11 rounded-md bg-campus px-5 text-sm font-bold text-white shadow">Apply</button></noscript>
+        <noscript><button type="submit" class="h-11 rounded-md bg-campus px-5 text-sm font-bold text-white shadow ui-button ui-button--primary">Apply</button></noscript>
         <p class="flex-1 text-xs leading-5 text-slate-500">{% if category == 'cultural' %}Showing Socio Cultural competitions only.{% elif category == 'sports' %}Showing Sports competitions only.{% else %}Showing every category together &mdash; pick one to narrow the tally and the bar graphs.{% endif %}</p>
-        {% if category %}<a href="{% url 'overall_medal_tally' %}" class="rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-pine hover:bg-moss">Clear filter</a>{% endif %}
+        {% if category %}<a href="{% url 'overall_medal_tally' %}" class="rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-pine hover:bg-moss ui-button ui-button--secondary ui-button--small">Clear filter</a>{% endif %}
     </div>
 </form>
 
@@ -247,7 +247,7 @@
     </div>
     {% endif %}
 
-    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Go to Sports</a>
+    <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Go to Sports</a>
 </div>
 {% endif %}
 </div>

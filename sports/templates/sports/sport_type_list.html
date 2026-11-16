@@ -11,9 +11,9 @@
         <p class="mt-2 text-sm text-slate-500">Maintain the sports recognized by the system, from basketball to chess.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'sport_type_create' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Add sport type</a>
-        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">Manage venues</a>
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
+        <a href="{% url 'sport_type_create' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Add sport type</a>
+        <a href="{% url 'venue_list' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">Manage venues</a>
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">&larr; Sports</a>
     </div>
 </div>
 
@@ -33,7 +33,7 @@
             <span class="text-xs text-slate-400">{{ sport.events.count }} events</span>
         </div>
         <div class="p-4">
-            <a href="{% url 'sport_type_edit' sport.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus">Edit</a>
+            <a href="{% url 'sport_type_edit' sport.id %}" class="block rounded-md bg-ink px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Edit</a>
         </div>
     </article>
     {% endfor %}

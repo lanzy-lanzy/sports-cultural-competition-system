@@ -34,6 +34,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static_v 'css/liquid-glass.css' %}">
+    <link rel="stylesheet" href="{% static_v 'css/buttons.css' %}">
 </head>
 <body class="bg-white font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
     <div class="flex min-h-screen flex-col">
@@ -89,7 +90,7 @@
                     <p class="mt-6 max-w-xl text-base leading-8 text-white/85 sm:text-lg">One trusted platform for organizing competitions, guiding judges, calculating scores, and publishing official results across J.H. Cerilles State College.</p>
 
                     <div class="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
+                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark ui-button ui-button--secondary">
                             Sign in to Competrack
                         </a>
                         <a href="#platform" class="lg-btn-glass inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark">
@@ -184,8 +185,8 @@
                         <p class="mt-4 leading-7 text-white/75">Sign in to manage an event, or register for a judge account to start scoring.</p>
                     </div>
                     <div class="flex w-full max-w-sm flex-col gap-3 sm:flex-row lg:w-auto lg:max-w-none">
-                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center whitespace-nowrap rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss">Sign in to Competrack</a>
-                        <a href="{% url 'register' %}" class="lg-btn-glass inline-flex items-center justify-center whitespace-nowrap rounded-md border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">Register as judge</a>
+                        <a href="{% url 'login' %}" class="neu-raise inline-flex items-center justify-center whitespace-nowrap rounded-md bg-white px-6 py-3.5 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss ui-button ui-button--secondary">Sign in to Competrack</a>
+                        <a href="{% url 'register' %}" class="lg-btn-glass inline-flex items-center justify-center whitespace-nowrap rounded-md border border-white/25 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 ui-button ui-button--glass">Register as judge</a>
                     </div>
                 </div>
             </section>

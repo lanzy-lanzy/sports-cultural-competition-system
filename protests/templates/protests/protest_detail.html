@@ -32,7 +32,7 @@
             </dl>
             <p class="mt-5 whitespace-pre-line rounded-md bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700">{{ protest.description }}</p>
             {% if protest.supporting_document %}
-            <a href="{{ protest.supporting_document.url }}" target="_blank" class="mt-4 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
+            <a href="{{ protest.supporting_document.url }}" target="_blank" class="mt-4 inline-flex items-center gap-2 rounded-md border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100 ui-button ui-button--secondary">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                 View supporting document
             </a>
@@ -75,7 +75,7 @@
                 </select>
                 <p class="mt-1 text-xs text-slate-400">Hold Ctrl/Cmd to select multiple committee members.</p>
             </div>
-            <button type="submit" class="w-full cursor-pointer rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">Save review</button>
+            <button type="submit" class="w-full cursor-pointer rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 ui-button ui-button--primary">Save review</button>
         </form>
     </div>
 </div>

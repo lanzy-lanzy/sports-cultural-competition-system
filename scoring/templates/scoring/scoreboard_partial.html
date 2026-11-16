@@ -75,7 +75,7 @@
     <p class="font-display text-lg font-bold text-ink">The live scoreboard has not opened yet</p>
     <p class="mt-2 text-sm text-slate-500">Scores appear here once the competition is underway or the results are published.</p>
     {% if not user.is_authenticated %}
-    <a href="{% url 'login' %}?next={{ request.path }}" class="mt-6 inline-flex items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:brightness-105">Sign in to continue</a>
+    <a href="{% url 'login' %}?next={{ request.path }}" class="mt-6 inline-flex items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:brightness-105 ui-button ui-button--primary">Sign in to continue</a>
     {% endif %}
 </div>
 {% else %}

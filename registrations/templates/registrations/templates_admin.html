@@ -29,7 +29,7 @@
                 <form method="post" action="{% url 'registration_templates' %}" class="flex gap-2">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="template_force_delete">
-                    <button type="submit" class="cursor-pointer rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700" onclick="return confirm('PERMANENTLY delete selected templates? This cannot be undone.');">
+                    <button type="submit" class="cursor-pointer rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700 ui-button ui-button--danger" onclick="return confirm('PERMANENTLY delete selected templates? This cannot be undone.');">
                         Force Delete
                     </button>
                 </form>
@@ -71,7 +71,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="action" value="template_delete">
                             <input type="hidden" name="template_id" value="{{ template.id }}">
-                            <button type="submit" class="cursor-pointer rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                            <button type="submit" class="cursor-pointer rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 ui-button ui-button--secondary">
                                 Delete (Archive)
                             </button>
                         </form>
@@ -79,7 +79,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="action" value="template_force_delete">
                             <input type="hidden" name="template_id" value="{{ template.id }}">
-                            <button type="submit" class="cursor-pointer rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100" onclick="return confirm('PERMANENTLY delete this template and its files? This cannot be undone.');">
+                            <button type="submit" class="cursor-pointer rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 ui-button ui-button--danger" onclick="return confirm('PERMANENTLY delete this template and its files? This cannot be undone.');">
                                 Force Delete
                             </button>
                         </form>

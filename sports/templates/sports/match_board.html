@@ -11,8 +11,8 @@
         <p class="mt-2 text-sm text-slate-500">Every scheduled and completed match across every competition, split into Sports and Socio Cultural categories and grouped by day.</p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200">&larr; Sports</a>
-        <a href="{% url 'export_schedule_csv' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow">Export CSV</a>
+        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">&larr; Sports</a>
+        <a href="{% url 'export_schedule_csv' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Export CSV</a>
     </div>
 </div>
 
@@ -74,9 +74,9 @@
         </p>
         <div class="flex gap-2">
             {% if active_count %}
-            <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:border-teal-200">Clear filters</a>
+            <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary">Clear filters</a>
             {% endif %}
-            <button type="submit" class="rounded-md bg-ink px-5 py-2 text-sm font-bold text-white hover:bg-campus">Apply</button>
+            <button type="submit" class="rounded-md bg-ink px-5 py-2 text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Apply</button>
         </div>
     </div>
 </form>
@@ -85,10 +85,10 @@
 {% if day_keys|length > 1 %}
 <div class="mb-6 flex flex-wrap items-center gap-2">
     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Jump to day</span>
-    <a href="{% url 'match_board' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not filter_state.day %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">All</a>
+    <a href="{% url 'match_board' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not filter_state.day %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">All</a>
     {% for day_key in day_keys %}
     <a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ day_key|date:'Y-m-d' }}"
-       class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if filter_state.day == day_key|date:'Y-m-d' %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %}">{{ day_key|date:'D, M j' }}</a>
+       class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if filter_state.day == day_key|date:'Y-m-d' %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">{{ day_key|date:'D, M j' }}</a>
     {% endfor %}
 </div>
 {% endif %}
@@ -100,8 +100,8 @@
         <div class="flex items-center gap-2">
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ section.count }} match{{ section.count|pluralize }}</span>
             {% if filter_state.day == section.day|date:'Y-m-d' %}
-            {% if prev_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ prev_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">&larr; Prev</a>{% endif %}
-            {% if next_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ next_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Next &rarr;</a>{% endif %}
+            {% if prev_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ prev_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">&larr; Prev</a>{% endif %}
+            {% if next_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ next_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Next &rarr;</a>{% endif %}
             {% endif %}
         </div>
     </div>
@@ -150,9 +150,9 @@
                     </td>
                     <td class="px-5 py-4">
                         <div class="flex justify-end gap-2">
-                            <a href="{% url 'event_bracket' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Bracket</a>
-                            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Schedule</a>
-                            <a href="{% url 'edit_match' match.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200">Edit</a>
+                            <a href="{% url 'event_bracket' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Bracket</a>
+                            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Schedule</a>
+                            <a href="{% url 'edit_match' match.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Edit</a>
                         </div>
                     </td>
                 </tr>
@@ -186,7 +186,7 @@
                             <span class="block text-xs text-slate-500">{{ match.label }} &middot; {{ match.contestants_display }}</span>
                         </td>
                         <td class="px-5 py-4 text-right">
-                            <a href="{% url 'edit_match' match.id %}" class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus">Set time and venue</a>
+                            <a href="{% url 'edit_match' match.id %}" class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus ui-button ui-button--primary ui-button--small">Set time and venue</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -204,7 +204,7 @@
     <p class="font-display text-lg font-bold text-ink">No matches match these filters</p>
     <p class="mt-2 text-sm text-slate-500">Clear the filters, or generate a bracket from a sport event to create matches.</p>
     {% if active_count %}
-    <a href="{% url 'match_board' %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Clear filters</a>
+    <a href="{% url 'match_board' %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Clear filters</a>
     {% endif %}
 </div>
 {% endif %}

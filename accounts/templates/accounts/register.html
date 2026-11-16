@@ -32,6 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static_v 'css/liquid-glass.css' %}">
+    <link rel="stylesheet" href="{% static_v 'css/buttons.css' %}">
 </head>
 <body class="relative min-h-screen bg-pine-dark font-sans text-slate-600 antialiased selection:bg-moss selection:text-ink">
     <div class="fixed inset-0" aria-hidden="true">
@@ -180,7 +181,7 @@
 
                         <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-white/15 pt-6 sm:flex-row">
                             <p class="text-sm text-white/70">Already registered? <a href="{% url 'login' %}" class="lg-link font-semibold">Sign in</a></p>
-                            <button type="submit" class="neu-raise h-12 w-full rounded-md bg-white px-6 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark sm:w-auto">Create account</button>
+                            <button type="submit" class="neu-raise h-12 w-full rounded-md bg-white px-6 text-sm font-semibold text-pine-dark transition-colors hover:bg-moss focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-pine-dark sm:w-auto ui-button ui-button--secondary">Create account</button>
                         </div>
                     </form>
                 </div>

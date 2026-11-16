@@ -41,8 +41,8 @@
         {% endif %}
 
         <div class="mt-8 flex justify-end gap-3">
-            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400">Cancel</a>
-            <button type="submit" class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow">Save match</button>
+            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400 ui-button ui-button--secondary">Cancel</a>
+            <button type="submit" class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow ui-button ui-button--primary">Save match</button>
         </div>
     </form>
 </div>

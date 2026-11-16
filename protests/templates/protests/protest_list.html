@@ -30,7 +30,7 @@
 {% if page_obj %}
 <div class="space-y-4">
     {% for protest in page_obj %}
-    <a href="{% url 'protest_detail' protest.id %}" class="block rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition hover:border-teal-200 hover:shadow-md">
+    <a href="{% url 'protest_detail' protest.id %}" class="block rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition hover:border-teal-200 hover:shadow-md ui-button ui-button--soft">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">

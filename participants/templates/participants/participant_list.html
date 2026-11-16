@@ -13,14 +13,14 @@
         <!-- View toggle -->
         <div class="flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
             <button type="button" id="view-grid-btn" onclick="setView('grid')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="true">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="true">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
                 </svg>
                 <span class="hidden sm:inline">Cards</span>
             </button>
             <button type="button" id="view-table-btn" onclick="setView('table')"
-                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200" aria-pressed="false">
+                    class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ui-button ui-button--secondary" aria-pressed="false">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                 </svg>
@@ -28,7 +28,7 @@
             </button>
         </div>
 
-        <a href="{% url 'create_participant' %}" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40">
+        <a href="{% url 'create_participant' %}" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40 ui-button ui-button--primary">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
@@ -76,17 +76,17 @@
                 {{ participant.get_status_display }}
             </span>
             <div class="flex items-center gap-1">
-                <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" title="View Profile" class="cursor-pointer rounded-md p-2 text-cyan-600 transition-colors hover:bg-cyan-50 hover:text-cyan-800">
+                <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" title="View Profile" class="cursor-pointer rounded-md p-2 text-cyan-600 transition-colors hover:bg-cyan-50 hover:text-cyan-800 ui-button ui-button--secondary ui-button--icon">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
                 </button>
-                <button type="button" onclick="openEditParticipant(this)" data-id="{{ participant.id }}" data-url="{% url 'edit_participant' participant.id %}" data-name="{{ participant.name }}" data-phone="{{ participant.phone }}" data-age="{{ participant.age }}" data-gender="{{ participant.gender }}" data-bio="{{ participant.bio }}" data-achievements="{{ participant.achievements }}" data-status="{{ participant.status }}" data-has-image="{% if participant.profile_image %}true{% else %}false{% endif %}" title="Edit" class="cursor-pointer rounded-md p-2 text-slate-500 transition-colors hover:bg-cyan-50 hover:text-cyan-700">
+                <button type="button" onclick="openEditParticipant(this)" data-id="{{ participant.id }}" data-url="{% url 'edit_participant' participant.id %}" data-name="{{ participant.name }}" data-phone="{{ participant.phone }}" data-age="{{ participant.age }}" data-gender="{{ participant.gender }}" data-bio="{{ participant.bio }}" data-achievements="{{ participant.achievements }}" data-status="{{ participant.status }}" data-has-image="{% if participant.profile_image %}true{% else %}false{% endif %}" title="Edit" class="cursor-pointer rounded-md p-2 text-slate-500 transition-colors hover:bg-cyan-50 hover:text-cyan-700 ui-button ui-button--secondary ui-button--icon">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/>
                     </svg>
                 </button>
-                <button type="button" onclick="openDeleteParticipant(this)" data-url="{% url 'delete_participant' participant.id %}" data-name="{{ participant.name }}" title="Delete" class="cursor-pointer rounded-md p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600">
+                <button type="button" onclick="openDeleteParticipant(this)" data-url="{% url 'delete_participant' participant.id %}" data-name="{{ participant.name }}" title="Delete" class="cursor-pointer rounded-md p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600 ui-button ui-button--danger ui-button--icon">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
                     </svg>
@@ -142,7 +142,7 @@
                     </td>
                     <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center justify-end gap-1.5">
-                            <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
+                            <button type="button" onclick="openModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">View</button>
                             <button type="button"
                                     data-url="{% url 'edit_participant' participant.id %}"
                                     data-name="{{ participant.name }}"
@@ -154,12 +154,12 @@
                                     data-status="{{ participant.status }}"
                                     data-has-image="{% if participant.profile_image %}true{% else %}false{% endif %}"
                                     onclick="openEditParticipant(this)"
-                                    class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
+                                    class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">Edit</button>
                             <button type="button"
                                     data-url="{% url 'delete_participant' participant.id %}"
                                     data-name="{{ participant.name }}"
                                     onclick="openDeleteParticipant(this)"
-                                    class="cursor-pointer rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50">Delete</button>
+                                    class="cursor-pointer rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors duration-200 hover:border-rose-300 hover:bg-rose-50 ui-button ui-button--danger ui-button--small">Delete</button>
                         </div>
                     </td>
                 </tr>
@@ -178,7 +178,7 @@
     </div>
     <h3 class="font-display text-xl font-semibold text-slate-900">No Participants</h3>
     <p class="mt-2 text-sm text-slate-500">Get started by adding a new participant.</p>
-    <a href="{% url 'create_participant' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105">
+    <a href="{% url 'create_participant' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 ui-button ui-button--primary">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
         </svg>
@@ -203,7 +203,7 @@
                     <p class="text-xs text-slate-500">Add a new participant to the system.</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -267,8 +267,8 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Create Participant</button>
+                    <button type="button" onclick="closeModal('create-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl ui-button ui-button--primary">Create Participant</button>
                 </div>
             </form>
         </div>
@@ -291,7 +291,7 @@
                     <p class="text-xs text-slate-500">Update the participant details.</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -370,8 +370,8 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                    <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Participant</button>
+                    <button type="button" onclick="closeModal('edit-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                    <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl ui-button ui-button--primary">Update Participant</button>
                 </div>
             </form>
         </div>
@@ -392,8 +392,8 @@
         <form method="POST" id="delete-participant-form">
             {% csrf_token %}
             <div class="mt-6 flex justify-center gap-3">
-                <button type="button" onclick="closeModal('delete-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
-                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105">Delete</button>
+                <button type="button" onclick="closeModal('delete-participant-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105 ui-button ui-button--danger">Delete</button>
             </div>
         </form>
     </div>
@@ -416,7 +416,7 @@
                     <p class="text-xs text-slate-500">Participant Profile</p>
                 </div>
             </div>
-            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 ui-button ui-button--secondary ui-button--icon" aria-label="Close">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -509,8 +509,8 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
-            <a href="{% url 'participant_detail' participant.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Open Full Page</a>
-            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105">Close</button>
+            <a href="{% url 'participant_detail' participant.id %}" class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Open Full Page</a>
+            <button type="button" onclick="closeModal('view-participant-{{ participant.id }}')" class="cursor-pointer rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 ui-button ui-button--primary">Close</button>
         </div>
     </div>
 </div>

@@ -79,7 +79,7 @@
             <h1 class="font-display text-2xl font-semibold text-slate-900">Create New Round</h1>
             <p class="mt-1 text-sm text-slate-500">{{ competition.name }}</p>
         </div>
-        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">
+        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
             </svg>
@@ -131,7 +131,7 @@
                 <div class="mb-3 flex items-center justify-between">
                     <h2 class="font-display text-base font-semibold text-slate-900">Criteria</h2>
                     <button type="button" onclick="addCriteria()"
-                            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300">
+                            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:border-cyan-300 ui-button ui-button--secondary">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
@@ -145,7 +145,7 @@
 
             <div class="flex justify-end">
                 <button type="submit" disabled title="Add at least one criterion"
-                        class="inline-flex items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50">
+                        class="inline-flex items-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 ui-button ui-button--primary">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>

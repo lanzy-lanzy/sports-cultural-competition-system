@@ -386,25 +386,40 @@ def _entry_matches_query(event, entry, group=None, knockout_only=False):
     from django.db.models import Q
 
     base = event.matches.filter(status=Match.Status.COMPLETED)
-    if group:
+    if group is not None:
         base = base.filter(group=group)
     if knockout_only:
         base = base.filter(group__isnull=True)
     if entry.team_id:
-        return base.filter(entries__team=entry.team)
-    return base.filter(entries__participant=entry.participant)
+        return base.filter(entries__team_id=entry.team_id).prefetch_related('entries')
+    return base.filter(entries__participant_id=entry.participant_id).prefetch_related('entries')
+
+
+def _scored_opponents(match, entry):
+    """Return both sides of an actual scored contest; byes are not played games."""
+    sides = list(match.entries.all())
+    if len(sides) != 2 or {side.side for side in sides} != {1, 2}:
+        return None
+    if any(side.score is None for side in sides):
+        return None
+    if (sides[0].team_id, sides[0].participant_id) == (sides[1].team_id, sides[1].participant_id):
+        return None
+    own = next((side for side in sides if (side.team_id, side.participant_id) == (entry.team_id, entry.participant_id)), None)
+    if own is None:
+        return None
+    return own, next(side for side in sides if side.pk != own.pk)
 
 
 def _round_robin_standings(event, group=None):
     rows = []
-    candidates = event.entries.filter(status='CONFIRMED')
-    if group:
+    candidates = event.entries.filter(status='CONFIRMED').select_related('team', 'participant')
+    if group is not None:
         from django.db.models import Q
         matches = event.matches.filter(group=group)
         candidates = candidates.filter(Q(team_id__in=matches.values('entries__team_id')) | Q(participant_id__in=matches.values('entries__participant_id')))
     for entry in candidates:
         completed = list(_entry_matches_query(event, entry, group=group).distinct())
-        played = len(completed)
+        played = 0
         wins = 0
         draws = 0
         losses = 0
@@ -412,25 +427,19 @@ def _round_robin_standings(event, group=None):
         points_against = Decimal('0')
 
         for match in completed:
-            match_entries = list(match.entries.all())
-            own = next(
-                (me for me in match_entries
-                 if (entry.team_id and me.team_id == entry.team_id)
-                 or (entry.participant_id and me.participant_id == entry.participant_id)),
-                None,
-            )
-            opponent = next((me for me in match_entries if own and me.id != own.id), None)
-            if own is None or own.score is None:
+            opponents = _scored_opponents(match, entry)
+            if opponents is None:
                 continue
-            if own.is_winner:
+            own, opponent = opponents
+            played += 1
+            if own.score > opponent.score:
                 wins += 1
-            elif own.is_draw:
+            elif own.score == opponent.score:
                 draws += 1
             else:
                 losses += 1
             points_for += own.score
-            if opponent and opponent.score is not None:
-                points_against += opponent.score
+            points_against += opponent.score
 
         total_points = wins * event.win_points + draws * event.draw_points + losses * event.loss_points
         point_diff = points_for - points_against
@@ -464,7 +473,7 @@ def compute_elimination_standings(event):
     final_round = deciding.round_number if deciding else 0
     has_groups = event.matches.filter(group__isnull=False).exists()
 
-    entries = event.entries.filter(status='CONFIRMED')
+    entries = event.entries.filter(status='CONFIRMED').select_related('team', 'participant')
     if has_groups:
         from django.db.models import Q
 
@@ -488,18 +497,16 @@ def compute_elimination_standings(event):
         wins = 0
         losses = 0
         last_lost_round = 0
+        played = 0
         for match in completed:
-            own = next(
-                (me for me in match.entries.all()
-                 if (entry.team_id and me.team_id == entry.team_id)
-                 or (entry.participant_id and me.participant_id == entry.participant_id)),
-                None,
-            )
-            if own is None:
+            opponents = _scored_opponents(match, entry)
+            if opponents is None:
                 continue
-            if own.is_winner:
+            own, opponent = opponents
+            played += 1
+            if own.score > opponent.score:
                 wins += 1
-            else:
+            elif own.score < opponent.score:
                 losses += 1
                 last_lost_round = max(last_lost_round, match.round_number)
 
@@ -520,7 +527,7 @@ def compute_elimination_standings(event):
         rows.append({
             'entry': entry,
             'name': entry.display_name,
-            'played': len(completed),
+            'played': played,
             'wins': wins,
             'losses': losses,
             'last_lost_round': last_lost_round,
@@ -559,11 +566,32 @@ def compute_elimination_standings(event):
 
 def compute_standings(event):
     """Standings appropriate to the event format."""
-    if event.format == 'LEAGUE' and event.playoff_count and event.matches.filter(group__isnull=True).exists():
+    if (event.format == SportsEvent.Format.GROUP_STAGE or (event.format == SportsEvent.Format.LEAGUE and event.playoff_count)) and event.matches.filter(group__isnull=True).exists():
         return compute_elimination_standings(event)
     if event.format in (SportsEvent.Format.ROUND_ROBIN, SportsEvent.Format.LEAGUE, SportsEvent.Format.GROUP_STAGE, SportsEvent.Format.BEST_OF):
         return _round_robin_standings(event)
     return compute_elimination_standings(event)
+
+
+def compute_team_standings(team):
+    """Per-event and per-phase records; ranks from unrelated stages are never combined."""
+    records = []
+    events = SportsEvent.objects.filter(entries__team=team, entries__status='CONFIRMED').select_related('competition')
+    for event in events:
+        if event.format == SportsEvent.Format.GROUP_STAGE or (event.format == SportsEvent.Format.LEAGUE and event.playoff_count):
+            groups = event.matches.filter(group__isnull=False).values_list('group', flat=True).distinct().order_by('group')
+            tables = [(f'Group {group}' if event.format == SportsEvent.Format.GROUP_STAGE else 'League', compute_group_standings(event, group)) for group in groups]
+            if event.matches.filter(group__isnull=True).exists():
+                tables.append(('Knockout', compute_elimination_standings(event)))
+            if not tables:
+                tables = [('Group stage' if event.format == SportsEvent.Format.GROUP_STAGE else 'League', _round_robin_standings(event))]
+        else:
+            tables = [(event.get_format_display(), compute_standings(event))]
+        for stage, rows in tables:
+            row = next((row for row in rows if row['entry'].team_id == team.pk), None)
+            if row is not None:
+                records.append({'event': event, 'stage': stage, 'draws': 0, 'total_points': None, **row})
+    return records
 
 
 def compute_group_standings(event, group_name):

@@ -27,7 +27,7 @@
             {% if competition_rows %}
             <div class="sh-tools">
                 <div class="sh-search"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><label for="sh-search" class="sr-only">Search competitions or events</label><input id="sh-search" type="search" placeholder="Search competitions or events…" autocomplete="off"></div>
-                <div class="sh-filters" role="group" aria-label="Filter competitions"><button type="button" class="sh-filter" data-filter="all" aria-pressed="true">All</button><button type="button" class="sh-filter" data-filter="ACTIVE" aria-pressed="false">Active</button><button type="button" class="sh-filter" data-filter="COMPLETED" aria-pressed="false">Completed</button></div>
+                <div class="sh-filters" role="group" aria-label="Filter competitions"><button type="button" class="sh-filter ui-button ui-button--secondary" data-filter="all" aria-pressed="true">All</button><button type="button" class="sh-filter ui-button ui-button--secondary" data-filter="ACTIVE" aria-pressed="false">Active</button><button type="button" class="sh-filter ui-button ui-button--secondary" data-filter="COMPLETED" aria-pressed="false">Completed</button></div>
             </div>
             <p id="sh-filter-count" class="sh-muted" aria-live="polite" style="margin-bottom:12px">{{ competition_rows|length }} competition{{ competition_rows|length|pluralize }}</p>
             {% for row in competition_rows %}
@@ -46,7 +46,7 @@
                 {% else %}<p class="sh-muted" style="padding:12px 22px">No events yet. Add a sport event to get started.</p>{% endif %}
             </article>
             {% endfor %}
-            <div id="sh-no-matches" class="sh-panel sh-empty" hidden><strong>No competitions found</strong>Try another name or switch to All.<br><button type="button" id="sh-reset" class="sh-button">Clear filters</button></div>
+            <div id="sh-no-matches" class="sh-panel sh-empty" hidden><strong>No competitions found</strong>Try another name or switch to All.<br><button type="button" id="sh-reset" class="sh-button ui-button ui-button--secondary">Clear filters</button></div>
             {% else %}<div class="sh-panel sh-empty"><strong>Your next tournament starts here</strong>Create a sports competition, then add events and register your teams.<br><a href="{% url 'competition_list' %}" class="sh-button sh-button-primary">Go to competitions &rarr;</a></div>{% endif %}
         </section>
 

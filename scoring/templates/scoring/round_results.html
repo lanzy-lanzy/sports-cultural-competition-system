@@ -30,7 +30,7 @@
             {% if submitted_count %}
             <form method="post" action="{% url 'verify_round_scores' round.id %}">
                 {% csrf_token %}
-                <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-emerald-700 ui-button ui-button--primary">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Verify {{ submitted_count }} score{{ submitted_count|pluralize }}
                 </button>
@@ -39,16 +39,16 @@
             {% if verified_count %}
             <form method="post" action="{% url 'unverify_round_scores' round.id %}">
                 {% csrf_token %}
-                <button type="submit" class="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100 ui-button ui-button--secondary">
                     Clear verification ({{ verified_count }})
                 </button>
             </form>
             {% endif %}
-            <a href="{% url 'score_history' competition.id %}?round={{ round.id }}" class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            <a href="{% url 'score_history' competition.id %}?round={{ round.id }}" class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 ui-button ui-button--secondary">
                 Change history
             </a>
         {% endif %}
-        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white/70 px-4 py-2 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-slate-50">
+        <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white/70 px-4 py-2 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-slate-50 ui-button ui-button--secondary">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
             </svg>
