@@ -36,7 +36,7 @@
                 {% for row in group.rows %}
                 <tr class="border-b border-slate-100 last:border-0 {% if row.qualifies %}bg-emerald-50/60{% endif %}">
                     <td class="px-5 py-3 font-display text-base font-bold text-ink">{{ row.rank }}</td>
-                    <td class="px-5 py-3 font-semibold text-slate-800">{{ row.name }}</td>
+                    <td class="px-5 py-3 font-semibold text-slate-800">{% include 'sports/standing_contestant.html' %}</td>
                     <td class="px-5 py-3 text-center text-slate-500">{{ row.played }}</td>
                     <td class="px-5 py-3 text-center font-semibold text-emerald-600">{{ row.wins }}</td>
                     <td class="px-5 py-3 text-center text-amber-600">{{ row.draws }}</td>
@@ -78,7 +78,7 @@
                 {% for row in group_stage.knockout %}
                 <tr class="border-b border-slate-100 last:border-0 {% if row.is_champion %}bg-yellow-50/70{% endif %}">
                     <td class="px-5 py-3 font-display text-base font-bold text-ink">{{ row.rank }}</td>
-                    <td class="px-5 py-3 font-semibold text-slate-800">{{ row.name }}</td>
+                    <td class="px-5 py-3 font-semibold text-slate-800">{% include 'sports/standing_contestant.html' %}</td>
                     <td class="px-5 py-3 text-center text-slate-500">{{ row.played }}</td>
                     <td class="px-5 py-3 text-center font-semibold text-emerald-600">{{ row.wins }}</td>
                     <td class="px-5 py-3 text-center text-rose-600">{{ row.losses }}</td>
