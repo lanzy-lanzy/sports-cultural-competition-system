@@ -192,20 +192,34 @@ body.app-canvas {
 /* Active item: a mint-lit raised pill. A plain white wash over emerald turned
    into a desaturated grey smudge that read as "dirty", not "selected";
    tinting with the brand accent keeps it unmistakably active but still soft. */
-.lg-sidebar nav .bg-moss {
-    background:
-        linear-gradient(135deg, rgba(167, 243, 208, 0.22) 0%, rgba(167, 243, 208, 0.10) 100%) !important;
+.lg-sidebar nav a[aria-current="page"] {
+    position: relative;
+    background: linear-gradient(110deg, #256349, #194b35) !important;
     border-radius: 0.75rem !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.26),
-        inset 0 -1px 0 rgba(0, 30, 16, 0.30),
-        0 10px 20px -12px rgba(0, 20, 10, 0.75);
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(167, 243, 208, 0.3), 0 4px 12px rgba(0, 20, 10, 0.2);
+}
+.lg-sidebar nav a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #a7f3d0;
+}
+.lg-sidebar nav a[aria-current="page"] svg { color: #b8efcf !important; }
+.lg-sidebar nav a:focus-visible {
+    outline: 2px solid #a7f3d0;
+    outline-offset: 2px;
 }
 .lg-sidebar nav .bg-pine { background-color: #a7f3d0 !important; }
 
 /* Frosted wash + mint icons on hover for nav and brand actions. The active
    pill is excluded so hovering it cannot wash out its own gradient. */
-.lg-sidebar nav a:hover:not(.bg-moss),
+.lg-sidebar nav a:hover:not([aria-current="page"]),
 .lg-sidebar nav button:hover,
 .lg-sidebar > div:first-of-type a:hover,
 .lg-sidebar > div:first-of-type button:hover {
@@ -226,6 +240,81 @@ body.app-canvas {
 }
 .lg-sidebar .bg-rose-50 { background-color: rgba(244, 63, 94, 0.14) !important; }
 .lg-sidebar .bg-slate-100 { background-color: rgba(255, 255, 255, 0.10) !important; }
+
+/* Shared records workspace: Results, Medal Tally, and Reports. */
+.records-page .records-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid #24563c;
+    border-radius: 1rem;
+    background: radial-gradient(ellipse at 100% 0%, rgba(95, 174, 130, .22), transparent 55%),
+        linear-gradient(115deg, #0b3a20, #15251b);
+    color: #ffffff;
+    box-shadow: 0 12px 28px -20px rgba(11, 58, 32, .55);
+}
+.records-page .records-hero::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -5rem;
+    top: -8rem;
+    width: 24rem;
+    height: 24rem;
+    border: 1px solid rgba(167, 243, 208, .14);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.records-hero .records-kicker {
+    color: #b8efcf;
+    font-size: .625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .2em;
+}
+.records-hero .records-description { color: #d0dfd4; line-height: 1.7; }
+.records-hero .records-hero-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    min-height: 2.75rem;
+    padding: .625rem 1rem;
+    border: 1px solid rgba(184, 239, 207, .3);
+    border-radius: .5rem;
+    background: rgba(255, 255, 255, .07);
+    color: #ffffff;
+    font-size: .8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.records-hero .records-hero-link:hover { background: rgba(255, 255, 255, .15); }
+.records-page .records-panel {
+    border-radius: .875rem;
+    border-color: #dce6de;
+    box-shadow: 0 6px 22px -18px rgba(11, 58, 32, .35);
+}
+.records-page .records-metric { border-top: 3px solid #93cba9; }
+.records-page .results-card { display: flex; flex-direction: column; }
+.records-page .results-card:hover { border-color: #93cba9; }
+.records-page .results-card-header { background: linear-gradient(110deg, #0c5330, #116b3b); }
+.records-page .records-empty { background: linear-gradient(135deg, #ffffff, #f2f8f4); }
+.records-page .records-table { font-variant-numeric: tabular-nums; }
+.records-page .records-table thead { background: #f2f8f4; }
+.records-page .records-table th { color: #53675b; white-space: nowrap; }
+.records-page .records-table td { vertical-align: middle; }
+.records-page .records-table tbody tr { transition: background-color .15s ease; }
+.records-page .records-table tbody tr:hover { background-color: #f2f8f4; }
+.records-page :is(a, button, select):focus-visible {
+    outline: 2px solid #2e9c5c;
+    outline-offset: 3px;
+}
+.records-hero :is(a, button):focus-visible { outline-color: #b8efcf; }
+.records-page .records-section { scroll-margin-top: 6.5rem; }
+@media (prefers-reduced-motion: reduce) {
+    .records-page *, .lg-sidebar nav a { transition: none !important; }
+    .records-page article:hover { transform: none !important; }
+}
 
 @media (prefers-reduced-transparency: reduce) {
     body.app-canvas { background-image: none; }

@@ -20,6 +20,7 @@ from .services import (
 )
 from sports.models import Match, SportsEvent, SportType, Venue
 from sports.services import event_podium, generate_bracket, record_match_result
+from sports.workflow import confirm_awards
 
 
 class BaseScoringTest(TestCase):
@@ -605,7 +606,7 @@ class SportPodiumTest(TestCase):
         self.event = SportsEvent.objects.create(
             competition=self.competition, sport_type=self.sport,
             name='Basketball', team_based=True,
-            format=SportsEvent.Format.SINGLE_ELIMINATION,
+            format=SportsEvent.Format.SINGLE_ELIMINATION, bronze_policy='MATCH',
         )
         self.teams = [
             Team.objects.create(name=f'T{i}', category=Team.Category.SPORTS, created_by=self.admin)
@@ -617,9 +618,12 @@ class SportPodiumTest(TestCase):
 
     def _play_everything(self):
         generate_bracket(self.event)
-        for match in self.event.matches.order_by('round_number', 'id'):
-            if match.entries.count() == 2:
-                record_match_result(match, {1: 10, 2: 5})
+        while True:
+            match = next((m for m in self.event.matches.exclude(status='COMPLETED') if m.entries.count() == 2), None)
+            if not match:
+                break
+            record_match_result(match, {1: 10, 2: 5})
+        confirm_awards(self.event, self.admin)
 
     def test_unfinished_event_has_no_podium(self):
         generate_bracket(self.event)
@@ -670,7 +674,7 @@ class OverallMedalTallyTest(TestCase):
         sport = SportType.objects.create(name='Basketball', team_based=True)
         event = SportsEvent.objects.create(
             competition=self.sport_comp, sport_type=sport, name='Basketball',
-            team_based=True, format=SportsEvent.Format.SINGLE_ELIMINATION,
+            team_based=True, format=SportsEvent.Format.SINGLE_ELIMINATION, bronze_policy='MATCH',
         )
         teams = [
             Team.objects.create(name=f'Sports {i}', category=Team.Category.SPORTS, created_by=self.admin)
@@ -680,9 +684,12 @@ class OverallMedalTallyTest(TestCase):
         for team in teams:
             EventEntry.objects.create(event=event, team=team, status='CONFIRMED')
         generate_bracket(event)
-        for match in event.matches.order_by('round_number', 'id'):
-            if match.entries.count() == 2:
-                record_match_result(match, {1: 10, 2: 5})
+        while True:
+            match = next((m for m in event.matches.exclude(status='COMPLETED') if m.entries.count() == 2), None)
+            if not match:
+                break
+            record_match_result(match, {1: 10, 2: 5})
+        confirm_awards(event, self.admin)
         return teams[0]
 
     def _add_judged_podium(self):
@@ -1167,7 +1174,7 @@ class DashboardWidgetTest(BaseScoringTest):
         sport_type = SportType.objects.create(name='Chess', team_based=False)
         event = SportsEvent.objects.create(
             competition=self.competition, sport_type=sport_type,
-            name='Chess Singles', format=SportsEvent.Format.SINGLE_ELIMINATION,
+            name='Chess Singles', format=SportsEvent.Format.SINGLE_ELIMINATION, bronze_policy='MATCH',
             status=SportsEvent.Status.SCHEDULED,
         )
         self.match = Match.objects.create(

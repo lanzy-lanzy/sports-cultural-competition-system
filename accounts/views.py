@@ -90,7 +90,7 @@ def _scorecard_for(competition, round_obj, is_live):
 
 def landing_scorecard():
     """Pick the most presentable round with real data: live scoring, then final results."""
-    competitions = list(Competition.objects.order_by('-start_date', '-id'))
+    competitions = list(Competition.objects.exclude(kind=Competition.Kind.SPORTS).order_by('-start_date', '-id'))
     active = [c for c in competitions if c.status == 'ACTIVE']
 
     # 1) Live scoring: the most recent active competition with an ongoing, scored round.

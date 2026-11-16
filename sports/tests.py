@@ -395,13 +395,13 @@ class DoubleEliminationBracketTest(TestCase):
             self.teams.append(team)
             EventEntry.objects.create(event=self.event, team=team, status='CONFIRMED')
 
-    def test_non_power_of_two_entries_rejected(self):
+    def test_non_power_of_two_entries_use_byes(self):
         self.event.entries.all().delete()
         for i in range(3):
             team = Team.objects.create(name=f'Odd {i}', category=Team.Category.SPORTS, created_by=self.admin)
             EventEntry.objects.create(event=self.event, team=team, status='CONFIRMED')
-        with self.assertRaises(ValueError):
-            generate_bracket(self.event)
+        generate_bracket(self.event)
+        self.assertTrue(self.event.matches.filter(status='COMPLETED', notes__contains='bye').exists())
 
     def test_bracket_structure(self):
         generate_bracket(self.event)
@@ -461,6 +461,8 @@ class GroupStageTest(TestCase):
         self.assertFalse(self.event.matches.filter(round_number__gt=1).exists())
         for match in self.event.matches.filter(group__isnull=False):
             record_match_result(match, {1: 25, 2: 20})
+        from .workflow import resolve_ties
+        resolve_ties(self.event, self.admin, list(self.event.entries.values_list('pk', flat=True)), 'Group tie-break result')
         self.assertTrue(self.event.matches.filter(round_number__gt=1).exists())
         group_stage = compute_group_stage_standings(self.event)
         self.assertIsNotNone(group_stage['knockout'])
@@ -553,9 +555,9 @@ class SeedSportsCommandTest(TestCase):
     def test_creates_reference_data(self):
         self.assertGreaterEqual(SportType.objects.count(), 8)
         self.assertGreaterEqual(Venue.objects.count(), 8)
-        self.assertEqual(Team.objects.filter(status=Team.Status.APPROVED).count(), 12)
-        self.assertEqual(TeamMembership.objects.count(), 60)
-        self.assertEqual(TeamStaff.objects.filter(role=TeamStaff.Role.COACH).count(), 12)
+        self.assertEqual(set(Team.objects.filter(status=Team.Status.APPROVED).values_list('name',flat=True)), {'SAFES','SOCJE','STE','SCS'})
+        self.assertEqual(TeamMembership.objects.count(), 20)
+        self.assertEqual(TeamStaff.objects.filter(role=TeamStaff.Role.COACH).count(), 4)
 
     def test_creates_events_across_formats(self):
         formats = set(SportsEvent.objects.values_list('format', flat=True))

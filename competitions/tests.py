@@ -20,11 +20,11 @@ class CompetitionViewTest(TestCase):
             created_by=self.admin,
         )
 
-    def test_create_competition_with_rounds_and_criteria(self):
+    def test_sports_creation_ignores_judged_rounds_and_criteria(self):
         data = {
             'name': 'New Comp', 'description': 'desc',
             'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
-            'status': 'DRAFT', 'kind': 'SPORTS',
+            'status': 'DRAFT', 'kind': 'SPORTS', 'tournament_format': 'SINGLE_ELIMINATION',
             'round_names[]': ['Round A'], 'round_orders[]': ['1'],
             'round_weights[]': ['100'], 'round_statuses[]': ['PENDING'],
             'criterion_names_1[]': ['C1'], 'criterion_descriptions_1[]': ['x'],
@@ -34,15 +34,14 @@ class CompetitionViewTest(TestCase):
         self.assertRedirects(resp, reverse('competition_list'))
         comp = Competition.objects.get(name='NEW COMP')
         self.assertEqual(comp.kind, 'SPORTS')
-        self.assertEqual(comp.rounds.count(), 1)
-        self.assertEqual(comp.rounds.first().criteria.count(), 1)
-        self.assertEqual(comp.rounds.first().criteria.first().max_score, Decimal('50'))
+        self.assertEqual(comp.tournament_format, 'SINGLE_ELIMINATION')
+        self.assertEqual(comp.rounds.count(), 0)
 
     def test_edit_competition_updates_name(self):
         data = {
             'title': 'Renamed', 'description': 'new',
             'start_date': '2026-03-01 00:00:00', 'end_date': '2026-03-02 00:00:00',
-            'status': 'COMPLETED', 'kind': 'SPORTS',
+            'status': 'COMPLETED', 'kind': 'SPORTS', 'tournament_format': 'SINGLE_ELIMINATION',
         }
         resp = self.client.post(reverse('edit_competition', args=[self.competition.id]), data)
         self.assertRedirects(resp, reverse('competition_detail', args=[self.competition.id]))
@@ -182,7 +181,7 @@ class CompetitionViewTest(TestCase):
         data = {
             'name': 'Mislabeled', 'description': 'desc',
             'start_date': '2026-02-01 00:00:00', 'end_date': '2026-02-02 00:00:00',
-            'status': 'DRAFT', 'kind': 'SPORTS', 'cultural_event_type': 'DANCE',
+            'status': 'DRAFT', 'kind': 'SPORTS', 'tournament_format': 'SINGLE_ELIMINATION', 'cultural_event_type': 'DANCE',
         }
         resp = self.client.post(reverse('create_competition'), data)
         self.assertRedirects(resp, reverse('competition_list'))
@@ -208,7 +207,7 @@ class CompetitionViewTest(TestCase):
         data = {
             'title': 'Comp', 'description': 'new',
             'start_date': '2026-03-01 00:00:00', 'end_date': '2026-03-02 00:00:00',
-            'status': 'ACTIVE', 'kind': 'SPORTS',
+            'status': 'ACTIVE', 'kind': 'SPORTS', 'tournament_format': 'SINGLE_ELIMINATION',
             'gold_points': '20', 'silver_points': '10', 'bronze_points': '5',
         }
         self.client.post(reverse('edit_competition', args=[self.competition.id]), data)
@@ -774,3 +773,41 @@ class CulturalSubtypeTests(TestCase):
         self.assertContains(resp, 'id="edit-subtype-manage-toggle"')
         self.assertContains(resp, 'id="m-subtype-manage-panel"')
         self.assertContains(resp, 'id="edit-subtype-manage-panel"')
+
+
+class SportsTournamentFormatTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser('format-admin', 'format@example.com', 'pass')
+        self.client.force_login(self.user)
+        self.data = dict(name='Format cup', description='Sports', start_date='2026-02-01',
+                         end_date='2026-02-02', status='DRAFT', kind='SPORTS')
+
+    def test_all_six_formats_persist_without_rounds(self):
+        for value in Competition.TournamentFormat.values:
+            with self.subTest(value=value):
+                response = self.client.post(reverse('create_competition'), {
+                    **self.data, 'name': value, 'tournament_format': value,
+                    'round_names[]': ['Ignored'],
+                })
+                self.assertEqual(response.status_code, 302)
+                comp = Competition.objects.get(name=value)
+                self.assertEqual(comp.tournament_format, value)
+                self.assertFalse(comp.rounds.exists())
+
+    def test_invalid_format_does_not_create_competition(self):
+        for value in ['', 'INVALID']:
+            response = self.client.post(reverse('create_competition'), {
+                **self.data, 'tournament_format': value,
+            })
+            self.assertContains(response, 'Select a tournament format')
+        self.assertFalse(Competition.objects.exists())
+
+    def test_cultural_creation_still_saves_judged_rounds(self):
+        response = self.client.post(reverse('create_competition'), {
+            **self.data, 'kind': 'CULTURAL', 'cultural_event_type': 'DANCE',
+            'round_names[]': ['Final'], 'round_orders[]': ['1'],
+            'round_weights[]': ['100'], 'round_statuses[]': ['PENDING'],
+            'criterion_names_1[]': ['Technique'], 'criterion_max_scores_1[]': ['100'],
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Criterion.objects.get().name, 'TECHNIQUE')

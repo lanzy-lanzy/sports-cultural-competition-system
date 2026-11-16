@@ -7,9 +7,11 @@
 <style>
     .bracket-card { height: 126px; overflow: hidden; }
     #bracket-lines { position: absolute; inset: 0; z-index: 0; }
-    #bracket-lines path { fill: none; stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 5 5; }
+    #bracket-lines path { fill: none; stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: none; }
     #bracket-lines .bracket-line--won { stroke: #116B3B; stroke-dasharray: none; }
     #bracket-lines .bracket-line--live { stroke: #f59e0b; stroke-dasharray: 7 5; }
+    #bracket-lines .bracket-line--lost { stroke: #d49a45; stroke-dasharray: 5 4; }
+    .bracket-search-hit { outline: 3px solid #60a87a; outline-offset: 3px; }
     .bracket-col { position: relative; z-index: 10; }
     @keyframes advance-pulse {
         0% { box-shadow: 0 0 0 0 rgba(8, 127, 120, .45); }
@@ -22,24 +24,42 @@
 {% block content %}
 <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
-        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
+        <p id="bracket-competition-name" class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
         <h1 class="mt-1 font-display text-3xl font-bold text-ink">Tournament bracket</h1>
-        <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}{% if bracket %} &middot; click a match to record its result; winners advance automatically{% endif %}</p>
+        <p id="bracket-event-caption" class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}{% if bracket and not bracket.preview %} &middot; select an available match to record scores{% endif %}</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-        <a href="{% url 'match_schedule' event.id %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Schedule</a>
-        <a href="{% url 'event_standings' event.id %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Standings</a>
-        <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
+        <a id="bracket-schedule-link" href="{% url 'match_schedule' event.id %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Schedule</a>
+        <a id="bracket-standings-link" href="{% url 'event_standings' event.id %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:border-teal-200">Standings</a>
+        <a id="bracket-event-link" href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
     </div>
 </div>
 
 {% if bracket %}
+<section id="live-schedule" class="mb-5 rounded-md border border-emerald-200 bg-white p-5 shadow-sm" aria-labelledby="live-schedule-title">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 id="live-schedule-title" class="text-sm font-bold text-emerald-900">Current / next match</h2><span id="schedule-refresh-status" class="text-xs text-slate-500" role="status">Updates automatically every 10 seconds</span></div>
+    <div id="live-schedule-content" class="grid gap-4 md:grid-cols-2" aria-live="polite" aria-atomic="true"></div>
+</section>
+{% endif %}
+{% if bracket.preview %}
+<div class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-5 py-4"><h2 class="text-sm font-bold text-emerald-900">Knockout bracket preview</h2><p class="mt-1 text-sm text-emerald-800">Top {{ event.qualifiers_per_group }} from each group advance. Qualifier positions below will be replaced with team names after all group results and qualification ties are resolved.</p></div>
+{% endif %}
+{% if bracket %}
 <div class="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-    <div class="overflow-x-auto app-scrollbar">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <label class="text-xs font-semibold text-slate-600">Find a team or match <input id="bracket-search" type="search" placeholder="Team or match name" class="ml-2 rounded-md border border-slate-200 px-3 py-2 text-sm"></label>
+        <div class="flex items-center gap-2" role="group" aria-label="Bracket zoom"><button type="button" id="bracket-zoom-out" class="rounded-md border px-3 py-2" aria-label="Zoom out">−</button><span id="bracket-zoom-level" class="text-xs">100%</span><button type="button" id="bracket-zoom-in" class="rounded-md border px-3 py-2" aria-label="Zoom in">+</button><button type="button" id="bracket-reset" class="rounded-md border px-3 py-2 text-xs">Reset view</button></div>
+    </div>
+    <label class="mb-3 flex items-center gap-2 text-xs font-semibold text-emerald-800"><input id="follow-live-schedule" type="checkbox" {% if follow_schedule %}checked{% endif %}> Follow current schedule <span class="font-normal text-slate-500">— automatically switches this bracket when the next event starts</span></label>
+    <p id="bracket-format-help" class="mb-4 text-sm text-slate-500" aria-live="polite"></p>
+    <div id="bracket-standings" class="mb-4 overflow-x-auto"></div>
+    <p id="bracket-search-count" class="mb-2 text-xs text-emerald-700" aria-live="polite"></p>
+    <div class="overflow-x-auto app-scrollbar" tabindex="0" role="region" aria-label="Tournament matches. Scroll horizontally to view all rounds.">
         <div id="bracket-stage" class="relative flex min-w-max gap-x-14 px-2 py-2"></div>
     </div>
 </div>
 
+<div id="bracket-extra" class="mt-6"></div>
 {{ bracket|json_script:"bracket-data" }}
 
 <!-- Record result modal -->
@@ -78,8 +98,8 @@
             </div>
 
             <p id="result-modal-error" class="mt-4 hidden rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"></p>
-            <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                The higher score wins and advances in the bracket. Equal scores are saved as a draw.
+            <p id="bracket-result-help" class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                The higher score wins and advances in the bracket. Knockout matches require a winner; equal scores are not allowed.
             </p>
 
             <div class="mt-5 flex justify-end gap-2">
@@ -101,6 +121,12 @@
     stage.appendChild(svg);
 
     var data = JSON.parse(dataEl.textContent);
+    var zoom = 1;
+    var pollPending = false;
+    var latestRequest = 0;
+    var scheduleSignature = '';
+    var payloadSignature = JSON.stringify(data);
+    var search = document.getElementById('bracket-search');
 
     var modal = document.getElementById('result-modal');
     var form = document.getElementById('result-modal-form');
@@ -127,6 +153,7 @@
     function buildCard(match) {
         var card = el('div', 'bracket-card group rounded-md border bg-white shadow-sm transition');
         card.dataset.match = match.id;
+        card.dataset.search = (match.label + ' ' + match.entries.map(function(e) { return e.name; }).join(' ') + ' ' + (match.placeholder_names || []).join(' ')).toLocaleLowerCase();
         card.classList.add(match.status === 'COMPLETED' ? 'border-emerald-200' : 'border-slate-200');
 
         var head = el('div', 'flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5');
@@ -154,7 +181,7 @@
                 'flex-1 truncate text-sm ' + (entry && entry.winner ? 'font-bold text-emerald-800'
                     : (entry && match.status === 'COMPLETED' ? 'text-slate-400'
                         : (entry ? 'text-slate-600' : 'italic text-slate-400'))),
-                entry ? entry.name : 'Awaiting winner'));
+                entry ? entry.name : (match.placeholder_names ? match.placeholder_names[side - 1] : 'Awaiting winner')));
 
             if (entry && entry.score !== null) {
                 row.appendChild(el('span',
@@ -167,7 +194,7 @@
         card.appendChild(el('div', 'truncate border-t border-slate-100 px-3 py-1 text-[9px] text-slate-400',
             (match.venue || 'Venue TBA') + ' · ' + (match.start || 'Time TBA')));
 
-        if (match.status !== 'COMPLETED' && match.entries.length === 2) {
+        if (match.recordUrl && match.status !== 'COMPLETED' && match.status !== 'CANCELLED' && match.entries.length === 2) {
             card.classList.add('cursor-pointer', 'hover:border-campus', 'hover:shadow-md');
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
@@ -192,6 +219,14 @@
     }
 
     function render() {
+        if (data.event) {
+            document.getElementById('bracket-competition-name').textContent = data.event.competition + ' · Sport Event';
+            document.getElementById('bracket-event-caption').textContent = data.event.name + ' · ' + data.event.format;
+            document.getElementById('bracket-schedule-link').href = data.event.schedule_url;
+            document.getElementById('bracket-standings-link').href = data.event.standings_url;
+            document.getElementById('bracket-event-link').href = data.event.detail_url;
+            document.title = 'Bracket - ' + data.event.name;
+        }
         Array.prototype.slice.call(stage.children).forEach(function (node) {
             if (node !== svg) { node.remove(); }
         });
@@ -217,6 +252,9 @@
         champBody.appendChild(buildChampionCard());
         champCol.appendChild(champBody);
         stage.appendChild(champCol);
+        renderSchedule();
+        renderDetails();
+        highlightSearch();
         drawLines();
         if (document.fonts && document.fonts.ready) { document.fonts.ready.then(drawLines); }
     }
@@ -226,34 +264,138 @@
         var box = stage.getBoundingClientRect();
         svg.setAttribute('width', box.width);
         svg.setAttribute('height', box.height);
+        if (data.mode === 'fixtures' || data.mode === 'series') return;
+        var scale = box.width / stage.offsetWidth || 1;
+        svg.setAttribute('width', stage.offsetWidth);
+        svg.setAttribute('height', stage.offsetHeight);
         data.rounds.forEach(function (round, roundIndex) {
             var isFinalRound = roundIndex === data.rounds.length - 1 && round.total === 1;
             round.matches.forEach(function (match) {
-                var targetId = match.next || (isFinalRound ? 'champion' : null);
-                if (!targetId) { return; }
-                var src = stage.querySelector('[data-match="' + match.id + '"]');
-                var tgt = stage.querySelector('[data-match="' + targetId + '"]');
-                if (!src || !tgt) { return; }
-                var a = src.getBoundingClientRect();
-                var b = tgt.getBoundingClientRect();
-                var x1 = a.right - box.left;
-                var y1 = a.top + a.height / 2 - box.top;
-                var x2 = b.left - box.left;
-                var y2 = b.top + b.height / 2 - box.top;
-                var xm = x1 + (x2 - x1) / 2;
-                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', 'M' + x1 + ' ' + y1 + ' H' + xm + ' V' + y2 + ' H' + x2);
-                var cls = 'bracket-line';
-                if (match.status === 'COMPLETED') { cls += ' bracket-line--won'; }
-                else if (match.status === 'ONGOING') { cls += ' bracket-line--live'; }
-                path.setAttribute('class', cls);
-                svg.appendChild(path);
+                var targets = [{id: match.next || (isFinalRound ? 'champion' : null), loser: false}];
+                if (match.loserNext) targets.push({id:match.loserNext, loser:true});
+                targets.forEach(function(target) {
+                    if (!target.id) return;
+                    var src = stage.querySelector('[data-match="' + match.id + '"]');
+                    var tgt = stage.querySelector('[data-match="' + target.id + '"]');
+                    if (!src || !tgt) return;
+                    var a = src.getBoundingClientRect(), b = tgt.getBoundingClientRect();
+                    var x1 = (a.right-box.left)/scale, y1 = (a.top+a.height/2-box.top)/scale;
+                    var x2 = (b.left-box.left)/scale, y2 = (b.top+b.height/2-box.top)/scale;
+                    var xm = x1+(x2-x1)/2;
+                    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+                    path.setAttribute('d','M'+x1+' '+y1+' H'+xm+' V'+y2+' H'+x2);
+                    path.setAttribute('class','bracket-line'+(target.loser?' bracket-line--lost':match.status==='COMPLETED'?' bracket-line--won':match.status==='ONGOING'?' bracket-line--live':''));
+                    svg.appendChild(path);
+                });
             });
         });
     }
 
+    function renderSchedule() {
+        var schedule = data.schedule || {};
+        var signature = JSON.stringify(schedule);
+        if (signature === scheduleSignature) return;
+        scheduleSignature = signature;
+        var container = document.getElementById('live-schedule-content');
+        container.replaceChildren();
+        function fixture(match, label) {
+            var card = el('div','rounded-md border border-emerald-100 bg-emerald-50/40 p-4');
+            card.appendChild(el('p','text-xs font-bold uppercase tracking-wider text-emerald-700', label));
+            card.appendChild(el('p','mt-2 text-base font-semibold text-slate-800',match.entries.map(function(entry){return entry.name;}).join(' vs ')));
+            var when = match.scheduled_start ? new Date(match.scheduled_start).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}) : 'Start time to be assigned';
+            card.appendChild(el('p','mt-1 text-xs text-slate-500', match.label+' · '+(match.venue || 'Venue to be assigned')+' · '+when));
+            var button = el('button','mt-3 rounded-md bg-campus px-3 py-2 text-xs font-semibold text-white','Record result');
+            button.type='button';button.addEventListener('click',function(){openModal(match);});card.appendChild(button);
+            container.appendChild(card);
+        }
+        if (schedule.current) fixture(schedule.current, schedule.state === 'ongoing' ? 'Playing now' : 'Scheduled now · awaiting result');
+        if (schedule.next) fixture(schedule.next,'Up next');
+        if (!schedule.current && !schedule.next) {
+            var message = schedule.state==='finished' ? 'All matches are complete. Final results remain below.'
+                : schedule.state==='cancelled' ? 'This event is cancelled.'
+                : 'Waiting for the next scheduled match. Unscheduled or postponed matches are available on the schedule.';
+            container.appendChild(el('p','text-sm text-slate-500',message));
+        }
+        if (schedule.parallel_count) container.appendChild(el('p','text-xs text-slate-500',schedule.parallel_count+' other match(es) are also ongoing.'));
+        var link=el('a','text-xs font-semibold text-emerald-700','View full schedule →');
+        link.href=schedule.schedule_url || '#';container.appendChild(link);
+    }
+
+    function refreshSchedule() {
+        if (pollPending || document.hidden || !modal.classList.contains('hidden') || saveBtn.disabled) return;
+        pollPending=true;
+        var request=++latestRequest;
+        var following=document.getElementById('follow-live-schedule').checked;
+        var url=new URL(data.event ? data.event.bracket_url : window.location.href, window.location.origin);url.searchParams.set('format','json');
+        url.searchParams.set('follow',following ? '1' : '0');
+        fetch(url.toString(),{cache:'no-store',headers:{'Accept':'application/json'}})
+            .then(function(response){if(!response.ok)throw new Error('Refresh unavailable');return response.json();})
+            .then(function(payload){
+                if(request!==latestRequest || !modal.classList.contains('hidden') || saveBtn.disabled)return;
+                if(!payload || !Array.isArray(payload.rounds))throw new Error('Invalid refresh');
+                var signature=JSON.stringify(payload);
+                if(signature!==payloadSignature){data=payload;payloadSignature=signature;render();}
+                document.getElementById('schedule-refresh-status').textContent='Live · updates every 10 seconds';
+            })
+            .catch(function(){document.getElementById('schedule-refresh-status').textContent='Connection interrupted · retrying automatically';})
+            .finally(function(){pollPending=false;});
+    }
+    document.getElementById('follow-live-schedule').addEventListener('change',function(){latestRequest++;refreshSchedule();});
+    window.setInterval(refreshSchedule,10000);
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshSchedule();});
+
+    function renderDetails() {
+        var help = document.getElementById('bracket-format-help');
+        help.textContent = data.mode === 'double' ? 'Winners advance along the solid paths. Dashed gold paths lead to the losers bracket. A grand-final reset appears when required.'
+            : data.mode === 'series' ? 'Best of '+data.best_of+' games. First to '+data.wins_required+' wins takes the series. Unneeded games are cancelled automatically.'
+            : data.mode === 'fixtures' ? 'Each round contains scheduled pairings. Standings update after every result; teams do not advance between fixtures.'
+            : data.preview ? 'Qualifier positions are a preview. Team names appear once qualification is decided.' : 'Follow the connecting lines from each match to the final.';
+        var container = document.getElementById('bracket-standings');
+        container.replaceChildren();
+        if (data.standings && data.standings.length) {
+            var table = el('table','w-full text-left text-xs');
+            var head = el('thead','bg-slate-50 text-slate-500');
+            var tr = el('tr');
+            ['Rank','Team / player','Played','Wins','Draws','Losses','Points'].forEach(function(label){tr.appendChild(el('th','px-3 py-2',label));});
+            head.appendChild(tr);table.appendChild(head);
+            var body = el('tbody');
+            data.standings.forEach(function(row){
+                var tr=el('tr','border-b border-slate-100');
+                ['rank','name','played','wins','draws','losses','total_points'].forEach(function(key){tr.appendChild(el('td','px-3 py-2',String(row[key])));});
+                body.appendChild(tr);
+            });
+            table.appendChild(body);container.appendChild(table);
+        }
+        var extra = document.getElementById('bracket-extra');extra.replaceChildren();
+        [{title: data.mode === 'elimination' && data.group_matches && data.group_matches[0] && data.group_matches[0].group === 'League' ? 'League fixtures' : 'Group-stage matches',matches:data.group_matches},{title:'Third-place match',matches:data.extra_matches}].forEach(function(section){
+            if (!section.matches || !section.matches.length) return;
+            extra.appendChild(el('h2','mb-3 mt-5 font-display text-lg font-bold',section.title));
+            var grid=el('div','grid gap-4 sm:grid-cols-2 lg:grid-cols-3');
+            section.matches.forEach(function(match){grid.appendChild(buildCard(match));});extra.appendChild(grid);
+        });
+    }
+
+    function highlightSearch() {
+        var query=search.value.trim().toLocaleLowerCase(), count=0;
+        document.querySelectorAll('.bracket-card[data-search]').forEach(function(card){
+            var hit=!!query && card.dataset.search.includes(query);
+            card.classList.toggle('bracket-search-hit',hit);if(hit)count++;
+        });
+        document.getElementById('bracket-search-count').textContent=query ? count+' matching match'+(count===1?'':'es') : '';
+    }
+    search.addEventListener('input',highlightSearch);
+    function setZoom(value) {
+        zoom=Math.max(.5,Math.min(1.5,value));stage.style.zoom=zoom;
+        document.getElementById('bracket-zoom-level').textContent=Math.round(zoom*100)+'%';drawLines();
+    }
+    document.getElementById('bracket-zoom-in').addEventListener('click',function(){setZoom(zoom+.1);});
+    document.getElementById('bracket-zoom-out').addEventListener('click',function(){setZoom(zoom-.1);});
+    document.getElementById('bracket-reset').addEventListener('click',function(){search.value='';highlightSearch();setZoom(1);stage.parentElement.scrollLeft=0;});
+
     function openModal(match) {
+        latestRequest++;
         currentMatch = match;
+        document.getElementById('bracket-result-help').textContent = (data.mode === 'fixtures' || match.group) ? 'Enter the final scores. Equal scores are recorded as a draw.' : 'The higher score wins. This match requires a winner; equal scores are not allowed.';
         form.action = match.recordUrl;
         document.getElementById('result-modal-title').textContent = match.label;
         document.getElementById('result-modal-meta').textContent =
@@ -304,6 +446,7 @@
                     return;
                 }
                 data = result.payload.bracket;
+                payloadSignature = JSON.stringify(data);
                 var advancedId = currentMatch && (currentMatch.next || 'champion');
                 closeModal();
                 render();
@@ -366,4 +509,5 @@
     <a href="{% url 'sport_event_detail' event.id %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Back to event</a>
 </div>
 {% endif %}
+
 {% endblock %}

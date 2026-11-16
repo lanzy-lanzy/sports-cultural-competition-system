@@ -36,7 +36,7 @@ class RegistrationTest(TestCase):
         self.sport_event = SportsEvent.objects.create(
             competition=self.competition,
             sport_type=self.sport_type,
-            name='Chess Singles',
+            name='Chess Singles', team_based=False,
             format=SportsEvent.Format.SINGLE_ELIMINATION,
             status=SportsEvent.Status.SCHEDULED,
         )
@@ -92,7 +92,7 @@ class RegistrationTest(TestCase):
         self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'approve'})
         self.assertEqual(self.sport_event.matches.count(), 0)
 
-    def test_approval_generates_matches_when_ready(self):
+    def test_approval_waits_for_explicit_fixture_generation(self):
         other_user = User.objects.create_user('athlete2', 'athlete2@example.com', 'pass')
         other_participant = Participant.objects.create(
             user=other_user,
@@ -119,11 +119,13 @@ class RegistrationTest(TestCase):
             {'action': 'approve'},
         )
         self.assertEqual(self.sport_event.matches.count(), 0)
-        # Second approval: 2 confirmed entries -> bracket auto-generated.
+        # Second approval confirms the second entry; registration remains open.
         self.client.post(
             reverse('registration_review', args=[EventRegistration.objects.get(registrant=other_user).id]),
             {'action': 'approve'},
         )
+        self.assertEqual(self.sport_event.matches.count(), 0)
+        self.client.post(reverse('generate_event_bracket', args=[self.sport_event.pk]))
         matches = list(self.sport_event.matches.all())
         self.assertEqual(len(matches), 1)
         match_entries = list(matches[0].entries.order_by('side'))
@@ -135,7 +137,7 @@ class RegistrationTest(TestCase):
         self.assertTrue(
             AuditLog.objects.filter(
                 action='BRACKET_GENERATED',
-                details__icontains='auto-generated',
+                details__icontains='Bracket generated',
             ).exists(),
         )
 
@@ -155,7 +157,7 @@ class RegistrationTest(TestCase):
         self.assertFalse(
             AuditLog.objects.filter(
                 action='BRACKET_GENERATED',
-                details__icontains='auto-generated',
+                details__icontains='Bracket generated',
             ).exists(),
         )
         self.assertListEqual(list(self.sport_event.matches.order_by('id')), [seeded_match])

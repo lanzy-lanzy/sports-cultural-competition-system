@@ -4,6 +4,7 @@ from . import views
 
 
 urlpatterns = [
+    path('sports/events/<int:event_id>/workflow/', views.tournament_action, name='tournament_action'),
     path('sports/hub/', views.sports_hub, name='sports_hub'),
     path('sports/matches/board/', views.match_board, name='match_board'),
     path('sports/', views.sport_type_list, name='sport_type_list'),

@@ -1,10 +1,15 @@
-from django.contrib.auth.models import User
+from datetime import timedelta
+from html.parser import HTMLParser
+
+from django.contrib.auth.models import AnonymousUser, User
 from django.core import mail
-from django.test import TestCase, override_settings
-from django.urls import reverse
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.urls import resolve, reverse
+from django.utils import timezone
 
 from competitions.models import Competition
 from judges.models import Judge, JudgeAssignment
+from .context_processors import NAV_GROUPS, active_nav
 from .models import UserProfile
 
 
@@ -140,3 +145,138 @@ class AccountTest(TestCase):
 
         self.assertContains(resp, '<span>Announcements</span>')
         self.assertContains(resp, '<span>Submit Protest</span>')
+
+
+class NavigationContextTests(SimpleTestCase):
+    def test_route_names_belong_to_only_one_navigation_group(self):
+        names = [name for group in NAV_GROUPS.values() for name in group]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_resolved_routes_select_their_own_navigation_group(self):
+        routes = [
+            ('results_list', [], 'results'),
+            ('competition_results_detail', [17], 'results'),
+            ('results_print', [17], 'results'),
+            ('round_results', [17, 3], 'results'),
+            ('overall_medal_tally', [], 'medal_tally'),
+            ('medal_tally', [17], 'medal_tally'),
+            ('award_list', [17], 'awards'),
+            ('reports_home', [], 'reports'),
+            ('export_medal_tally_csv', [], 'reports'),
+            ('print_medal_tally', [], 'reports'),
+            ('judge_dashboard', [], 'judge_dashboard'),
+            ('judge_profile', [], 'judge_profile'),
+            ('judge_history', [], 'judge_history'),
+        ]
+        for name, args, expected in routes:
+            with self.subTest(route=name):
+                path = reverse(name, args=args)
+                request = RequestFactory().get(path, {'category': 'sports'})
+                request.user = AnonymousUser()
+                request.resolver_match = resolve(path)
+                self.assertEqual(active_nav(request)['active_nav'], expected)
+
+    def test_unresolved_request_has_no_active_navigation(self):
+        request = RequestFactory().get('/')
+        request.user = AnonymousUser()
+        request.resolver_match = None
+        self.assertIsNone(active_nav(request)['active_nav'])
+
+
+class CurrentNavigationParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.current_links = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'a' and attrs.get('aria-current') == 'page':
+            self.current_links.append(attrs.get('href'))
+
+
+class NavigationRenderingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = User.objects.create_superuser('nav-admin', 'nav@example.com', None)
+        now = timezone.now()
+        cls.competition = Competition.objects.create(
+            name='Navigation Cup', description='Navigation page fixture',
+            status='ACTIVE', start_date=now, end_date=now + timedelta(days=1),
+            created_by=cls.admin,
+        )
+        cls.viewer = User.objects.create_user('nav-viewer')
+        cls.judge_user = User.objects.create_user('nav-judge')
+        UserProfile.objects.filter(user=cls.judge_user).update(role=UserProfile.Role.JUDGE)
+        Judge.objects.create(user=cls.judge_user, phone='123', status='ACTIVE')
+
+    def assert_current_link(self, response, expected_route):
+        self.assertEqual(response.status_code, 200)
+        parser = CurrentNavigationParser()
+        parser.feed(response.content.decode())
+        self.assertEqual(parser.current_links, [reverse(expected_route)])
+
+    def test_management_results_tally_and_reports_have_one_active_link(self):
+        self.client.force_login(self.admin)
+        routes = [
+            ('results_list', [], 'results_list'),
+            ('competition_results_detail', [self.competition.pk], 'results_list'),
+            ('overall_medal_tally', [], 'overall_medal_tally'),
+            ('medal_tally', [self.competition.pk], 'overall_medal_tally'),
+            ('reports_home', [], 'reports_home'),
+        ]
+        for name, args, selected in routes:
+            with self.subTest(route=name):
+                response = self.client.get(reverse(name, args=args))
+                self.assert_current_link(response, selected)
+
+    def test_filtered_tally_keeps_selection_and_filtered_export(self):
+        self.client.force_login(self.admin)
+        for category in ('sports', 'cultural'):
+            with self.subTest(category=category):
+                response = self.client.get(reverse('overall_medal_tally'), {'category': category})
+                self.assert_current_link(response, 'overall_medal_tally')
+                self.assertContains(response, f'{reverse("export_medal_tally_csv")}?category={category}')
+                self.assertContains(response, 'Clear filter')
+
+    def test_viewer_results_navigation_and_empty_state(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(reverse('results_list'))
+        self.assert_current_link(response, 'results_list')
+        self.assertContains(response, 'No Results Available')
+        self.assertNotContains(response, 'id="view-grid-btn"')
+        self.assertNotContains(response, 'id="view-table-btn"')
+
+    def test_judge_profile_and_history_select_their_own_links(self):
+        self.client.force_login(self.judge_user)
+        for name in ('judge_dashboard', 'judge_profile', 'judge_history'):
+            with self.subTest(route=name):
+                self.assert_current_link(self.client.get(reverse(name)), name)
+
+    def test_records_pages_share_visual_components(self):
+        self.client.force_login(self.admin)
+        for name, args in (
+            ('results_list', []), ('overall_medal_tally', []),
+            ('medal_tally', [self.competition.pk]), ('reports_home', []),
+        ):
+            with self.subTest(route=name):
+                response = self.client.get(reverse(name, args=args))
+                self.assertContains(response, 'records-page')
+                self.assertContains(response, 'records-hero')
+                self.assertContains(response, 'records-panel')
+
+    def test_results_preserve_view_controls_and_pagination(self):
+        self.client.force_login(self.admin)
+        now = timezone.now()
+        for index in range(9):
+            Competition.objects.create(
+                name=f'Competition {index}', description='Pagination fixture',
+                start_date=now, end_date=now + timedelta(days=1), created_by=self.admin,
+            )
+        response = self.client.get(reverse('results_list'))
+        self.assertContains(response, '10 competitions')
+        for element_id in ('view-grid-btn', 'view-table-btn', 'grid-view', 'table-view'):
+            self.assertContains(response, f'id="{element_id}"')
+        response = self.client.get(reverse('results_list'), {'page': 2})
+        self.assert_current_link(response, 'results_list')
+        self.assertEqual(len(response.context['competition_results']), 1)
+        self.assertContains(response, '10 competitions')

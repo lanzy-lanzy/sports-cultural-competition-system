@@ -43,7 +43,7 @@ def register_for_event(request):
             competition=form.cleaned_data['competition'],
             sport_event=form.cleaned_data['sport_event'],
             team=team,
-            participant=participant,
+            participant=None if team else participant,
         )
         messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
         return redirect('my_registrations')
@@ -139,7 +139,11 @@ def registration_review(request, registration_id):
             )
             messages.success(request, f'Registration for {registration.contestant_name} is now under review.')
     elif action == 'approve':
-        approved = approve_registration(registration, request.user, admin_notes)
+        try:
+            approved = approve_registration(registration, request.user, admin_notes)
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('registration_review', registration_id=registration.pk)
         from audit.models import record_action_from_request
         record_action_from_request(
             request,

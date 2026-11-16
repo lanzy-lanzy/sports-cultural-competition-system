@@ -47,6 +47,15 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
 
+            <section class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+                <h2 class="text-base font-bold">Tournament rules</h2>
+                <p class="text-sm text-slate-500">Entries are seeded in registration order. Fixture generation closes registration. Rules lock once fixtures exist.</p>
+                <div class="grid gap-4 sm:grid-cols-2">
+                {% for field in form %}{% if field.name in 'cycles,playoff_count,grand_final_reset,best_of,group_count,qualifiers_per_group,win_points,draw_points,loss_points,bronze_policy,tiebreakers' %}
+                <div data-rule="{{ field.name }}"><label class="mb-1 block text-sm font-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p></div>
+                {% endif %}{% endfor %}
+                </div>
+            </section>
             {# ===== Step 1 — Identity ===== #}
             <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <header class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-moss/60 to-white px-6 py-4">
@@ -161,7 +170,7 @@
                     <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pine text-sm font-bold text-white">3</span>
                     <div>
                         <h2 class="font-display text-base font-bold text-ink">Rules &amp; notes</h2>
-                        <p class="text-xs text-slate-500">Shared with judges and shown on the event page.</p>
+                        <p class="text-xs text-slate-500">Shared with teams, players and tournament staff on the event page.</p>
                     </div>
                     <svg class="ml-auto h-6 w-6 text-teal-300" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 9h8" /><path d="M8 13h6" /><path d="M9 18h-3a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-3l-3 3l-3 -3z" /></svg>
                 </header>
@@ -364,6 +373,25 @@
     }
 
     refresh();
+})();
+</script>
+<script>
+(function () {
+    const format = document.querySelector('[name="format"]');
+    function rules() {
+        const value = format.value;
+        document.querySelectorAll('[data-rule]').forEach(function (wrap) {
+            const name = wrap.dataset.rule;
+            const table = ['ROUND_ROBIN', 'LEAGUE', 'GROUP_STAGE'].includes(value);
+            let visible = name === 'bronze_policy' || (table && ['cycles', 'win_points', 'draw_points', 'loss_points', 'tiebreakers'].includes(name));
+            if (name === 'playoff_count') visible = value === 'LEAGUE';
+            if (name === 'grand_final_reset') visible = value === 'DOUBLE_ELIMINATION';
+            if (name === 'best_of') visible = value === 'BEST_OF';
+            if (['group_count', 'qualifiers_per_group'].includes(name)) visible = value === 'GROUP_STAGE';
+            wrap.hidden = !visible;
+        });
+    }
+    if (format) { format.addEventListener('change', rules); rules(); }
 })();
 </script>
 {% endblock %}

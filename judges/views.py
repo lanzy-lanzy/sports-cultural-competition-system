@@ -28,7 +28,7 @@ def judge_profile(request):
         messages.success(request, 'Profile updated successfully!')
         return redirect('judge_profile')
 
-    assignments = JudgeAssignment.objects.filter(judge=judge).select_related('competition').order_by('-assigned_at')
+    assignments = JudgeAssignment.objects.filter(judge=judge).exclude(competition__kind=Competition.Kind.SPORTS).select_related('competition').order_by('-assigned_at')
     for assignment in assignments:
         assignment.rounds_list = assignment.rounds.all().order_by('order')
 
@@ -41,7 +41,7 @@ def judge_profile(request):
 
 @management_required
 def judge_management(request):
-    competitions = Competition.objects.all().order_by('-id')
+    competitions = Competition.objects.exclude(kind=Competition.Kind.SPORTS).order_by('-id')
     for competition in competitions:
         competition.judge_count = JudgeAssignment.objects.filter(competition=competition).count()
 
@@ -56,7 +56,7 @@ def judge_management(request):
 
 @management_required
 def manage_judges(request, competition_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     assignments = JudgeAssignment.objects.filter(competition=competition).order_by('id')
     page_obj = Paginator(assignments, 10).get_page(request.GET.get('page'))
     available_judges = Judge.objects.filter(status='ACTIVE')
@@ -74,7 +74,7 @@ def manage_judges(request, competition_id):
 
 @management_required
 def assign_judges(request, competition_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
 
     if request.method == 'POST':
         judge_ids = request.POST.getlist('judges')
@@ -89,7 +89,10 @@ def assign_judges(request, competition_id):
             return redirect('manage_judges', competition_id=competition_id)
 
         judges = Judge.objects.filter(id__in=judge_ids)
-        rounds = Round.objects.filter(id__in=round_ids)
+        rounds = Round.objects.filter(id__in=round_ids, competition=competition)
+        if not rounds.exists():
+            messages.error(request, 'Select rounds belonging to this judged competition.')
+            return redirect('manage_judges', competition_id=competition.pk)
 
         for judge in judges:
             assignment, created = JudgeAssignment.objects.get_or_create(
@@ -115,7 +118,7 @@ def assign_judges(request, competition_id):
 
 @management_required
 def edit_judge_assignment(request, competition_id, assignment_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     assignment = get_object_or_404(JudgeAssignment, id=assignment_id, competition=competition)
 
     if request.method == 'POST':
@@ -126,7 +129,10 @@ def edit_judge_assignment(request, competition_id, assignment_id):
             messages.error(request, 'Please select at least one round.')
             return redirect('edit_judge_assignment', competition_id=competition_id, assignment_id=assignment_id)
 
-        rounds = Round.objects.filter(id__in=round_ids)
+        rounds = Round.objects.filter(id__in=round_ids, competition=competition)
+        if not rounds.exists():
+            messages.error(request, 'Select rounds belonging to this judged competition.')
+            return redirect('manage_judges', competition_id=competition.pk)
         assignment.rounds.set(rounds)
         assignment.status = status
         assignment.save()
@@ -145,6 +151,7 @@ def edit_judge_assignment(request, competition_id, assignment_id):
 
 @management_required
 def delete_judge_assignment(request, competition_id, assignment_id):
+    get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     assignment = get_object_or_404(JudgeAssignment, id=assignment_id, competition_id=competition_id)
     assignment.delete()
     messages.success(request, 'Judge assignment deleted successfully.')
@@ -157,7 +164,7 @@ def judge_history(request):
 
     assigned_round_ids = JudgeAssignment.objects.filter(
         judge=judge
-    ).values_list('rounds__id', flat=True)
+    ).exclude(competition__kind=Competition.Kind.SPORTS).values_list('rounds__id', flat=True)
 
     rounds = Round.objects.filter(
         id__in=assigned_round_ids
@@ -220,7 +227,7 @@ def judge_dashboard(request):
         status='ACTIVE',
         judge_assignments__judge=judge,
         judge_assignments__status='ACTIVE'
-    ).prefetch_related('rounds')
+    ).exclude(kind=Competition.Kind.SPORTS).prefetch_related('rounds')
 
     competition_data = []
     for competition in assigned_competitions:
@@ -237,7 +244,7 @@ def judge_dashboard(request):
     context = {
         'judge': judge,
         'competition_data': competition_data,
-        'pending_scores': Score.objects.filter(judge=judge, status='DRAFT').count(),
-        'submitted_scores': Score.objects.filter(judge=judge, status='SUBMITTED').count(),
+        'pending_scores': Score.objects.filter(judge=judge, status='DRAFT').exclude(criterion__round__competition__kind=Competition.Kind.SPORTS).count(),
+        'submitted_scores': Score.objects.filter(judge=judge, status='SUBMITTED').exclude(criterion__round__competition__kind=Competition.Kind.SPORTS).count(),
     }
     return render(request, 'judges/judge/dashboard.html', context)

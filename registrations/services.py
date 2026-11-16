@@ -9,6 +9,11 @@ from .models import EventRegistration
 
 @transaction.atomic
 def approve_registration(registration, reviewer, admin_notes=''):
+    if registration.sport_event_id:
+        from sports.models import SportsEvent
+        event = SportsEvent.objects.select_for_update().get(pk=registration.sport_event_id)
+        if event.matches.exists() or event.status in ('COMPLETED', 'CANCELLED'):
+            raise ValueError('Registration is closed because event fixtures are locked.')
     registration.status = EventRegistration.Status.APPROVED
     registration.reviewed_by = reviewer
     registration.reviewed_at = timezone.now()
@@ -19,25 +24,19 @@ def approve_registration(registration, reviewer, admin_notes=''):
     bracket_generated = False
     if registration.sport_event_id:
         event = registration.sport_event
-        EventEntry.objects.get_or_create(
+        if bool(registration.team_id) != event.team_based:
+            raise ValueError('The registration contestant type does not match the event.')
+        if event.max_teams and event.entries.exclude(status='WITHDRAWN').count() >= event.max_teams:
+            raise ValueError('The event has reached its entry cap.')
+        entry, _ = EventEntry.objects.get_or_create(
             event=registration.sport_event,
             team=registration.team,
             participant=registration.participant,
             defaults={'status': EventEntry.Status.CONFIRMED},
         )
-        # Matches only exist once a bracket is generated. Auto-generate it when
-        # this approval gives the event enough confirmed entries and no bracket
-        # exists yet; keep any existing bracket intact to protect results.
-        from sports.services import maybe_auto_generate_bracket
-        if maybe_auto_generate_bracket(event):
-            bracket_generated = True
-            from audit.models import record_action
-            record_action(
-                reviewer,
-                'BRACKET_GENERATED',
-                target=event,
-                details=f'Bracket auto-generated for {event.name} after registration approval',
-            )
+        if entry.status != EventEntry.Status.CONFIRMED:
+            entry.status = EventEntry.Status.CONFIRMED
+            entry.save(update_fields=['status'])
     elif registration.participant_id and registration.competition_id:
         if not ParticipantCompetition.objects.filter(
             participant=registration.participant,

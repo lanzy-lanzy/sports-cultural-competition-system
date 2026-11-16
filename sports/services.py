@@ -124,13 +124,14 @@ def _generate_round_robin(event, group=None):
         teams.append(None)
 
     rounds_pairs = []
-    for _ in range(n - 1):
+    for _ in range(len(teams) - 1):
         pairs = []
         for i in range(len(teams) // 2):
             pairs.append((teams[i], teams[len(teams) - 1 - i]))
         rounds_pairs.append(pairs)
         teams = [teams[0]] + [teams[-1]] + teams[1:-1]
 
+    rounds_pairs = rounds_pairs * event.cycles
     match_num = 1
     for round_number, pairs in enumerate(rounds_pairs, start=1):
         for entry_a, entry_b in pairs:
@@ -154,13 +155,9 @@ def _generate_group_stage(event):
     if n < 2:
         return
 
-    if n <= 4:
-        group_count = 1
-    elif n <= 8:
-        group_count = 2
-    else:
-        group_count = 4
-    group_count = min(group_count, n)
+    group_count = event.group_count
+    if group_count < 1 or n // group_count < max(2, event.qualifiers_per_group):
+        raise ValueError('Each group needs at least two entries and enough entries for the configured qualifiers.')
 
     groups = [[] for _ in range(group_count)]
     for idx, entry in enumerate(entries):
@@ -181,7 +178,7 @@ def _generate_group_stage(event):
             team_list = [team_list[0]] + [team_list[-1]] + team_list[1:-1]
 
         match_num = 1
-        for round_number, pairs in enumerate(pairs_rounds, start=1):
+        for round_number, pairs in enumerate(pairs_rounds * event.cycles, start=1):
             for entry_a, entry_b in pairs:
                 if entry_a is None or entry_b is None:
                     continue
@@ -199,20 +196,13 @@ def _generate_group_stage(event):
 def _generate_double_elimination(event):
     """Build a winners/losers bracket plus a grand final.
 
-    Requires a power-of-two number of confirmed entries to guarantee a balanced
-    losers bracket with no dead slots.
+    Pads the draw to the next power of two and advances empty feeder paths as byes.
     """
     entries = list(event.entries.filter(status='CONFIRMED').order_by('seed', 'id'))
     n = len(entries)
     if n < 2:
         return []
-    if n & (n - 1):
-        raise ValueError(
-            'Double elimination requires a power-of-two number of confirmed entries '
-            '(2, 4, 8, ...). Add or withdraw entries first, or use another format.'
-        )
-
-    size = n
+    size = 2 ** math.ceil(math.log2(n))
     k = int(math.log2(size))
     order = _seed_order(size)
     seed_map = {i + 1: entry for i, entry in enumerate(entries)}
@@ -287,8 +277,13 @@ def _advance_double_elim(match, winner, loser, event):
     grand = event.matches.filter(name='Grand Final').first()
     round_no = match.round_number
 
+    if match.name == 'Grand Final Reset':
+        return
     if grand is not None and round_no == grand.round_number:
-        # Grand final decided the champion.
+        if winner and winner.side == 2 and event.grand_final_reset:
+            reset, _ = Match.objects.get_or_create(event=event, name='Grand Final Reset', defaults={'round_number': grand.round_number + 1})
+            _place_entry(reset, winner, 2)
+            _place_entry(reset, loser, 1)
         return
 
     if round_no <= k:
@@ -298,9 +293,11 @@ def _advance_double_elim(match, winner, loser, event):
             # WB final: winner -> grand (side 1), loser -> last LB round (side 2).
             if grand is not None:
                 _place_entry(grand, winner, 1)
-            last_lb = event.matches.filter(round_number=3 * k - 2).order_by('id').first()
+            last_lb = event.matches.filter(round_number=3 * k - 2, name__startswith='LB Round').order_by('id').first()
             if last_lb is not None:
                 _place_entry(last_lb, loser, 2)
+            elif grand is not None:
+                _place_entry(grand, loser, 2)
             return
         _advance_winner(match, winner)
         peers = list(Match.objects.filter(event=event, round_number=round_no).order_by('id'))
@@ -308,7 +305,7 @@ def _advance_double_elim(match, winner, loser, event):
             idx = peers.index(match)
         except ValueError:
             return
-        lb_round = list(event.matches.filter(round_number=k + 2 * r + 1).order_by('id'))
+        lb_round = list(event.matches.filter(round_number=k + (1 if r == 0 else 2 * r)).order_by('id'))
         if r == 0:
             lb_match = lb_round[idx // 2]
             side = (idx % 2) + 1
@@ -340,38 +337,49 @@ def _advance_double_elim(match, winner, loser, event):
 
 @transaction.atomic
 def generate_bracket(event):
+    event = SportsEvent.objects.select_for_update().get(pk=event.pk)
+    if event.status in ('COMPLETED', 'CANCELLED'):
+        raise ValueError('Reopen this event before generating fixtures.')
     if event.matches.exists():
         raise ValueError('A bracket has already been generated. Delete existing matches first.')
+    if event.playoff_count and event.format == 'LEAGUE' and event.confirmed_count < event.playoff_count:
+        raise ValueError('There are fewer entries than the playoff qualifier count.')
+    if event.cycles not in (1, 2):
+        raise ValueError('Use a single or double round schedule.')
+    if event.max_teams and event.confirmed_count > event.max_teams:
+        raise ValueError('The confirmed entries exceed the event entry cap.')
+    if event.format == 'LEAGUE' and event.playoff_count not in (0, 2, 4, 8):
+        raise ValueError('Choose no playoffs, or a top 2, 4 or 8 playoff.')
     if not event.can_generate_bracket():
         raise ValueError('At least two confirmed entries are required to generate a bracket.')
 
     if event.format in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT):
         _build_elimination_matches(event)
-    elif event.format == SportsEvent.Format.ROUND_ROBIN:
-        _generate_round_robin(event)
+    elif event.format in (SportsEvent.Format.ROUND_ROBIN, SportsEvent.Format.LEAGUE):
+        _generate_round_robin(event, group='League' if event.format == 'LEAGUE' and event.playoff_count else None)
     elif event.format == SportsEvent.Format.DOUBLE_ELIMINATION:
         _generate_double_elimination(event)
+        _resolve_double_byes(event)
     elif event.format == SportsEvent.Format.GROUP_STAGE:
         _generate_group_stage(event)
+    elif event.format == SportsEvent.Format.BEST_OF:
+        entries = list(event.entries.filter(status='CONFIRMED').order_by('seed', 'id'))
+        if len(entries) != 2 or event.best_of % 2 != 1 or not 1 <= event.best_of <= 15:
+            raise ValueError('Best-of Series requires exactly two entries and an odd game count from 1 to 15.')
+        for game in range(1, event.best_of + 1):
+            match = Match.objects.create(event=event, name=f'Game {game}', round_number=game)
+            for side, entry in enumerate(entries, 1):
+                _place_entry(match, entry, side)
     else:
         raise ValueError(f'Bracket generation is not supported for {event.get_format_display()}.')
+    event.status = 'READY'
+    event.save(update_fields=['status'])
 
 
 def maybe_auto_generate_bracket(event):
-    """Generate a bracket automatically once the event is ready.
-
-    Used when registrations are approved so matches appear without a manual
-    click. A no-op when matches already exist (protects recorded results) or
-    when the event cannot generate a bracket yet (too few entries, unsupported
-    format...). Returns True when a bracket was generated.
-    """
-    if event.matches.exists():
-        return False
-    try:
-        generate_bracket(event)
-        return True
-    except ValueError:
-        return False
+    """Compatibility hook: approvals leave registration open until staff generate fixtures."""
+    # Coordinators generate fixtures explicitly after registration closes.
+    return False
 
 
 def _entry_matches_query(event, entry, group=None, knockout_only=False):
@@ -389,7 +397,12 @@ def _entry_matches_query(event, entry, group=None, knockout_only=False):
 
 def _round_robin_standings(event, group=None):
     rows = []
-    for entry in event.entries.filter(status='CONFIRMED'):
+    candidates = event.entries.filter(status='CONFIRMED')
+    if group:
+        from django.db.models import Q
+        matches = event.matches.filter(group=group)
+        candidates = candidates.filter(Q(team_id__in=matches.values('entries__team_id')) | Q(participant_id__in=matches.values('entries__participant_id')))
+    for entry in candidates:
         completed = list(_entry_matches_query(event, entry, group=group).distinct())
         played = len(completed)
         wins = 0
@@ -406,7 +419,7 @@ def _round_robin_standings(event, group=None):
                  or (entry.participant_id and me.participant_id == entry.participant_id)),
                 None,
             )
-            opponent = next((me for me in match_entries if me.id != own.id), None)
+            opponent = next((me for me in match_entries if own and me.id != own.id), None)
             if own is None or own.score is None:
                 continue
             if own.is_winner:
@@ -419,7 +432,7 @@ def _round_robin_standings(event, group=None):
             if opponent and opponent.score is not None:
                 points_against += opponent.score
 
-        total_points = wins * 3 + draws
+        total_points = wins * event.win_points + draws * event.draw_points + losses * event.loss_points
         point_diff = points_for - points_against
         rows.append({
             'entry': entry,
@@ -434,9 +447,9 @@ def _round_robin_standings(event, group=None):
             'total_points': total_points,
         })
 
-    rows.sort(key=lambda row: (-row['total_points'], -row['point_diff'], -row['points_for']))
-    for idx, row in enumerate(rows, start=1):
-        row['rank'] = idx
+    from .workflow import rank_table
+    rows = rank_table(event, rows, group)
+
     return rows
 
 
@@ -446,7 +459,9 @@ def compute_elimination_standings(event):
     The champion ranks first, followed by the runner-up, then contestants ordered
     by how deep into the bracket they were eliminated.
     """
-    final_round = event.matches.aggregate(Max('round_number'))['round_number__max'] or 0
+    from .workflow import final_match
+    deciding = final_match(event)
+    final_round = deciding.round_number if deciding else 0
     has_groups = event.matches.filter(group__isnull=False).exists()
 
     entries = event.entries.filter(status='CONFIRMED')
@@ -490,7 +505,7 @@ def compute_elimination_standings(event):
 
         is_champion = False
         for match in completed:
-            if match.round_number != final_round:
+            if not deciding or match.pk != deciding.pk:
                 continue
             own = next(
                 (me for me in match.entries.all()
@@ -524,12 +539,29 @@ def compute_elimination_standings(event):
             rank = idx
             row['rank'] = rank
         previous_key = key
+    from .workflow import proposed_podium
+    try:
+        podium = proposed_podium(event)
+    except ValueError:
+        podium = []
+    placement = {(e.team_id, e.participant_id): (dict(gold=1, silver=2, bronze=3)[medal], medal) for e, medal in podium}
+    for row in rows:
+        confirmed = placement.get((row['entry'].team_id, row['entry'].participant_id))
+        if confirmed:
+            row['rank'] = confirmed[0]
+            row['result'] = {'gold': 'Champion', 'silver': 'Runner-up', 'bronze': 'Third place'}[confirmed[1]]
+            row['is_champion'] = confirmed[1] == 'gold'
+        elif podium:
+            row['rank'] = max(row['rank'], len(podium) + 1)
+    rows.sort(key=lambda r: r['rank'])
     return rows
 
 
 def compute_standings(event):
     """Standings appropriate to the event format."""
-    if event.format in (SportsEvent.Format.ROUND_ROBIN, SportsEvent.Format.GROUP_STAGE):
+    if event.format == 'LEAGUE' and event.playoff_count and event.matches.filter(group__isnull=True).exists():
+        return compute_elimination_standings(event)
+    if event.format in (SportsEvent.Format.ROUND_ROBIN, SportsEvent.Format.LEAGUE, SportsEvent.Format.GROUP_STAGE, SportsEvent.Format.BEST_OF):
         return _round_robin_standings(event)
     return compute_elimination_standings(event)
 
@@ -539,7 +571,7 @@ def compute_group_standings(event, group_name):
 
 
 def _group_qualifiers(event):
-    """Top two entries of each group, ordered by group letter then points."""
+    """Configured qualifiers from each group, ordered by group then standings."""
     groups = (
         Match.objects.filter(event=event, group__isnull=False)
         .values_list('group', flat=True)
@@ -549,7 +581,10 @@ def _group_qualifiers(event):
     qualifiers = []
     for group_name in groups:
         rows = compute_group_standings(event, group_name)
-        qualifiers.extend(row['entry'] for row in rows[:2])
+
+        if len(rows) > event.qualifiers_per_group and rows[event.qualifiers_per_group - 1]['rank'] == rows[event.qualifiers_per_group]['rank']:
+            raise ValueError('Resolve the tied group qualification positions before creating the knockout stage.')
+        qualifiers.extend(row['entry'] for row in rows[:event.qualifiers_per_group])
     return qualifiers
 
 
@@ -563,7 +598,7 @@ def compute_group_stage_standings(event):
     ):
         rows = compute_group_standings(event, group_name)
         for idx, row in enumerate(rows):
-            row['qualifies'] = idx < 2
+            row['qualifies'] = idx < event.qualifiers_per_group
         groups.append({'group': group_name, 'rows': rows})
 
     knockout = None
@@ -584,19 +619,27 @@ def group_stage_overview(event):
 
 
 @transaction.atomic
-def record_match_result(match, scores, notes=None):
+def record_match_result(match, scores, notes=None, forfeited_side=None):
     """Record final scores for a match and advance winners in bracket formats.
 
     ``scores`` maps side -> Decimal (or str). At least one side must win; equal
     scores are treated as a draw (which cannot advance in elimination formats).
     """
-    if match.status == Match.Status.COMPLETED:
+    event = SportsEvent.objects.select_for_update().get(pk=match.event_id)
+    match = Match.objects.select_for_update().get(pk=match.pk)
+    if event.status in ('COMPLETED', 'CANCELLED'):
+        raise ValueError('Reopen the event before changing match results.')
+    if match.status in (Match.Status.COMPLETED, Match.Status.CANCELLED):
         raise ValueError('This match has already been completed.')
 
     entries = list(match.entries.all())
     if len(entries) != 2:
         raise ValueError('A match must have exactly two contestants to record a result.')
 
+    if forfeited_side is not None:
+        if forfeited_side not in (1, 2):
+            raise ValueError('Choose the forfeiting side.')
+        scores = {1: 0 if forfeited_side == 1 else 1, 2: 0 if forfeited_side == 2 else 1}
     parsed = {}
     for side in (1, 2):
         raw = scores.get(side)
@@ -606,11 +649,16 @@ def record_match_result(match, scores, notes=None):
             value = Decimal(str(raw))
         except Exception:
             raise ValueError('Scores must be valid numbers.') from None
+        if not value.is_finite() or value > Decimal('9999.99'):
+            raise ValueError('Scores must be finite numbers no larger than 9999.99.')
         if value < 0:
             raise ValueError('Scores cannot be negative.')
         parsed[side] = value.quantize(Decimal('0.01'))
 
-    event = match.event
+    if parsed[1] == parsed[2] and not (event.format == 'ROUND_ROBIN' or (event.format == 'LEAGUE' and (not event.playoff_count or match.group)) or match.group):
+        raise ValueError('A deciding match cannot finish as a draw.')
+    if event.format == 'BEST_OF' and event.matches.filter(round_number__lt=match.round_number).exclude(status='COMPLETED').exists():
+        raise ValueError('Finish the preceding series games first.')
 
     with transaction.atomic():
         by_side = {entry.side: entry for entry in entries}
@@ -632,21 +680,38 @@ def record_match_result(match, scores, notes=None):
         first.save(update_fields=['is_winner', 'is_draw'])
         second.save(update_fields=['is_winner', 'is_draw'])
 
+        if match.group or event.format in ('ROUND_ROBIN', 'BEST_OF') or (event.format == 'LEAGUE' and not event.playoff_count):
+            event.tie_resolution = []
+            event.save(update_fields=['tie_resolution'])
+        match.forfeited_side = forfeited_side
         if notes is not None:
             match.notes = notes
         match.status = Match.Status.COMPLETED
-        match.save(update_fields=['status', 'notes', 'updated_at'])
+        match.save(update_fields=['status', 'notes', 'forfeited_side', 'updated_at'])
 
         winner = match.winner
         loser = first if second.is_winner else second if first.is_winner else None
         if winner is not None:
             if event.format == SportsEvent.Format.DOUBLE_ELIMINATION:
                 _advance_double_elim(match, winner, loser, event)
+                _resolve_double_byes(event)
             else:
                 _advance_winner(match, winner)
 
         if event.format == SportsEvent.Format.GROUP_STAGE and match.group:
-            _maybe_generate_group_knockout(event)
+            try:
+                _maybe_generate_group_knockout(event)
+            except ValueError:
+                pass  # Qualification ties remain visible for coordinator resolution.
+
+        if event.format == 'LEAGUE' and event.playoff_count:
+            try:
+                _maybe_generate_league_playoffs(event)
+            except ValueError:
+                pass
+
+        from .workflow import update_progress
+        update_progress(event)
 
         return match
 
@@ -663,8 +728,14 @@ def _maybe_generate_group_knockout(event):
             _build_elimination_matches(event, entries=qualifiers, start_round=2)
 
 
+@transaction.atomic
 def delete_bracket(event):
+    event = SportsEvent.objects.select_for_update().get(pk=event.pk)
+    if event.confirmed_at or event.matches.filter(status='COMPLETED', entries__score__isnull=False).exists():
+        raise ValueError('Played fixtures cannot be deleted. Reopen and correct results instead.')
     event.matches.all().delete()
+    event.status = 'REGISTRATION'
+    event.save(update_fields=['status'])
 
 
 def match_overview(event):
@@ -686,26 +757,10 @@ def event_podium(event):
     gold, silver, bronze, where ``medal`` is one of :data:`PODIUM_MEDALS`.
     Events with fewer than two finishers return a partial or empty podium.
     """
-    matches = event.matches.all()
-    if not matches.exists():
+    event = SportsEvent.objects.get(pk=event.pk)
+    if event.status != 'COMPLETED' or not event.confirmed_at:
         return []
-    if matches.exclude(status=Match.Status.COMPLETED).exists():
-        return []
-
-    if event.format == SportsEvent.Format.GROUP_STAGE:
-        # The knockout stage decides the medals, not the group tables.
-        standings = compute_group_stage_standings(event)['knockout'] or []
-    else:
-        standings = compute_standings(event)
-
-    podium = []
-    for medal, position in zip(PODIUM_MEDALS, (1, 2, 3)):
-        # Ties share a rank, so take the first row holding that position.
-        for row in standings:
-            if row['rank'] == position:
-                podium.append((row['entry'], medal))
-                break
-    return podium
+    return [(award.entry, award.medal) for award in event.confirmed_awards.select_related('entry__team', 'entry__participant').order_by('id')]
 
 
 def find_venue_conflicts(venue, scheduled_start, scheduled_end, exclude_id=None):
@@ -721,3 +776,56 @@ def find_venue_conflicts(venue, scheduled_start, scheduled_end, exclude_id=None)
     if exclude_id is not None:
         queryset = queryset.exclude(id=exclude_id)
     return list(queryset.select_related('event', 'event__sport_type', 'venue')[:20])
+
+def _maybe_generate_league_playoffs(event):
+    regular = event.matches.filter(group='League')
+    if not regular.exists() or regular.exclude(status='COMPLETED').exists() or event.matches.filter(group__isnull=True).exists():
+        return
+    rows = _round_robin_standings(event, group='League')
+    count = event.playoff_count
+    if len(rows) > count and rows[count - 1]['rank'] == rows[count]['rank']:
+        raise ValueError('Resolve the tied league qualification positions first.')
+    # Seeding positions also affect the draw and must be resolved explicitly.
+    if len({r['rank'] for r in rows[:count]}) != count:
+        raise ValueError('Resolve tied playoff seeds first.')
+    start = (event.matches.aggregate(Max('round_number'))['round_number__max'] or 0) + 1
+    _build_elimination_matches(event, [r['entry'] for r in rows[:count]], start_round=start)
+
+
+def _resolve_double_byes(event):
+    """Advance a vacant path only after every possible feeder is resolved."""
+    k, _ = _double_elim_rounds(event)
+    grand = event.matches.filter(name='Grand Final').get()
+    matches = list(event.matches.exclude(name='Grand Final Reset').order_by('round_number', 'id'))
+    sources = {m.pk: set() for m in matches}
+    for match in matches:
+        if match.next_match_id:
+            sources[match.next_match_id].add(match.pk)
+        if match.name.startswith('WB Round'):
+            r = match.round_number - 1
+            peers = [m for m in matches if m.round_number == match.round_number]
+            index = peers.index(match)
+            if r == k - 1:
+                target = next((m for m in matches if m.round_number == 3 * k - 2 and m.name.startswith('LB Round')), grand)
+            else:
+                targets = [m for m in matches if m.round_number == k + (1 if r == 0 else 2 * r)]
+                target = targets[index // 2 if r == 0 else index]
+            sources[target.pk].add(match.pk)
+    while True:
+        completed = set(event.matches.filter(status='COMPLETED').values_list('pk', flat=True))
+        changed = False
+        for match in event.matches.exclude(status='COMPLETED').exclude(name='Grand Final Reset').order_by('round_number', 'id'):
+            entries = list(match.entries.all())
+            if len(entries) >= 2 or not sources[match.pk] <= completed:
+                continue
+            match.status = 'COMPLETED'
+            match.notes = 'Automatic bye; feeder paths resolved.'
+            match.save(update_fields=['status', 'notes'])
+            winner = entries[0] if entries else None
+            if winner:
+                winner.is_winner = True
+                winner.save(update_fields=['is_winner'])
+            _advance_double_elim(match, winner, None, event)
+            changed = True
+        if not changed:
+            break

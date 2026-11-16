@@ -66,18 +66,10 @@ VENUES = [
 ]
 
 TEAMS = [
-    ('Green Warriors', 'green', 'Athletic delegation with real depth at basketball and volleyball.'),
-    ('Crimson Tide', 'red', 'Recruited mostly from the engineering program.'),
-    ('Azure Falcons', 'blue', 'Fast breaks and an aggressive pressing defence.'),
-    ('Golden Suns', 'gold', 'Consistent performers who always clear the group stage.'),
-    ('Violet Vipers', 'purple', 'Led by the reigning campus chess champion.'),
-    ('Royal Knights', 'navy', 'A very strong serving team in volleyball.'),
-    ('Cobalt Comets', 'teal', 'New program working toward a semifinal berth.'),
-    ('Scarlet Stallions', 'maroon', 'Heavily supported by the criminology block.'),
-    ('Jade Jaguars', 'forest', 'Athletics powerhouse with sepak takraw veterans.'),
-    ('Orange Octopus', 'orange', 'Esports squad that also fields a sepak takraw side.'),
-    ('Pearl Panthers', 'white', 'Table tennis specialists who train after class.'),
-    ('Maroon Marauders', 'maroon', 'Mixed delegation with an open roster policy.'),
+    ('SAFES', 'green', 'SAFES sports delegation.'),
+    ('SOCJE', 'red', 'SOCJE sports delegation.'),
+    ('STE', 'blue', 'STE sports delegation.'),
+    ('SCS', 'gold', 'SCS sports delegation.'),
 ]
 
 # Five roster members per team, in jersey number order.
@@ -180,7 +172,7 @@ EVENT_SPECS = [
         gender='male', category='OPEN',
         event_format=SportsEvent.Format.SINGLE_ELIMINATION, team_based=True,
         venue='Main Gymnasium', day_offset=0, days=2, duration=100, turnaround=40,
-        contestants=('teams', 8), max_teams=16,
+        contestants=('teams', 4), max_teams=16,
         win_scores=(78, 96), lose_scores=(56, 78),
         rules=('FIBA rules. Four 10-minute quarters, a 2 minute break between '
                'quarters and a 15 minute half time. A 5 minute overtime is '
@@ -202,11 +194,11 @@ EVENT_SPECS = [
         gender='male', category='OPEN',
         event_format=SportsEvent.Format.GROUP_STAGE, team_based=True,
         venue='Covered Court', day_offset=2, days=3, duration=75, turnaround=25,
-        contestants=('teams', 8), max_teams=12,
+        contestants=('teams', 4), max_teams=12,
         win_scores=(72, 94), lose_scores=(58, 70),
         rules=('Best of three sets to 25 points, deciding set to 15. Rally '
                'scoring with a technical timeout at 8 points in the first two sets.'),
-        notes='Four groups of two, then a knockout stage for the top two.',
+        notes='Two groups of two, then a knockout stage for the top two.',
     ),
     EventSpec(
         key='sepak_takraw', sport='Sepak Takraw', name='Sepak Takraw - Open',
@@ -224,7 +216,7 @@ EVENT_SPECS = [
         gender='open', category='OPEN',
         event_format=SportsEvent.Format.GROUP_STAGE, team_based=True,
         venue='Table Tennis Hall', day_offset=4, days=3, duration=60, turnaround=15,
-        contestants=('teams', 8), max_teams=12,
+        contestants=('teams', 4), max_teams=12,
         win_scores=(11, 21), lose_scores=(6, 18),
         rules=('Team tie is two singles and one doubles match, best of three '
                'games to 11 points, on a 10 minute cycle.'),
@@ -235,7 +227,7 @@ EVENT_SPECS = [
         gender='open', category='OPEN',
         event_format=SportsEvent.Format.SINGLE_ELIMINATION, team_based=True,
         venue='Computer Laboratory 2', day_offset=5, days=2, duration=120, turnaround=20,
-        contestants=('teams', 8), max_teams=16,
+        contestants=('teams', 4), max_teams=16,
         win_scores=(2, 3), lose_scores=(0, 1),
         rules=('Mobile Legends Bang Bang, best of three games on the Honor of '
                'Kings map pool. Each team bans two heroes in the draft.'),
@@ -515,7 +507,7 @@ class Command(BaseCommand):
 
     def _create_coaches(self):
         coaches = []
-        for username, first, last, phone in COACHES:
+        for username, first, last, phone in COACHES[:len(TEAMS)]:
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={'email': f'{username.replace("_", ".")}@jhcsc.edu.ph'},
@@ -663,7 +655,7 @@ class Command(BaseCommand):
 
     def _fill_entries(self, event, kind, wanted, athletes):
         if kind == 'teams':
-            pool = Team.objects.filter(status=Team.Status.APPROVED).order_by('name')
+            pool = Team.objects.filter(status=Team.Status.APPROVED, name__in=[team[0] for team in TEAMS]).order_by('name')
             taken = set(event.entries.values_list('team_id', flat=True))
             for team in pool[:wanted]:
                 if team.id not in taken:

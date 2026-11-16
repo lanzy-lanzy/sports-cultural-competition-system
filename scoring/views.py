@@ -64,6 +64,8 @@ def _parse_score_value(raw_value, maximum):
 
 
 def _is_assigned_to_round(judge, round_obj):
+    if not round_obj.competition.uses_judging:
+        return False
     return JudgeAssignment.objects.filter(
         judge=judge,
         competition=round_obj.competition,
@@ -331,6 +333,8 @@ def competition_results_detail(request, competition_id):
         'judge_assignments__judge'
     ), id=competition_id)
     _ensure_results_visible(request.user, competition)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
 
     rounds = list(build_round_results(competition))
     overall_standings = build_overall_standings(competition)
@@ -357,6 +361,8 @@ def results_print(request, competition_id):
         'judge_assignments__rounds',
     ), id=competition_id)
     _ensure_results_visible(request.user, competition)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
 
     rounds = list(build_round_results(competition))
     overall_standings = build_overall_standings(competition)
@@ -411,6 +417,8 @@ def results_reveal(request, competition_id):
         'results'
     ), id=competition_id)
     _ensure_results_visible(request.user, competition)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
 
     results = CompetitionResult.objects.filter(
         competition=competition,
@@ -457,6 +465,8 @@ def toggle_results_visibility(request, competition_id):
 def verify_round_scores(request, round_id):
     """Result approval: lock a round's submitted scores as VERIFIED."""
     round_obj = get_object_or_404(Round.objects.select_related('competition'), id=round_id)
+    if not round_obj.competition.uses_judging:
+        raise PermissionDenied('Sports competitions use match results instead of judge scores.')
     with transaction.atomic():
         scores = list(Score.objects.filter(
             criterion__round=round_obj,
@@ -492,6 +502,8 @@ def verify_round_scores(request, round_id):
 def unverify_round_scores(request, round_id):
     """Reopen a verified round: flip VERIFIED scores back to SUBMITTED."""
     round_obj = get_object_or_404(Round.objects.select_related('competition'), id=round_id)
+    if not round_obj.competition.uses_judging:
+        raise PermissionDenied('Sports competitions use match results instead of judge scores.')
     with transaction.atomic():
         scores = list(Score.objects.filter(
             criterion__round=round_obj,
@@ -522,6 +534,8 @@ def unverify_round_scores(request, round_id):
 def score_history(request, competition_id):
     """Score change history for one competition, optionally filtered by round."""
     competition = get_object_or_404(Competition, id=competition_id)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
     logs = ScoreChangeLog.objects.filter(
         competition=competition
     ).select_related(
@@ -547,6 +561,8 @@ def score_history(request, competition_id):
 def round_results(request, competition_id, round_id):
     competition = get_object_or_404(Competition, id=competition_id)
     _ensure_results_visible(request.user, competition)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
     round_obj = get_object_or_404(Round, id=round_id, competition=competition)
 
     if round_obj.status != 'COMPLETED':
@@ -604,6 +620,8 @@ def round_results(request, competition_id, round_id):
 def generate_results_pdf(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
     _ensure_results_visible(request.user, competition)
+    if not competition.uses_judging:
+        return redirect('medal_tally', competition_id=competition.pk)
     rounds = competition.rounds.all().order_by('order')
 
     response = HttpResponse(content_type='application/pdf')

@@ -161,12 +161,12 @@
             <!-- Stats -->
             <div class="mt-auto grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
                 <div>
-                    <p class="text-lg font-semibold text-slate-900">{{ competition.rounds_count }}</p>
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Rounds</p>
+                    <p class="text-lg font-semibold text-slate-900">{% if competition.kind == 'SPORTS' %}{{ competition.event_count }}{% else %}{{ competition.rounds_count }}{% endif %}</p>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</p>
                 </div>
                 <div>
-                    <p class="text-lg font-semibold text-slate-900">{{ competition.criteria_count }}</p>
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Criteria</p>
+                    <p class="text-lg font-semibold text-slate-900">{% if competition.kind == 'SPORTS' %}{{ competition.match_count }}{% else %}{{ competition.criteria_count }}{% endif %}</p>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">{% if competition.kind == 'SPORTS' %}Matches{% else %}Criteria{% endif %}</p>
                 </div>
                 <div>
                     <p class="text-lg font-semibold text-slate-900">{{ competition.start_date|date:"M j" }}</p>
@@ -185,11 +185,11 @@
                         data-start="{{ competition.start_date|date:'Y-m-d' }}"
                         data-end="{{ competition.end_date|date:'Y-m-d' }}"
                         data-status="{{ competition.status }}"
-                        data-kind="{{ competition.kind }}"
+                        data-kind="{{ competition.kind }}" data-tournament-format="{{ competition.tournament_format }}"
                         data-type="{{ competition.cultural_event_type }}"
                         onclick="openEditComp(this)"
                         class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                <a href="{% url 'manage_rounds' competition.id %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md bg-campus px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
+                <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="inline-flex cursor-pointer items-center justify-center gap-1 rounded-md bg-campus px-2 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
                 {% endif %}
             </div>
 
@@ -226,8 +226,8 @@
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Start</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">End</th>
-                    <th scope="col" class="px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Rounds</th>
-                    <th scope="col" class="px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Criteria</th>
+                    <th scope="col" class="px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">{% if category == 'sports' %}Events{% else %}Rounds{% endif %}</th>
+                    <th scope="col" class="px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">{% if category == 'sports' %}Matches{% else %}Criteria{% endif %}</th>
                     <th scope="col" class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
                 </tr>
             </thead>
@@ -255,8 +255,8 @@
                     </td>
                     <td class="whitespace-nowrap px-4 py-4 text-slate-600">{{ competition.start_date|date:"M d, Y" }}</td>
                     <td class="whitespace-nowrap px-4 py-4 text-slate-600">{{ competition.end_date|date:"M d, Y" }}</td>
-                    <td class="px-4 py-4 text-center font-medium text-slate-700">{{ competition.rounds_count }}</td>
-                    <td class="px-4 py-4 text-center font-medium text-slate-700">{{ competition.criteria_count }}</td>
+                    <td class="px-4 py-4 text-center font-medium text-slate-700">{% if competition.kind == 'SPORTS' %}{{ competition.event_count }}{% else %}{{ competition.rounds_count }}{% endif %}</td>
+                    <td class="px-4 py-4 text-center font-medium text-slate-700">{% if competition.kind == 'SPORTS' %}{{ competition.match_count }}{% else %}{{ competition.criteria_count }}{% endif %}</td>
                     <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center justify-end gap-1.5">
                             <button type="button" onclick="openModal('view-comp-{{ competition.id }}')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">View</button>
@@ -268,11 +268,11 @@
                                     data-start="{{ competition.start_date|date:'Y-m-d' }}"
                                     data-end="{{ competition.end_date|date:'Y-m-d' }}"
                                     data-status="{{ competition.status }}"
-                                    data-kind="{{ competition.kind }}"
+                                    data-kind="{{ competition.kind }}" data-tournament-format="{{ competition.tournament_format }}"
                                     data-type="{{ competition.cultural_event_type }}"
                                     onclick="openEditComp(this)"
                                     class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors duration-200 hover:border-cyan-300 hover:text-cyan-700">Edit</button>
-                            <a href="{% url 'manage_rounds' competition.id %}" class="rounded-md bg-campus px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">Rounds</a>
+                            <a href="{% if competition.kind == 'SPORTS' %}{% url 'competition_sport_events' competition.id %}{% else %}{% url 'manage_rounds' competition.id %}{% endif %}" class="rounded-md bg-campus px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-105">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</a>
                             <button type="button"
                                     data-url="{% url 'delete_competition' competition.id %}"
                                     data-name="{{ competition.name }}"
@@ -347,7 +347,7 @@
                 </div>
                 <div>
                     <h2 class="font-display text-lg font-semibold text-slate-900">Create Competition</h2>
-                    <p class="text-xs text-slate-500">Set up details, rounds and scoring criteria.</p>
+                    <p class="text-xs text-slate-500">Set up details and a sports tournament format or cultural scoring rounds.</p>
                 </div>
             </div>
             <button type="button" onclick="closeModal('create-comp-modal')" class="cursor-pointer rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
@@ -416,6 +416,7 @@
                             </div>
                         </div>
                         {% include 'competitions/partials/cultural_subtype_field.html' with prefix='m-' is_cultural=False selected_subtype='' %}
+{% include 'competitions/partials/tournament_format_field.html' %}
                         <div class="md:col-span-2">
                             <label for="m-description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                             <textarea id="m-description" name="description" rows="3" placeholder="Describe your competition..."
@@ -425,7 +426,7 @@
                 </div>
 
                 <!-- Rounds -->
-                <div class="rounded-md border border-slate-200/80 bg-slate-50/50 p-5">
+                <div class="judged-rounds-wrap rounded-md border border-slate-200/80 bg-slate-50/50 p-5">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="font-display text-sm font-semibold text-slate-900">Competition Rounds</h3>
                         <button type="button" onclick="addRound()"
@@ -639,6 +640,7 @@
                     </div>
                 </div>
                 {% include 'competitions/partials/cultural_subtype_field.html' with prefix='edit-' is_cultural=False selected_subtype='' %}
+{% include 'competitions/partials/tournament_format_field.html' %}
                 <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                     <button type="button" onclick="closeModal('edit-comp-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900">Cancel</button>
                     <button type="submit" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-6 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl">Update Competition</button>
@@ -723,15 +725,16 @@
                     <div class="mt-1 font-semibold text-slate-900">{{ competition.end_date|date:"M d, Y" }}</div>
                 </div>
                 <div class="rounded-md border border-slate-100 bg-slate-50/60 p-3">
-                    <div class="text-xs font-medium uppercase tracking-wider text-slate-500">Rounds</div>
-                    <div class="mt-1 font-semibold text-slate-900">{{ competition.rounds_count }}</div>
+                    <div class="text-xs font-medium uppercase tracking-wider text-slate-500">{% if competition.kind == 'SPORTS' %}Events{% else %}Rounds{% endif %}</div>
+                    <div class="mt-1 font-semibold text-slate-900">{% if competition.kind == 'SPORTS' %}{{ competition.event_count }}{% else %}{{ competition.rounds_count }}{% endif %}</div>
                 </div>
                 <div class="rounded-md border border-slate-100 bg-slate-50/60 p-3">
-                    <div class="text-xs font-medium uppercase tracking-wider text-slate-500">Criteria</div>
-                    <div class="mt-1 font-semibold text-slate-900">{{ competition.criteria_count }}</div>
+                    <div class="text-xs font-medium uppercase tracking-wider text-slate-500">{% if competition.kind == 'SPORTS' %}Matches{% else %}Criteria{% endif %}</div>
+                    <div class="mt-1 font-semibold text-slate-900">{% if competition.kind == 'SPORTS' %}{{ competition.match_count }}{% else %}{{ competition.criteria_count }}{% endif %}</div>
                 </div>
             </div>
 
+            {% if competition.kind == 'SPORTS' %}<p class="text-sm font-semibold">{{ competition.get_tournament_format_display|default:'Tournament format not configured' }}</p><a class="mt-3 inline-block text-sm text-emerald-700" href="{% url 'competition_sport_events' competition.id %}">Manage sports events and matches</a>{% else %}
             <div class="space-y-4">
                 {% for round in competition.rounds.all %}
                 <div class="rounded-md border border-slate-200 bg-slate-50/50 p-4">
@@ -770,6 +773,7 @@
                 </div>
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
@@ -831,6 +835,15 @@
         const scope = root || document;
         const checked = scope.querySelector('input[name="kind"]:checked');
         const kind = checked ? checked.value : '';
+        scope.querySelectorAll('.sports-format-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('hidden', kind !== 'SPORTS');
+            wrap.querySelectorAll('select, input').forEach(el => { el.disabled = kind !== 'SPORTS'; });
+        });
+        scope.querySelectorAll('.judged-rounds-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('hidden', kind === 'SPORTS');
+            wrap.querySelectorAll('select, input, button').forEach(el => { el.disabled = kind === 'SPORTS'; });
+        });
+
 
         scope.querySelectorAll('.category-card').forEach(function (card) {
             const active = card.dataset.kind === kind;
@@ -861,6 +874,7 @@
     function openEditComp(btn) {
         const form = document.getElementById('edit-comp-form');
         form.action = btn.dataset.url;
+        form.querySelector('[name="tournament_format"]').value = btn.dataset.tournamentFormat || '';
         document.getElementById('edit-title').value = btn.dataset.name;
         document.getElementById('edit-desc').value = btn.dataset.description;
         document.getElementById('edit-start').value = btn.dataset.start;

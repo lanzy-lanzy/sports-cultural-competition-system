@@ -57,10 +57,15 @@ class SportsEvent(models.Model):
         SINGLE_ELIMINATION = 'SINGLE_ELIMINATION', 'Single elimination'
         DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION', 'Double elimination'
         ROUND_ROBIN = 'ROUND_ROBIN', 'Round robin'
-        GROUP_STAGE = 'GROUP_STAGE', 'Group stage'
-        KNOCKOUT = 'KNOCKOUT', 'Knockout'
+        GROUP_STAGE = 'GROUP_STAGE', 'Group Stage + Knockout'
+        KNOCKOUT = 'KNOCKOUT', 'Knockout (legacy)'
+        BEST_OF = 'BEST_OF', 'Best-of Series'
+        LEAGUE = 'LEAGUE', 'League Format'
 
     class Status(models.TextChoices):
+        REGISTRATION = 'REGISTRATION', 'Registration'
+        READY = 'READY', 'Ready'
+        REVIEW = 'REVIEW', 'Awaiting confirmation'
         PLANNED = 'PLANNED', 'Planned'
         SCHEDULED = 'SCHEDULED', 'Scheduled'
         ONGOING = 'ONGOING', 'Ongoing'
@@ -78,6 +83,22 @@ class SportsEvent(models.Model):
     gender = models.CharField(max_length=20, choices=Gender.choices, default=Gender.OPEN)
     team_based = models.BooleanField(default=True)
     format = models.CharField(max_length=20, choices=Format.choices, default=Format.SINGLE_ELIMINATION)
+    cycles = models.PositiveSmallIntegerField(default=1, choices=[(1, 'Single round'), (2, 'Double round')])
+    playoff_count = models.PositiveSmallIntegerField(default=0, choices=[(0, 'No playoffs'), (2, 'Top 2'), (4, 'Top 4'), (8, 'Top 8')])
+    grand_final_reset = models.BooleanField(default=True)
+    best_of = models.PositiveSmallIntegerField(default=3)
+    group_count = models.PositiveSmallIntegerField(default=2)
+    qualifiers_per_group = models.PositiveSmallIntegerField(default=2)
+    win_points = models.PositiveSmallIntegerField(default=3)
+    draw_points = models.PositiveSmallIntegerField(default=1)
+    loss_points = models.PositiveSmallIntegerField(default=0)
+    bronze_policy = models.CharField(max_length=10, default='SHARED', choices=[
+        ('MATCH', 'Third-place match'), ('SHARED', 'Shared bronze'), ('NONE', 'No bronze'),
+    ])
+    tiebreakers = models.JSONField(default=list, blank=True)
+    tie_resolution = models.JSONField(default=list, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     rules = models.TextField(blank=True)
     max_teams = models.PositiveIntegerField(
         null=True,
@@ -186,6 +207,7 @@ class Match(models.Model):
         blank=True,
         related_name='previous_matches',
     )
+    forfeited_side = models.PositiveSmallIntegerField(null=True, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -244,3 +266,10 @@ class MatchEntry(models.Model):
         if self.participant_id:
             return self.participant.name
         return 'TBD'
+
+class EventAward(models.Model):
+    event = models.ForeignKey(SportsEvent, on_delete=models.CASCADE, related_name='confirmed_awards')
+    entry = models.ForeignKey(EventEntry, on_delete=models.PROTECT)
+    medal = models.CharField(max_length=6, choices=[('gold', 'Gold'), ('silver', 'Silver'), ('bronze', 'Bronze')])
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['event', 'entry'], name='unique_sports_award_entry')]

@@ -2,7 +2,9 @@ NAV_GROUPS = {
     'dashboard': ['dashboard'],
     'portal': ['portal_home'],
     'users': ['user_management', 'update_user_access'],
-    'judge_dashboard': ['judge_dashboard', 'judge_profile', 'judge_history'],
+    'judge_dashboard': ['judge_dashboard'],
+    'judge_profile': ['judge_profile'],
+    'judge_history': ['judge_history'],
     'competitions': [
         'competition_list', 'create_competition', 'competition_detail',
         'edit_competition', 'delete_competition', 'toggle_competition_status',
@@ -40,9 +42,10 @@ NAV_GROUPS = {
     'cultural': ['socio_cultural_management'],
     'results': [
         'results_list', 'competition_results_detail', 'results_reveal',
-        'toggle_results_visibility', 'round_results', 'generate_pdf_results',
-        'scoring_panel', 'update_score', 'overall_medal_tally',
+        'results_print', 'toggle_results_visibility', 'round_results',
+        'generate_pdf_results', 'scoring_panel', 'update_score',
     ],
+    'medal_tally': ['overall_medal_tally', 'medal_tally'],
     'eligibility': [
         'my_eligibility', 'eligibility_list', 'eligibility_review',
     ],
@@ -80,8 +83,6 @@ NAV_GROUPS = {
     'awards': [
         'award_list', 'create_award', 'edit_award', 'delete_award',
         'award_recipient_add', 'award_recipient_remove', 'certificate_pdf',
-        'medal_tally',
-        'overall_medal_tally',
     ],
 }
 

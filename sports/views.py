@@ -94,7 +94,7 @@ def sports_hub(request):
     today = now.date()
 
     all_events = [event for row in competition_rows for event in row['events']]
-    open_statuses = (SportsEvent.Status.PLANNED, SportsEvent.Status.SCHEDULED, SportsEvent.Status.ONGOING)
+    open_statuses = tuple(value for value in SportsEvent.Status.values if value not in ('COMPLETED', 'CANCELLED'))
 
     return render(request, 'sports/sports_hub.html', {
         'competition_rows': competition_rows,
@@ -317,13 +317,20 @@ def competition_sport_events(request, competition_id):
 @management_required
 def create_sport_event(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
-    form = SportsEventForm(request.POST or None)
+    if competition.kind == Competition.Kind.CULTURAL:
+        messages.error(request, 'Sports events require a Sports competition.')
+        return redirect('competition_detail', competition_id=competition.pk)
+    defaults = {'GROUP_KNOCKOUT': 'GROUP_STAGE'}
+    form = SportsEventForm(request.POST or None, initial={'format': defaults.get(competition.tournament_format, competition.tournament_format or 'SINGLE_ELIMINATION')})
     if request.method == 'POST' and form.is_valid():
         event = form.save(commit=False)
         event.competition = competition
         if not event.name.strip():
             event.name = f'{event.sport_type.name} - {event.get_gender_display()}'
         event.save()
+        if competition.status == 'COMPLETED':
+            competition.status = 'ACTIVE'
+            competition.save(update_fields=['status'])
         messages.success(request, f'{event.name} was created.')
         return redirect('sport_event_detail', event_id=event.id)
     return render(request, 'sports/event_form.html', {'form': form, 'competition': competition, 'event': None})
@@ -352,13 +359,20 @@ def sport_event_detail(request, event_id):
         'overview': match_overview(event),
         'entry_form': EventEntryForm(event=event),
         'bracket_generated': event.matches.exists(),
+        'can_clear_bracket': not event.confirmed_at and not event.matches.filter(status='COMPLETED', entries__score__isnull=False).exists(),
+        **_workflow_context(event),
     })
 
 
 @management_required
 @require_POST
+@transaction.atomic
 def add_event_entry(request, event_id):
-    event = get_object_or_404(SportsEvent, id=event_id)
+    event = get_object_or_404(SportsEvent.objects.select_for_update(), id=event_id)
+    if event.matches.exists() or event.status in ('COMPLETED', 'CANCELLED'):
+        messages.error(request, 'Entries are locked after fixtures are generated. Clear unplayed fixtures before changing entries.')
+        return redirect('sport_event_detail', event_id=event.pk)
+
     form = EventEntryForm(request.POST, event=event)
     if form.is_valid():
         EventEntry.objects.create(
@@ -377,8 +391,13 @@ def add_event_entry(request, event_id):
 
 @management_required
 @require_POST
+@transaction.atomic
 def update_entry_status(request, event_id, entry_id):
-    event = get_object_or_404(SportsEvent, id=event_id)
+    event = get_object_or_404(SportsEvent.objects.select_for_update(), id=event_id)
+    if event.matches.exists() or event.status in ('COMPLETED', 'CANCELLED'):
+        messages.error(request, 'Entries are locked after fixtures are generated. Clear unplayed fixtures before changing entries.')
+        return redirect('sport_event_detail', event_id=event.pk)
+
     entry = get_object_or_404(EventEntry, id=entry_id, event=event)
     status = request.POST.get('status')
     if status in EventEntry.Status.values:
@@ -392,8 +411,13 @@ def update_entry_status(request, event_id, entry_id):
 
 @management_required
 @require_POST
+@transaction.atomic
 def remove_event_entry(request, event_id, entry_id):
-    event = get_object_or_404(SportsEvent, id=event_id)
+    event = get_object_or_404(SportsEvent.objects.select_for_update(), id=event_id)
+    if event.matches.exists() or event.status in ('COMPLETED', 'CANCELLED'):
+        messages.error(request, 'Entries are locked after fixtures are generated. Clear unplayed fixtures before changing entries.')
+        return redirect('sport_event_detail', event_id=event.pk)
+
     entry = get_object_or_404(EventEntry, id=entry_id, event=event)
     name = entry.display_name
     entry.delete()
@@ -423,7 +447,11 @@ def generate_event_bracket(request, event_id):
 @require_POST
 def clear_event_bracket(request, event_id):
     event = get_object_or_404(SportsEvent, id=event_id)
-    delete_bracket(event)
+    try:
+        delete_bracket(event)
+    except ValueError as error:
+        messages.error(request, str(error))
+        return redirect('sport_event_detail', event_id=event.pk)
     record_action_from_request(
         request,
         'BRACKET_CLEARED',
@@ -499,7 +527,7 @@ def record_match_result_view(request, match_id):
     wants_json = request.POST.get('format') == 'json'
     sms_summary = None
     try:
-        record_match_result(match, scores, notes=request.POST.get('notes', ''))
+        record_match_result(match, scores, notes=request.POST.get('notes', ''), forfeited_side=int(request.POST['forfeited_side']) if request.POST.get('forfeited_side') else None)
         record_action_from_request(
             request,
             'MATCH_RESULT',
@@ -547,6 +575,7 @@ def _bracket_match_brief(match):
         'status': match.status,
         'statusDisplay': match.get_status_display(),
         'next': match.next_match_id,
+        'group': match.group,
         'venue': match.venue.name if match.venue_id else None,
         'start': timezone.localtime(match.scheduled_start).strftime('%b %d · %H:%M') if match.scheduled_start else None,
         'recordUrl': reverse('record_match_result', args=[match.id]),
@@ -563,65 +592,190 @@ def _bracket_match_brief(match):
     }
 
 
-def bracket_payload(event):
-    """Bracket-shaped JSON for the interactive bracket page.
-
-    Only elimination brackets (no group matches) get the connector layout; the
-    template falls back to the plain round grid for other formats.
-    """
-    if event.format not in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT):
+def _knockout_preview(event):
+    """Draw qualifier paths before qualification, without creating match records."""
+    import math
+    from .services import _seed_order
+    groups = list(event.matches.exclude(group__isnull=True).values_list('group', flat=True).distinct().order_by('group'))
+    if not groups:
         return None
-    matches = (
-        event.matches
-        .select_related('venue', 'next_match')
-        .prefetch_related('entries__team', 'entries__participant')
-        .order_by('round_number', 'id')
-    )
+    qualifiers = [f'Group {group} — #{position}' for group in groups for position in range(1, event.qualifiers_per_group + 1)]
+    if len(qualifiers) < 2:
+        return None
+    size = 2 ** math.ceil(math.log2(len(qualifiers)))
+    seed_order = _seed_order(size)
+    rounds = []
+    for round_index in range(int(math.log2(size))):
+        count = size // 2 ** (round_index + 1)
+        matches = []
+        for index in range(count):
+            names = []
+            if round_index == 0:
+                for seed in seed_order[index * 2:index * 2 + 2]:
+                    names.append(qualifiers[seed - 1] if seed <= len(qualifiers) else 'Bye')
+            else:
+                names = [f'Winner of {rounds[-1]["label"]} {index * 2 + side}' for side in (1, 2)]
+            matches.append({
+                'id': f'preview-{round_index}-{index}',
+                'label': f'{ROUND_LABELS.get(count * 2, "Round")} {index + 1}',
+                'status': 'PENDING', 'statusDisplay': 'Awaiting qualifiers',
+                'next': f'preview-{round_index + 1}-{index // 2}' if count > 1 else None,
+                'recordUrl': None, 'entries': [], 'placeholder_names': names,
+                'venue': None, 'start': None,
+            })
+        rounds.append({'label': ROUND_LABELS.get(count * 2, f'Round of {count * 2}'), 'done': 0, 'total': count, 'matches': matches})
+    return {'rounds': rounds, 'champion': None, 'preview': True}
+
+
+def _live_event_schedule(event, now=None):
+    """Choose a real current/next fixture; completed and postponed slots never occupy it."""
+    now = now or timezone.now()
+    matches = list(event.matches.select_related('venue').prefetch_related('entries__team', 'entries__participant'))
+    def order(match):
+        return (match.scheduled_start is None, match.scheduled_start or now, match.round_number, match.pk)
+    eligible = [m for m in matches if m.status in ('ONGOING', 'SCHEDULED') and m.entries.count() == 2]
+    ongoing = sorted([m for m in eligible if m.status == 'ONGOING'], key=order)
+    due = sorted([m for m in eligible if m.status == 'SCHEDULED' and m.scheduled_start and m.scheduled_start <= now], key=order)
+    future = sorted([m for m in eligible if m.status == 'SCHEDULED' and m.scheduled_start and m.scheduled_start > now], key=order)
+    current = (ongoing or due or [None])[0]
+    next_match = next((m for m in due + future if not current or m.pk != current.pk), None)
+    state = 'ongoing' if ongoing else 'due' if due else 'upcoming' if future else 'waiting'
+    if event.status == 'CANCELLED':
+        state, current, next_match = 'cancelled', None, None
+    elif matches and all(m.status in ('COMPLETED', 'CANCELLED') for m in matches):
+        state, current, next_match = 'finished', None, None
+    def brief(match):
+        if not match:
+            return None
+        result = _bracket_match_brief(match)
+        result['scheduled_start'] = match.scheduled_start.isoformat() if match.scheduled_start else None
+        result['scheduled_end'] = match.scheduled_end.isoformat() if match.scheduled_end else None
+        return result
+    return {'state': state, 'current': brief(current), 'next': brief(next_match),
+            'parallel_count': max(0, len(ongoing) - 1),
+            'schedule_url': reverse('match_schedule', args=[event.pk])}
+
+
+def bracket_payload(event):
+    payload = _bracket_payload(event)
+    if payload is not None:
+        # Reload status because result recording may have just changed the event.
+        current_event = SportsEvent.objects.get(pk=event.pk)
+        payload['schedule'] = _live_event_schedule(current_event)
+        payload['event'] = {'id': current_event.pk, 'name': current_event.name, 'format': current_event.get_format_display(), 'competition': current_event.competition.name, 'bracket_url': reverse('event_bracket', args=[current_event.pk]), 'schedule_url': reverse('match_schedule', args=[current_event.pk]), 'standings_url': reverse('event_standings', args=[current_event.pk]), 'detail_url': reverse('sport_event_detail', args=[current_event.pk])}
+    return payload
+
+
+def _bracket_payload(event):
+    """Format-aware interactive fixtures, series, or elimination graph."""
+    matches = list(event.matches.select_related('venue', 'next_match').prefetch_related('entries__team', 'entries__participant').order_by('round_number', 'id'))
+    if not matches:
+        return None
+    mode = 'elimination'
+    if event.format == SportsEvent.Format.BEST_OF:
+        mode = 'series'
+    elif event.format == SportsEvent.Format.ROUND_ROBIN or (event.format == SportsEvent.Format.LEAGUE and not any(m.group is None for m in matches)):
+        mode = 'fixtures'
+    elif event.format == SportsEvent.Format.LEAGUE and not event.playoff_count:
+        mode = 'fixtures'
+    elif event.format == SportsEvent.Format.DOUBLE_ELIMINATION:
+        mode = 'double'
     by_round = OrderedDict()
     for match in matches:
-        if match.group:
+        if match.name == 'Bronze Match' or (mode in ('elimination', 'double') and match.group):
             continue
         by_round.setdefault(match.round_number, []).append(match)
     if not by_round:
-        return None
-
+        payload = _knockout_preview(event) if event.format == SportsEvent.Format.GROUP_STAGE else None
+        if payload:
+            payload.update(mode='elimination', group_matches=[_bracket_match_brief(m) for m in matches if m.group])
+        return payload
     rounds = []
-    for round_number, round_matches in by_round.items():
-        slots = 2 * len(round_matches)
-        rounds.append({
-            'label': ROUND_LABELS.get(slots) or f'Round of {slots}',
-            'done': sum(1 for m in round_matches if m.status == Match.Status.COMPLETED),
-            'total': len(round_matches),
-            'matches': [_bracket_match_brief(m) for m in round_matches],
-        })
-
+    for number, round_matches in by_round.items():
+        if mode == 'double':
+            label = round_matches[0].name.replace('WB Round', 'Winners round').replace('LB Round', 'Losers round')
+        elif mode == 'series':
+            label = f'Game {number}'
+        elif mode == 'fixtures':
+            label = f'Round {number}'
+        else:
+            label = ROUND_LABELS.get(2 * len(round_matches), f'Round of {2 * len(round_matches)}')
+        rounds.append({'label': label, 'done': sum(m.status == 'COMPLETED' for m in round_matches), 'total': len(round_matches), 'matches': [_bracket_match_brief(m) for m in round_matches]})
+    if mode == 'double':
+        from .services import _double_elim_rounds
+        k, _ = _double_elim_rounds(event)
+        grand = next((m for m in matches if m.name == 'Grand Final'), None)
+        reset = next((m for m in matches if m.name == 'Grand Final Reset'), None)
+        for round_data in rounds:
+            for brief in round_data['matches']:
+                source = next(m for m in matches if m.pk == brief['id'])
+                if source.name == 'Grand Final' and reset:
+                    brief['next'] = reset.pk
+                if not source.name.startswith('WB Round'):
+                    continue
+                r = source.round_number - 1
+                peers = by_round[source.round_number]
+                index = peers.index(source)
+                if r == k - 1:
+                    targets = [m for m in matches if m.name.startswith('LB Round') and m.round_number == 3 * k - 2]
+                    target = targets[0] if targets else grand
+                else:
+                    targets = by_round.get(k + (1 if r == 0 else 2 * r), [])
+                    slot = index // 2 if r == 0 else index
+                    target = targets[slot] if slot < len(targets) else None
+                brief['loserNext'] = target.pk if target else None
     champion = None
-    final_matches = list(by_round.values())[-1]
-    if len(final_matches) == 1:
-        winner = final_matches[0].winner
-        if winner and final_matches[0].status == Match.Status.COMPLETED:
-            champion = winner.display_name
+    if mode in ('elimination', 'double'):
+        final = list(by_round.values())[-1]
+        if len(final) == 1 and final[0].status == 'COMPLETED' and final[0].winner:
+            champion = final[0].winner.display_name
+    standings = []
+    if mode in ('fixtures', 'series'):
+        standings = [{key: row.get(key, 0) for key in ('rank', 'name', 'played', 'wins', 'draws', 'losses', 'total_points')} for row in compute_standings(event)]
+        from .workflow import proposed_podium
+        try:
+            podium = proposed_podium(event)
+            champion = podium[0][0].display_name if podium else None
+        except ValueError:
+            pass
+    return {'rounds': rounds, 'champion': champion, 'mode': mode, 'standings': standings,
+            'best_of': event.best_of, 'wins_required': event.best_of // 2 + 1,
+            'extra_matches': [_bracket_match_brief(m) for m in matches if m.name == 'Bronze Match'],
+            'group_matches': [_bracket_match_brief(m) for m in matches if m.group] if mode in ('elimination', 'double') else []}
 
-    return {'rounds': rounds, 'champion': champion}
+
+def _scheduled_bracket_event(fallback, now=None):
+    """Follow an ongoing fixture or a fixture whose scheduled time has arrived."""
+    now = now or timezone.now()
+    candidates = Match.objects.exclude(event__competition__kind=Competition.Kind.CULTURAL).exclude(
+        event__status__in=['CANCELLED', 'COMPLETED'],
+    ).annotate(contestants=Count('entries')).filter(contestants=2).select_related('event__competition')
+    ongoing = candidates.filter(status='ONGOING').order_by('scheduled_start', 'pk')
+    current = candidates.filter(status='SCHEDULED', scheduled_start__lte=now).filter(
+        Q(scheduled_end__gt=now) | Q(scheduled_end__isnull=True, scheduled_start__date=timezone.localdate(now)),
+    ).order_by('scheduled_start', 'pk')
+    selected = list(ongoing) or list(current)
+    # Keep a selected event stable when several courts are playing simultaneously.
+    return next((m.event for m in selected if m.event_id == fallback.pk), selected[0].event if selected else fallback)
 
 
 @management_required
 def event_bracket(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
-    if event.format == SportsEvent.Format.GROUP_STAGE:
-        groups, knockout_rounds = group_stage_overview(event)
-        return render(request, 'sports/group_bracket.html', {
-            'event': event,
-            'groups': groups,
-            'knockout_rounds': knockout_rounds,
-        })
+    follow_schedule = request.GET.get('follow', '0' if request.GET.get('format') == 'json' else '1') == '1'
+    if follow_schedule:
+        event = _scheduled_bracket_event(event)
     bracket = bracket_payload(event)
     if request.GET.get('format') == 'json':
-        return JsonResponse(bracket or {'rounds': [], 'champion': None})
+        response = JsonResponse(bracket or {'rounds': [], 'champion': None, 'schedule': _live_event_schedule(event)})
+        response['Cache-Control'] = 'no-store'
+        return response
     return render(request, 'sports/event_bracket.html', {
         'event': event,
         'bracket': bracket,
         'overview': match_overview(event),
+        'groups': group_stage_overview(event)[0] if event.format == SportsEvent.Format.GROUP_STAGE else {},
+        'follow_schedule': follow_schedule,
     })
 
 
@@ -645,3 +799,43 @@ def venue_detail(request, venue_id):
         'upcoming': upcoming,
         'completed': completed,
     })
+
+def _workflow_context(event):
+    from .workflow import proposed_podium
+    try:
+        podium = proposed_podium(event)
+        issue = ''
+    except ValueError as error:
+        podium, issue = [], str(error)
+    return {'proposed_podium': podium, 'completion_issue': issue}
+
+
+@management_required
+@require_POST
+def tournament_action(request, event_id):
+    from .workflow import confirm_awards, reopen_event, resolve_ties, correct_result, seed_entries
+    from accounts.access import get_user_role
+    from django.core.exceptions import PermissionDenied
+    if get_user_role(request.user) not in ('ADMINISTRATOR', 'SPORTS_COORDINATOR'):
+        raise PermissionDenied('Only administrators and sports coordinators can confirm or correct sports results.')
+    event = get_object_or_404(SportsEvent, pk=event_id)
+    action = request.POST.get('action')
+    try:
+        if action == 'confirm':
+            confirm_awards(event, request.user)
+        elif action == 'reopen':
+            reopen_event(event, request.user, request.POST.get('reason', ''))
+        elif action == 'resolve':
+            order = [int(x.strip()) for x in (request.POST.getlist('order[]') or request.POST.get('order', '').split(','))]
+            resolve_ties(event, request.user, order, request.POST.get('reason', ''))
+        elif action == 'seed':
+            seed_entries(event, request.user, [int(x.strip()) for x in (request.POST.getlist('order[]') or request.POST.get('order', '').split(','))])
+        elif action == 'correct':
+            match = get_object_or_404(Match, pk=request.POST.get('match_id'), event=event)
+            correct_result(match, request.user, {1: request.POST.get('score_1'), 2: request.POST.get('score_2')}, request.POST.get('reason', ''))
+        else:
+            raise ValueError('Unknown tournament action.')
+        messages.success(request, 'Tournament updated successfully.')
+    except (ValueError, TypeError) as error:
+        messages.error(request, str(error))
+    return redirect('sport_event_detail', event_id=event.pk)

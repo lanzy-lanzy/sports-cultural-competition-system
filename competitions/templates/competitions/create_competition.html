@@ -93,6 +93,7 @@
                     </div>
                 </div>
                 {% include 'competitions/partials/cultural_subtype_field.html' %}
+{% include 'competitions/partials/tournament_format_field.html' %}
                 <div class="md:col-span-2">
                     <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
                     <div class="grid grid-cols-3 gap-4">
@@ -122,7 +123,7 @@
         </div>
 
         <!-- Rounds -->
-        <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <div class="judged-rounds-wrap rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
             <div class="mb-6 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="flex h-9 w-9 items-center justify-center rounded-md bg-violet-500 text-white">
@@ -260,6 +261,15 @@
         const scope = root || document;
         const checked = scope.querySelector('input[name="kind"]:checked');
         const kind = checked ? checked.value : '';
+        scope.querySelectorAll('.sports-format-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('hidden', kind !== 'SPORTS');
+            wrap.querySelectorAll('select, input').forEach(el => { el.disabled = kind !== 'SPORTS'; });
+        });
+        scope.querySelectorAll('.judged-rounds-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('hidden', kind === 'SPORTS');
+            wrap.querySelectorAll('select, input, button').forEach(el => { el.disabled = kind === 'SPORTS'; });
+        });
+
 
         scope.querySelectorAll('.category-card').forEach(function (card) {
             const active = card.dataset.kind === kind;

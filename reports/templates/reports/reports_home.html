@@ -5,18 +5,18 @@
 {% block header_title %}Reports &amp; Analytics{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="records-page space-y-7">
 
     <!-- Institutional report header -->
-    <section class="relative overflow-hidden rounded-lg bg-pine-dark text-white shadow-soft">
+    <section class="records-hero text-white">
         <div class="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border border-white/10"></div>
         <div class="pointer-events-none absolute -bottom-32 right-24 h-72 w-72 rounded-full border border-white/10"></div>
         <div class="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-pine/30 blur-2xl"></div>
-        <div class="relative flex flex-col justify-between gap-8 px-6 py-8 sm:px-9 sm:py-10 lg:flex-row lg:items-center">
+        <div class="relative flex flex-col justify-between gap-6 px-6 py-8 sm:px-8 sm:py-9 xl:flex-row xl:items-center">
             <div class="max-w-3xl">
-                <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-200/90">Institutional reporting</p>
+                <p class="records-kicker">Institutional reporting</p>
                 <h1 class="mt-2 font-display text-3xl font-semibold tracking-[-0.01em] text-white sm:text-4xl">Reports &amp; Analytics</h1>
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-50/80">
+                <p class="records-description mt-3 max-w-2xl text-sm">
                     Official registers, competition schedules, medal standings, and judging records.
                     Every report is available as a spreadsheet, a sealed PDF document, or a formal print preview.
                 </p>
@@ -29,8 +29,8 @@
                     <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-emerald-50">Management only</span>
                 </div>
             </div>
-            <div class="flex shrink-0 items-center gap-4 rounded-md border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-sm">
-                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white p-1.5 ring-2 ring-white/30">
+            <div class="flex w-fit max-w-full items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-4 xl:shrink-0">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white p-1.5 ring-2 ring-white/30">
                     <img src="{% static 'images/jhcsc_logo.png' %}" alt="J.H. Cerilles State College seal" class="h-full w-full rounded-full object-contain">
                 </span>
                 <div class="leading-tight">
@@ -42,33 +42,40 @@
         </div>
     </section>
 
+    <nav class="records-panel flex flex-wrap items-center gap-2 border bg-white px-4 py-3" aria-label="Report sections">
+        <span class="mr-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Quick access</span>
+        <a href="#official-registers" class="rounded-md bg-moss px-3 py-2 text-xs font-semibold text-pine-deep hover:bg-teal-100">Official registers</a>
+        <a href="#competition-documents" class="rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-moss hover:text-pine">Competition documents</a>
+        <a href="{% url 'overall_medal_tally' %}" class="rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-moss hover:text-pine">Medal standings <span aria-hidden="true">&rarr;</span></a>
+    </nav>
+
     <!-- Summary statistics -->
-    <section class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Reporting overview">
+        <div class="records-panel records-metric border bg-white p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Participants</p>
                     <p class="mt-2 font-display text-3xl font-semibold text-ink">{{ stats.participants }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ stats.active_competitions }} active competition{{ stats.active_competitions|pluralize }}</p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-pine-deep">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-moss text-pine-deep">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
                 </span>
             </div>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+        <div class="records-panel records-metric border bg-white p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Teams &amp; delegations</p>
                     <p class="mt-2 font-display text-3xl font-semibold text-ink">{{ stats.teams }}</p>
                     <p class="mt-1 text-xs text-slate-500">Official competition delegations</p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-pine-deep">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-moss text-pine-deep">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72M18 18.72v-.002a8.965 8.965 0 00-1.096-4.311M18 18.72H6m12.742-4.311A9.065 9.065 0 0119.5 12a2.999 2.999 0 00-3.213-2.994M6.742 14.409A8.965 8.965 0 015.5 18.72m1.242-4.311A9.065 9.065 0 004.5 12a2.999 2.999 0 013.213-2.994M6 18.72a9.094 9.094 0 01-3.741-.479 3 3 0 014.682-2.72M6 18.72v-.002a8.965 8.965 0 011.096-4.311M15 6.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </span>
             </div>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+        <div class="records-panel records-metric border bg-white p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Registrations</p>
@@ -81,19 +88,19 @@
                         {% endif %}
                     </p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-pine-deep">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-moss text-pine-deep">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </span>
             </div>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+        <div class="records-panel records-metric border bg-white p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Matches</p>
                     <p class="mt-2 font-display text-3xl font-semibold text-ink">{{ stats.matches }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ stats.completed_matches }} completed &middot; {{ stats.competitions }} competition{{ stats.competitions|pluralize }}</p>
                 </div>
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-pine-deep">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-moss text-pine-deep">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
                 </span>
             </div>
@@ -101,7 +108,7 @@
     </section>
 
     <!-- Registry reports -->
-    <section>
+    <section id="official-registers" class="records-section">
         <div class="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-pine">Registry &amp; participation</p>
@@ -113,7 +120,7 @@
 
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {% for report in reports %}
-            <article class="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-pine/30 hover:shadow-lg">
+            <article class="records-panel group flex flex-col overflow-hidden border bg-white transition duration-200 hover:-translate-y-0.5 hover:border-pine/30 hover:shadow-lg">
                 <div class="flex flex-1 flex-col p-5">
                     <div class="flex items-start justify-between gap-3">
                         <span class="flex h-11 w-11 items-center justify-center rounded-md bg-moss text-pine-deep ring-1 ring-pine/10">
@@ -153,16 +160,16 @@
                     {% endif %}
                 </div>
 
-                <div class="flex items-center gap-1.5 border-t border-slate-100 bg-paper/60 px-4 py-3">
-                    <a href="{% url report.csv_url %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine" title="Download CSV">
+                <div class="grid grid-cols-3 gap-2 border-t border-slate-100 bg-paper/60 px-4 py-3">
+                    <a href="{% url report.csv_url %}" class="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine" title="Download CSV">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                         CSV
                     </a>
-                    <a href="{% url report.pdf_url %}" class="inline-flex items-center gap-1.5 rounded-md bg-pine px-2.5 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-pine-deep" title="Download PDF">
+                    <a href="{% url report.pdf_url %}" class="inline-flex items-center justify-center gap-1.5 rounded-md bg-pine px-2 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-pine-deep" title="Download PDF">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                         PDF
                     </a>
-                    <a href="{% url report.print_url %}" target="_blank" rel="noopener" class="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine" title="Open print preview">
+                    <a href="{% url report.print_url %}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine" title="Open print preview">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5z"/></svg>
                         Print
                     </a>
@@ -173,7 +180,7 @@
     </section>
 
     <!-- Per-competition documents -->
-    <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft">
+    <section id="competition-documents" class="records-section records-panel overflow-hidden border bg-white">
         <div class="flex flex-col justify-between gap-3 border-b border-slate-200 bg-paper/60 px-6 py-5 sm:flex-row sm:items-end">
             <div>
                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-pine">Competition records</p>
@@ -187,15 +194,16 @@
 
         {% if competitions %}
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200">
+            <table class="records-table min-w-[900px] w-full divide-y divide-slate-200">
+                <caption class="sr-only">Per-competition results, standings, and judge score exports</caption>
                 <thead class="bg-white">
-                    <tr class="text-left text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                        <th class="px-6 py-3.5">Competition</th>
-                        <th class="px-4 py-3.5">Schedule</th>
-                        <th class="px-4 py-3.5 text-center">Scale</th>
-                        <th class="px-4 py-3.5">Official results</th>
-                        <th class="px-4 py-3.5">Standings</th>
-                        <th class="px-6 py-3.5">Judge scores</th>
+                    <tr class="text-left text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                        <th scope="col" class="px-6 py-3.5">Competition</th>
+                        <th scope="col" class="px-4 py-3.5">Schedule</th>
+                        <th scope="col" class="px-4 py-3.5 text-center">Scale</th>
+                        <th scope="col" class="px-4 py-3.5">Official results</th>
+                        <th scope="col" class="px-4 py-3.5">Standings</th>
+                        <th scope="col" class="px-6 py-3.5">Judge scores</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -237,20 +245,20 @@
                                 <a href="{% url 'print_standings' competition.id %}" target="_blank" rel="noopener" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-pine/40 hover:text-pine" title="Print standings">Print</a>
                             </div>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4">{% if competition.uses_judging %}
                             <div class="flex flex-wrap items-center gap-1">
                                 <a href="{% url 'export_judge_scores_csv' competition.id %}" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-pine/40 hover:text-pine" title="Judge scores CSV">CSV</a>
                                 <a href="{% url 'export_judge_scores_pdf' competition.id %}" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-pine/40 hover:text-pine" title="Judge scores PDF">PDF</a>
                                 <a href="{% url 'print_judge_scores' competition.id %}" target="_blank" rel="noopener" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-pine/40 hover:text-pine" title="Print judge scores">Print</a>
                             </div>
-                        </td>
+                        {% else %}<span class="text-xs text-slate-400">Not required for Sports</span>{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="px-6 py-14 text-center">
+        <div class="records-empty px-6 py-14 text-center">
             <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-moss text-pine">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75v10.5m0-10.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0 10.5a2.25 2.25 0 110 4.5 2.25 2.25 0 010-4.5zM3.75 12h16.5"/></svg>
             </span>

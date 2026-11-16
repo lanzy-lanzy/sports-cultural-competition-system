@@ -11,6 +11,18 @@ class Competition(models.Model):
         CULTURAL = 'CULTURAL', 'Cultural competition'
         MIXED = 'MIXED', 'Mixed / other'
 
+    class TournamentFormat(models.TextChoices):
+        SINGLE_ELIMINATION = 'SINGLE_ELIMINATION', 'Single Elimination'
+        DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION', 'Double Elimination'
+        ROUND_ROBIN = 'ROUND_ROBIN', 'Round Robin'
+        GROUP_KNOCKOUT = 'GROUP_KNOCKOUT', 'Group Stage + Knockout'
+        BEST_OF = 'BEST_OF', 'Best-of Series'
+        LEAGUE = 'LEAGUE', 'League Format'
+
+    tournament_format = models.CharField(
+        max_length=20, choices=TournamentFormat.choices, blank=True, default='',
+    )
+
     class CulturalEventType(models.TextChoices):
         DANCE = 'DANCE', 'Dance Competition'
         SINGING = 'SINGING', 'Singing Competition'
@@ -67,6 +79,10 @@ class Competition(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def uses_judging(self):
+        return self.kind != self.Kind.SPORTS
 
     def get_cultural_event_type_display(self):
         return cultural_subtype_labels().get(

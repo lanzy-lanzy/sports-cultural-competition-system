@@ -31,8 +31,8 @@ class EventRegistrationForm(forms.Form):
         self.user = user
         self.fields['competition'].queryset = Competition.objects.filter(status='ACTIVE').order_by('-id')
         self.fields['sport_event'].queryset = SportsEvent.objects.filter(
-            status__in=[SportsEvent.Status.PLANNED, SportsEvent.Status.SCHEDULED],
-        ).select_related('sport_type').order_by('name')
+            status__in=[SportsEvent.Status.PLANNED, SportsEvent.Status.REGISTRATION, SportsEvent.Status.SCHEDULED],
+        ).filter(matches__isnull=True).select_related('sport_type').order_by('name')
 
         # The team dropdown is only for team managers, who register a whole team
         # as one contestant. A participant's team comes from the "My team"

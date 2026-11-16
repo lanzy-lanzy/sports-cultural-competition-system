@@ -80,6 +80,9 @@ def contestant_identity(team=None, participant=None):
 
 def _award_medals(competition):
     """Yield ``(key, name, medal_type, source, points, participant, provisional)`` for a competition's awards."""
+    if competition.kind == Competition.Kind.SPORTS and competition.sport_events.exists():
+        # Event-confirmed medals are the sole source for match-based sports.
+        return
     points_map = medal_points_for(competition)
     recipients = (
         AwardRecipient.objects
@@ -104,9 +107,8 @@ def _award_medals(competition):
 def _sports_medals(competition):
     """Yield sport-event podiums; every match of the event must be decided.
 
-    The event-level podium is final once its bracket is fully played, even if
-    the wider competition is still running, so these medals are never marked
-    provisional.
+    Only coordinator-confirmed event awards enter the tally, even when the
+    wider competition is still running.
     """
     from sports.services import event_podium
 
@@ -138,6 +140,8 @@ def _standings_medals(competition):
     it. Only participants who have actually been judged can reach the
     podium, and DRAFT or CANCELLED competitions contribute nothing.
     """
+    if competition.kind == Competition.Kind.SPORTS:
+        return
     if competition.status not in ('ACTIVE', 'COMPLETED'):
         return
     if _has_manual_medal_awards(competition):

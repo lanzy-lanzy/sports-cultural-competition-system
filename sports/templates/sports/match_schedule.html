@@ -136,6 +136,11 @@
                            class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
                 </div>
                 <div>
+                    <label class="mb-1.5 block text-xs font-semibold">Forfeit (optional)
+                        <select name="forfeited_side" id="result-forfeit" class="mt-1 w-full rounded-md border px-3 py-2">
+                            <option value="">No forfeit</option><option value="1">Side 1 forfeits</option><option value="2">Side 2 forfeits</option>
+                        </select>
+                    </label><p class="mb-3 text-xs text-slate-500">A forfeit records a 1–0 result for the other side.</p>
                     <label for="result-notes" class="mb-1.5 block text-xs font-semibold text-slate-600">Notes <span class="font-normal text-slate-400">(optional)</span></label>
                     <textarea name="notes" id="result-notes" rows="2" placeholder="Match sheet reference, protests, or remarks"
                               class="w-full rounded-md border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100"></textarea>
@@ -190,6 +195,7 @@
         score1.value = '';
         score2.value = '';
         notes.value = '';
+        document.getElementById('result-forfeit').value = '';
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         // Stop the page behind the dialog from scrolling.

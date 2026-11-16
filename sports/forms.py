@@ -44,11 +44,25 @@ class VenueForm(forms.ModelForm):
 
 
 class SportsEventForm(forms.ModelForm):
+    TIEBREAK_ORDERS = {
+        'DIFFERENCE': ['point_diff', 'points_for'],
+        'HEAD_TO_HEAD': ['head_to_head', 'point_diff', 'points_for'],
+        'SCORED': ['points_for', 'point_diff', 'head_to_head'],
+    }
+    tiebreakers = forms.ChoiceField(label='Tie-breaker order', choices=[
+        ('DIFFERENCE', 'Score difference, then scores recorded'),
+        ('HEAD_TO_HEAD', 'Head-to-head, score difference, then scores recorded'),
+        ('SCORED', 'Scores recorded, score difference, then head-to-head'),
+    ])
+
+    def clean_tiebreakers(self):
+        return self.TIEBREAK_ORDERS[self.cleaned_data['tiebreakers']]
+
     class Meta:
         model = SportsEvent
         fields = (
             'sport_type', 'name', 'category', 'gender', 'team_based', 'format',
-            'rules', 'max_teams', 'venue', 'start_date', 'end_date', 'status',
+            'cycles', 'playoff_count', 'grand_final_reset', 'best_of', 'group_count', 'qualifiers_per_group', 'win_points', 'draw_points', 'loss_points', 'bronze_policy', 'tiebreakers', 'rules', 'max_teams', 'venue', 'start_date', 'end_date', 'status',
         )
         widgets = {
             'rules': forms.Textarea(attrs={'rows': 4}),
@@ -57,6 +71,16 @@ class SportsEventForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        if args and args[0] is not None:
+            data = args[0].copy()
+            if data.get('team_based') in ('off', 'false', '0'):
+                data['team_based'] = ''
+            for key in ('cycles', 'playoff_count', 'best_of', 'group_count', 'qualifiers_per_group', 'win_points', 'draw_points', 'loss_points', 'bronze_policy'):
+                if key not in data:
+                    data[key] = str(SportsEvent._meta.get_field(key).default)
+            if 'tiebreakers' not in data:
+                data['tiebreakers'] = 'DIFFERENCE'
+            args = (data, *args[1:])
         super().__init__(*args, **kwargs)
         self.fields['sport_type'].queryset = SportType.objects.filter(is_active=True)
         self.fields['venue'].queryset = Venue.objects.filter(is_active=True)
@@ -64,10 +88,31 @@ class SportsEventForm(forms.ModelForm):
         # The view names the event after the sport type and division when the
         # name is left blank, so keep the form permissive about it.
         self.fields['name'].required = False
+        stored = self.instance.tiebreakers or self.TIEBREAK_ORDERS['DIFFERENCE']
+        self.initial['tiebreakers'] = next((key for key, value in self.TIEBREAK_ORDERS.items() if value == stored), 'DIFFERENCE')
+        if self.instance.format != SportsEvent.Format.KNOCKOUT:
+            self.fields['format'].choices = [(k, v) for k, v in SportsEvent.Format.choices if k != SportsEvent.Format.KNOCKOUT]
+        self.fields['status'].choices = [(k, v) for k, v in SportsEvent.Status.choices if k not in ('COMPLETED', 'REVIEW')]
+        if self.instance.pk:
+            self.fields['status'].choices = SportsEvent.Status.choices
+            self.fields['status'].disabled = True
+            if self.instance.matches.exists():
+                for key in ('sport_type', 'team_based', 'format', 'cycles', 'playoff_count', 'grand_final_reset', 'best_of', 'group_count', 'qualifiers_per_group', 'win_points', 'draw_points', 'loss_points', 'bronze_policy', 'tiebreakers'):
+                    self.fields[key].disabled = True
+        self.fields['tiebreakers'].help_text = 'Applied in order after standings points. Remaining ties require a recorded coordinator decision.'
         _style_fields(self)
 
     def clean(self):
         cleaned = super().clean()
+        best = cleaned.get('best_of')
+        if best is not None and (best < 1 or best > 15 or best % 2 == 0):
+            self.add_error('best_of', 'Use an odd number from 1 to 15.')
+        for key in ('group_count', 'qualifiers_per_group'):
+            if cleaned.get(key) is not None and cleaned[key] < 1:
+                self.add_error(key, 'Must be at least one.')
+        breakers = cleaned.get('tiebreakers') or []
+        if not isinstance(breakers, list) or any(x not in ('head_to_head', 'point_diff', 'points_for') for x in breakers) or len(set(breakers)) != len(breakers):
+            self.add_error('tiebreakers', 'Use a list of unique supported tie-breakers.')
         start = cleaned.get('start_date')
         end = cleaned.get('end_date')
         venue = cleaned.get('venue')
@@ -115,6 +160,12 @@ class EventEntryForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
         contestant_type = cleaned.get('contestant_type')
+        if self.event.matches.exists():
+            raise forms.ValidationError('Entries are locked after fixture generation.')
+        if self.event.max_teams and self.event.entries.exclude(status='WITHDRAWN').count() >= self.event.max_teams:
+            raise forms.ValidationError('This event has reached its entry cap.')
+        if (contestant_type == 'team') != self.event.team_based:
+            raise forms.ValidationError('The contestant type must match the event team/individual setting.')
         if contestant_type == 'team':
             if not cleaned.get('team'):
                 self.add_error('team', 'Select a team for this event.')
@@ -141,6 +192,12 @@ class MatchForm(forms.ModelForm):
         self.fields['venue'].queryset = Venue.objects.filter(is_active=True)
         self.fields['venue'].required = False
         self.fields['round_number'].required = False
+        self.fields['round_number'].disabled = True
+        self.fields['name'].disabled = True
+        self.fields['status'].choices = [(k, v) for k, v in Match.Status.choices if k != 'COMPLETED']
+        if self.instance.status == 'COMPLETED' or self.instance.event.status in ('COMPLETED', 'CANCELLED'):
+            self.fields['status'].choices = Match.Status.choices
+            self.fields['status'].disabled = True
         _style_fields(self)
 
     def clean(self):

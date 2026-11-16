@@ -63,12 +63,15 @@ def _validate_category_fields(post):
         # Sports (and legacy Mixed) competitions never carry a cultural sub-type.
         event_type = ''
 
+    if kind == Competition.Kind.SPORTS and post.get('tournament_format') not in Competition.TournamentFormat.values:
+        errors.append('Select a tournament format for the Sports competition.')
     return kind, event_type, errors
 
 
 def _subtype_form_context(kind, selected):
     """Shared context for the cultural sub-type field on create/edit forms."""
     return {
+        'tournament_formats': Competition.TournamentFormat.choices,
         'subtype_groups': cultural_subtype_groups(),
         'selected_subtype': selected or '',
         'is_cultural': kind == Competition.Kind.CULTURAL,
@@ -216,11 +219,14 @@ def competition_list(request):
             )
 
     competitions = competitions.order_by('-id').annotate(
+        event_count=Count('sport_events', distinct=True),
+        match_count=Count('sport_events__matches', distinct=True),
         rounds_count=Count('rounds', distinct=True),
         criteria_count=Count('rounds__criteria', distinct=True),
     )
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
     return render(request, 'competitions/competition_list.html', {
+        'tournament_formats': Competition.TournamentFormat.choices,
         'page_obj': page_obj,
         'category': category,
         'sports_count': counts['sports'] or 0,
@@ -341,11 +347,12 @@ def create_competition(request):
                     status=request.POST.get('status'),
                     created_by=request.user,
                     kind=kind,
+                    tournament_format=request.POST.get('tournament_format', '') if kind == Competition.Kind.SPORTS else '',
                     cultural_event_type=event_type,
                     **_medal_points(request.POST)
                 )
 
-                round_names = request.POST.getlist('round_names[]')
+                round_names = [] if kind == Competition.Kind.SPORTS else request.POST.getlist('round_names[]')
                 round_orders = request.POST.getlist('round_orders[]')
                 round_weights = request.POST.getlist('round_weights[]')
                 round_statuses = request.POST.getlist('round_statuses[]')
@@ -400,10 +407,16 @@ def edit_competition(request, competition_id):
 
     if request.method == 'POST':
         kind, event_type, category_errors = _validate_category_fields(request.POST)
+        if competition.sport_events.exists():
+            if kind == Competition.Kind.CULTURAL:
+                category_errors.append('A competition with sports events must keep its Sports category.')
+            if request.POST.get('status') == 'COMPLETED' and competition.sport_events.exclude(status__in=['COMPLETED', 'CANCELLED']).exists():
+                category_errors.append('Confirm all sports events before completing this competition.')
         if category_errors:
             # Echo the submitted values (unsaved) so staff can fix the choice.
             competition.name = (request.POST.get('title') or competition.name).upper()
             competition.description = (request.POST.get('description') or '').upper() or competition.description
+            competition.tournament_format = request.POST.get('tournament_format', '')
             competition.kind = request.POST.get('kind') or competition.kind
             competition.cultural_event_type = request.POST.get('cultural_event_type') or competition.cultural_event_type
             return render(request, 'competitions/edit_competition.html', {
@@ -426,6 +439,7 @@ def edit_competition(request, competition_id):
         competition.end_date = end_date
         competition.status = status
         competition.kind = kind
+        competition.tournament_format = request.POST.get('tournament_format', '') if kind == Competition.Kind.SPORTS else ''
         competition.cultural_event_type = event_type
         for key, value in _medal_points(request.POST).items():
             setattr(competition, key, value)
@@ -632,6 +646,9 @@ def toggle_competition_status(request, competition_id):
             'COMPLETED': 'DRAFT'
         }
 
+        if status_flow.get(competition.status) == 'COMPLETED' and competition.sport_events.exclude(status__in=['COMPLETED', 'CANCELLED']).exists():
+            messages.error(request, 'Confirm all sports events before completing this competition.')
+            return redirect(_competition_list_url(competition.kind))
         competition.status = status_flow.get(competition.status, 'DRAFT')
         competition.save()
 
@@ -642,6 +659,8 @@ def toggle_competition_status(request, competition_id):
 @management_required
 def manage_rounds(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
+    if competition.kind == Competition.Kind.SPORTS:
+        return redirect('competition_sport_events', competition_id=competition.pk)
     rounds = competition.rounds.all().order_by('order')
     page_obj = Paginator(rounds, 10).get_page(request.GET.get('page'))
     status_counts = {
@@ -653,6 +672,7 @@ def manage_rounds(request, competition_id):
     context = {
         'competition': competition,
         'rounds': page_obj,
+        'tournament_formats': Competition.TournamentFormat.choices,
         'page_obj': page_obj,
         'total_rounds': rounds.count(),
         'ongoing_rounds': status_counts.get('ONGOING', 0),
@@ -665,6 +685,8 @@ def manage_rounds(request, competition_id):
 @management_required
 def create_round(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
+    if competition.kind == Competition.Kind.SPORTS:
+        return redirect('competition_sport_events', competition_id=competition.pk)
 
     if request.method == 'POST':
         try:

@@ -31,6 +31,24 @@
 </div>
 {% endif %}
 
+<section class="mb-6 rounded-md border border-slate-200 bg-white p-6 space-y-4">
+    <h2 class="text-lg font-bold">Final placements and medals</h2>
+    {% if not bracket_generated %}<details><summary class="cursor-pointer text-sm font-semibold">Set entry seeds</summary><form method="post" action="{% url 'tournament_action' event.id %}" class="flex gap-2">{% csrf_token %}<input type="hidden" name="action" value="seed">{% include 'sports/entry_order_fields.html' %}<button class="rounded-md border px-4 py-2">Save seeds</button></form></details>{% endif %}
+    {% if event.confirmed_at %}<p class="text-sm text-emerald-700">Confirmed by {{ event.confirmed_by }} on {{ event.confirmed_at }}. Medals are included in the overall tally.</p>{% endif %}
+    {% if proposed_podium %}<ul class="space-y-2">{% for entry, medal in proposed_podium %}<li><strong class="uppercase">{{ medal }}</strong> — {{ entry.display_name }}</li>{% endfor %}</ul>
+    {% if not event.confirmed_at %}<form method="post" action="{% url 'tournament_action' event.id %}">{% csrf_token %}<input type="hidden" name="action" value="confirm"><button class="rounded-md bg-campus px-4 py-2 text-white">Confirm placements and publish medals</button></form>{% endif %}
+    {% else %}<p class="text-sm text-slate-500">{{ completion_issue }}</p>{% endif %}
+    <a class="inline-block text-sm font-semibold text-emerald-700" href="{% url 'event_standings' event.id %}">View standings and win/loss records</a>
+    {% if event.confirmed_at or event.status == 'CANCELLED' or event.status == 'COMPLETED' %}
+    <form method="post" action="{% url 'tournament_action' event.id %}" class="flex flex-wrap gap-2">{% csrf_token %}<input type="hidden" name="action" value="reopen"><input required name="reason" placeholder="Reason for reopening" class="rounded-md border px-3 py-2"><button class="rounded-md border px-4 py-2">Reopen and withdraw medals</button></form>
+    {% else %}
+    <details><summary class="cursor-pointer text-sm font-semibold">Resolve a standings tie</summary><p class="my-2 text-xs text-slate-500">Arrange the confirmed entries in the approved finishing order. This only resolves positions still tied after the configured sporting rules. Record the playoff or tie-break decision in the reason.</p>
+
+    <form method="post" action="{% url 'tournament_action' event.id %}" class="mt-3 flex flex-wrap gap-2">{% csrf_token %}<input type="hidden" name="action" value="resolve">{% include 'sports/entry_order_fields.html' %}<input required name="reason" placeholder="Tie-break decision and reason" class="rounded-md border px-3 py-2"><button class="rounded-md border px-4 py-2">Save resolution</button></form></details>
+    <details><summary class="cursor-pointer text-sm font-semibold">Correct a completed match</summary><p class="my-2 text-xs text-slate-500">Dependent match results will be cleared and must be played again. Confirmed medals must be withdrawn by reopening first.</p>
+    <form method="post" action="{% url 'tournament_action' event.id %}" class="mt-3 grid gap-2 sm:grid-cols-2">{% csrf_token %}<input type="hidden" name="action" value="correct"><select name="match_id" required class="rounded-md border px-3 py-2">{% for match in matches %}{% if match.status == 'COMPLETED' %}<option value="{{ match.pk }}">{{ match.label }}: {{ match.contestants_display }}</option>{% endif %}{% endfor %}</select><input required name="reason" placeholder="Reason for correction" class="rounded-md border px-3 py-2"><input type="number" min="0" step="0.01" required name="score_1" placeholder="Side 1 score" class="rounded-md border px-3 py-2"><input type="number" min="0" step="0.01" required name="score_2" placeholder="Side 2 score" class="rounded-md border px-3 py-2"><button class="rounded-md border px-4 py-2" onclick="return confirm('Clear dependent results and save this correction?')">Correct result</button></form></details>
+    {% endif %}
+</section>
 <div class="grid gap-6 lg:grid-cols-3">
     <!-- Entries -->
     <section class="rounded-md border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1">
@@ -39,7 +57,7 @@
             <a href="{% url 'event_standings' event.id %}" class="text-xs font-bold text-campus hover:underline">Standings</a>
         </div>
 
-        <form method="POST" action="{% url 'add_event_entry' event.id %}" class="mb-5 space-y-3 rounded-md bg-slate-50 p-4">
+        {% if not bracket_generated %}<form method="POST" action="{% url 'add_event_entry' event.id %}" class="mb-5 space-y-3 rounded-md bg-slate-50 p-4">
             {% csrf_token %}
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Add entry</p>
             <div>
@@ -55,7 +73,7 @@
                 {{ entry_form.participant }}
             </div>
             <button type="submit" class="w-full rounded-md bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-campus">Add to event</button>
-        </form>
+        </form>{% else %}<p class="mb-4 text-sm text-slate-500">Entries are locked while fixtures exist.</p>{% endif %}
 
         {% if entries %}
         <ul class="space-y-2">
@@ -71,15 +89,15 @@
                 <div class="flex shrink-0 items-center gap-1">
                     <form method="POST" action="{% url 'update_entry_status' event.id entry.id %}">
                         {% csrf_token %}
-                        <select name="status" onchange="this.form.submit()" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs">
-                            {% for value, label in entry.status.field.choices %}
+                        <select {% if bracket_generated %}disabled{% endif %} name="status" onchange="this.form.submit()" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs">
+                            {% for value, label in entry.Status.choices %}
                             <option value="{{ value }}" {% if entry.status == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </form>
                     <form method="POST" action="{% url 'remove_event_entry' event.id entry.id %}">
                         {% csrf_token %}
-                        <button type="submit" onclick="return confirm('Remove {{ entry.display_name }} from this event?')" class="rounded-md p-1.5 text-rose-500 hover:bg-rose-50" title="Remove entry">
+                        <button {% if bracket_generated %}disabled{% endif %} type="submit" onclick="return confirm('Remove {{ entry.display_name }} from this event?')" class="rounded-md p-1.5 text-rose-500 hover:bg-rose-50" title="Remove entry">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </form>
@@ -92,12 +110,12 @@
         {% endif %}
 
         <div class="mt-6 space-y-3 border-t border-slate-100 pt-5">
-            {% if bracket_generated %}
+            {% if bracket_generated and can_clear_bracket %}
             <form method="POST" action="{% url 'clear_event_bracket' event.id %}" class="flex gap-2">
                 {% csrf_token %}
                 <button type="submit" onclick="return confirm('Delete all matches for this event?')" class="flex-1 rounded-md border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-100">Clear bracket</button>
             </form>
-            {% else %}
+            {% elif not bracket_generated %}
             <form method="POST" action="{% url 'generate_event_bracket' event.id %}">
                 {% csrf_token %}
                 <button type="submit" class="w-full rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white shadow">Generate {{ event.get_format_display }} bracket</button>

@@ -204,7 +204,7 @@ def export_judge_scores_csv(request, competition_id):
     """Per-judge, per-criterion scoring sheet for one competition."""
     from scoring.models import Score
 
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     filename = f'judge_scores_{competition.id}.csv'
 
     rows = [['Round', 'Criterion', 'Max Score', 'Judge', 'Participant', 'Score', 'Remarks', 'Status', 'Scored At']]
@@ -300,7 +300,7 @@ def export_medal_tally_pdf(request):
 
 @management_required
 def export_judge_scores_pdf(request, competition_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     return _pdf_response(judge_scores_report(competition))
 
 
@@ -344,7 +344,7 @@ def print_medal_tally(request):
 
 @management_required
 def print_judge_scores(request, competition_id):
-    competition = get_object_or_404(Competition, id=competition_id)
+    competition = get_object_or_404(Competition.objects.exclude(kind=Competition.Kind.SPORTS), id=competition_id)
     return _print_response(request, judge_scores_report(competition))
 
 

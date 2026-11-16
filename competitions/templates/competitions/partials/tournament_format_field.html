@@ -1,0 +1,11 @@
+<div class="sports-format-wrap hidden rounded-md border border-slate-200 bg-slate-50 p-5">
+    <label class="mb-2 block text-sm font-semibold text-slate-800">Tournament Format
+        <select name="tournament_format" required disabled class="mt-2 block w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm">
+            <option value="">Select tournament format</option>
+            {% for value, label in tournament_formats %}
+            <option value="{{ value }}" {% if form_data.tournament_format == value or competition.tournament_format == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <p class="mt-2 text-sm text-slate-500">Results use wins, losses, points, runs or goals, bracket advancement and ranking tie-breakers. Configure events, fixtures and match results in the sports match board.</p>
+</div>
