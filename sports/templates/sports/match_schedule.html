@@ -4,6 +4,7 @@
 {% block header_title %}Schedule{% endblock %}
 
 {% block content %}
+{% include 'sports/event_navigation.html' with section='matches' %}
 <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
         <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
@@ -11,20 +12,12 @@
         <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-4">
-        <a href="{% url 'event_bracket' event.id %}" class="rounded-md bg-campus px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-105">View bracket</a>
-        <a href="{% url 'sms_dashboard' %}" class="text-sm font-semibold text-slate-500 hover:text-campus">SMS updates</a>
-        <a href="{% url 'match_board' %}?competition={{ event.competition_id }}" class="text-sm font-semibold text-slate-500 hover:text-campus">All competition matches</a>
-        <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
+        {% if not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'create_match' event.id %}" class="rounded-md bg-ink px-4 py-2 text-sm font-bold text-white">Create manual match</a>{% endif %}
     </div>
 </div>
 
 {% if not sms_configured %}
-<div class="mb-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-    <span class="font-bold">SMS is not configured.</span>
-    Add <code class="rounded bg-white/70 px-1">SEMAPHORE_API_KEY</code> and
-    <code class="rounded bg-white/70 px-1">SEMAPHORE_SENDER_NAME</code> in <code class="rounded bg-white/70 px-1">.env</code> to text contestants automatically.
-    <a href="{% url 'sms_dashboard' %}" class="font-bold underline">Open SMS setup</a>
-</div>
+<details class="mb-5 text-xs text-slate-500"><summary class="cursor-pointer">Text notifications are off</summary><p class="mt-2">You can manage matches without text notifications. <a href="{% url 'sms_dashboard' %}" class="font-semibold text-campus">Set up notifications</a></p></details>
 {% endif %}
 
 {% if matches %}
@@ -103,7 +96,6 @@
 <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
     <p class="font-display text-lg font-bold text-ink">No matches scheduled</p>
     <p class="mt-2 text-sm text-slate-500">Generate the bracket from the event page, then come back to schedule and record results.</p>
-    <a href="{% url 'sport_event_detail' event.id %}" class="mt-4 inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus">Back to event</a>
 </div>
 {% endif %}
 

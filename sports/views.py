@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
 from accounts.access import management_required
-from .forms import EventEntryForm, MatchForm, SportsEventForm, SportTypeForm, VenueForm
+from .forms import EventEntryForm, ManualMatchForm, SportsEventForm, SportTypeForm, VenueForm
 from .models import EventEntry, Match, SportsEvent, SportType, Venue
 from .services import (
     compute_elimination_standings,
@@ -351,7 +351,7 @@ def edit_sport_event(request, event_id):
 def sport_event_detail(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition', 'sport_type', 'venue'), id=event_id)
     entries = event.entries.select_related('team', 'participant').order_by('seed', 'id')
-    matches = event.matches.select_related('venue').order_by('round_number', 'id')
+    matches = event.matches.select_related('venue').prefetch_related('entries__team', 'entries__participant').order_by('round_number', 'id')
     return render(request, 'sports/event_detail.html', {
         'event': event,
         'entries': entries,
@@ -465,7 +465,7 @@ def clear_event_bracket(request, event_id):
 @management_required
 def match_schedule(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
-    matches = event.matches.select_related('venue').order_by('round_number', 'id')
+    matches = event.matches.select_related('venue').prefetch_related('entries__team', 'entries__participant').order_by('round_number', 'id')
     from sms.services import is_configured
     return render(request, 'sports/match_schedule.html', {
         'event': event,
@@ -475,17 +475,40 @@ def match_schedule(request, event_id):
 
 
 @management_required
+@transaction.atomic
+def create_match(request, event_id):
+    event = get_object_or_404(SportsEvent.objects.select_for_update(), id=event_id)
+    match = Match(event=event, venue=event.venue)
+    form = ManualMatchForm(request.POST if request.method == 'POST' else None, instance=match)
+    if request.method == 'POST' and form.is_valid():
+        match = form.save()
+        record_action_from_request(request, 'MATCH_CREATED', target=match,
+                                   details=f'Manual match created: {match.contestants_display()}')
+        messages.success(request, 'Manual match and opponents created.')
+        return redirect('match_schedule', event_id=event.id)
+    return render(request, 'sports/match_form.html', {
+        'form': form, 'match': match, 'creating': True, 'sms_configured': False,
+    })
+
+
+@management_required
+@transaction.atomic
 def edit_match(request, match_id):
     match = get_object_or_404(Match.objects.select_related('event__competition'), id=match_id)
+    # Serialize manual edits to matches belonging to the same event.
+    match.event = SportsEvent.objects.select_for_update().get(pk=match.event_id)
+    match = Match.objects.select_for_update().select_related('event__competition').get(pk=match.pk)
     previous = {
         'scheduled_start': match.scheduled_start,
         'scheduled_end': match.scheduled_end,
         'venue_id': match.venue_id,
         'status': match.status,
     }
-    form = MatchForm(request.POST or None, instance=match)
+    form = ManualMatchForm(request.POST if request.method == 'POST' else None, instance=match)
     if request.method == 'POST' and form.is_valid():
         match = form.save()
+        record_action_from_request(request, 'MATCH_UPDATED', target=match,
+                                   details=f'Manual schedule/pairing update: {match.contestants_display()}')
         if request.POST.get('notify_sms') == 'on':
             kind = None
             if previous['status'] != match.status:
@@ -505,7 +528,7 @@ def edit_match(request, match_id):
                 summary = notify_match(match, kind, created_by=request.user)
                 level = messages.SUCCESS if summary['sent'] else messages.WARNING
                 messages.add_message(request, level, describe_summary(summary))
-        messages.success(request, 'Match schedule updated.')
+        messages.success(request, 'Match schedule and pairing saved.')
         return redirect('match_schedule', event_id=match.event_id)
 
     from sms.services import is_configured

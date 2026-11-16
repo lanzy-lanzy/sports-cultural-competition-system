@@ -1,6 +1,6 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}Edit Match - {{ match.event.name }}{% endblock %}
+{% block title %}{% if creating %}Create{% else %}Edit{% endif %} Match - {{ match.event.name }}{% endblock %}
 {% block header_title %}Schedule{% endblock %}
 
 {% block content %}
@@ -8,8 +8,8 @@
     <div class="mb-7 flex items-center justify-between">
         <div>
             <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ match.event.name }}</p>
-            <h1 class="mt-1 font-display text-2xl font-bold text-ink">Edit match</h1>
-            <p class="mt-1 text-sm text-slate-500">{{ match.contestants_display }}</p>
+            <h1 class="mt-1 font-display text-2xl font-bold text-ink">{% if creating %}Create manual match{% else %}Edit match and opponents{% endif %}</h1>
+            <p class="mt-1 text-sm text-slate-500">{% if creating %}Choose two confirmed entries and assign a time and venue, or leave both times blank to schedule later.{% else %}{{ match.contestants_display }}{% endif %}</p>
         </div>
         <a href="{% url 'match_schedule' match.event_id %}" class="text-sm font-semibold text-slate-500 hover:text-campus">&larr; Schedule</a>
     </div>
@@ -20,8 +20,9 @@
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {% for field in form %}
             <div class="{% if field.name == 'notes' %}sm:col-span-2{% endif %}">
-                <label class="mb-1.5 block text-sm font-semibold text-slate-700">{{ field.label }}</label>
+                <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ field.label }}</label>
                 {{ field }}
+                {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
                 {% for error in field.errors %}<p class="mt-1 text-xs text-rose-600">{{ error }}</p>{% endfor %}
             </div>
             {% endfor %}
@@ -35,13 +36,8 @@
                 <span class="mt-0.5 block text-xs text-slate-500">Sends the new time, venue, or status to team managers and participants with a phone number.</span>
             </span>
         </label>
-        {% else %}
-        <p class="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            SMS is not configured yet, so no text will be sent. Add
-            <code class="rounded bg-white/70 px-1">SEMAPHORE_API_KEY</code> and
-            <code class="rounded bg-white/70 px-1">SEMAPHORE_SENDER_NAME</code> in <code class="rounded bg-white/70 px-1">.env</code>.
-            <a href="{% url 'sms_dashboard' %}" class="font-bold underline">Open SMS setup</a>.
-        </p>
+        {% elif not creating %}
+        <p class="mt-6 text-xs text-slate-500">Text notifications are off. <a href="{% url 'sms_dashboard' %}" class="font-semibold text-campus">Notification settings</a></p>
         {% endif %}
 
         <div class="mt-8 flex justify-end gap-3">

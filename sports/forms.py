@@ -3,7 +3,7 @@ from django import forms
 from participants.models import Participant
 from teams.models import Team
 
-from .models import EventEntry, Match, SportsEvent, SportType, Venue
+from .models import EventEntry, Match, MatchEntry, SportsEvent, SportType, Venue
 
 
 INPUT_CLASS = (
@@ -219,3 +219,85 @@ class MatchForm(forms.ModelForm):
                     f'This venue is already scheduled during that time: {labels}.',
                 )
         return cleaned
+
+
+class ManualMatchForm(MatchForm):
+    adjust_pairings = forms.BooleanField(
+        required=False, label='Replace opponents',
+        help_text='Select this to replace the two opponents. Otherwise the current pairing is preserved.',
+    )
+    opponent_1 = forms.ModelChoiceField(queryset=EventEntry.objects.none(), required=False)
+    opponent_2 = forms.ModelChoiceField(queryset=EventEntry.objects.none(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.creating = self.instance.pk is None
+        entries = self.instance.event.entries.filter(status=EventEntry.Status.CONFIRMED)
+        entries = entries.filter(participant__isnull=True) if self.instance.event.team_based else entries.filter(team__isnull=True)
+        entries = entries.select_related('team', 'participant')
+        for name in ('opponent_1', 'opponent_2'):
+            self.fields[name].queryset = entries
+            self.fields[name].label_from_instance = lambda entry: entry.display_name
+        if self.creating:
+            self.fields.pop('adjust_pairings')
+            self.fields['name'].disabled = False
+            self.fields['round_number'].disabled = False
+            self.fields['round_number'].required = True
+            self.fields['opponent_1'].required = True
+            self.fields['opponent_2'].required = True
+        else:
+            current = {entry.side: entry for entry in self.instance.entries.all()}
+            for side in (1, 2):
+                contestant = current.get(side)
+                if contestant:
+                    entry = entries.filter(team_id=contestant.team_id, participant_id=contestant.participant_id).first()
+                    self.initial[f'opponent_{side}'] = entry.pk if entry else None
+        # datetime-local controls require an ISO local value to retain saved times.
+        for name in ('scheduled_start', 'scheduled_end'):
+            self.fields[name].widget.format = '%Y-%m-%dT%H:%M'
+        _style_fields(self)
+        if 'adjust_pairings' in self.fields:
+            self.fields['adjust_pairings'].widget.attrs['class'] = 'h-4 w-4 rounded border-slate-300'
+
+    def clean(self):
+        cleaned = super().clean()
+        event = self.instance.event
+        if event.confirmed_at or event.status in ('COMPLETED', 'CANCELLED'):
+            raise forms.ValidationError('This event is closed. Reopen it before changing matches.')
+        if bool(cleaned.get('scheduled_start')) != bool(cleaned.get('scheduled_end')):
+            raise forms.ValidationError('Provide both start and end times, or leave both blank.')
+        if cleaned.get('round_number', 1) is not None and cleaned.get('round_number', 1) < 1:
+            self.add_error('round_number', 'Round must be at least 1.')
+        if self.creating or cleaned.get('adjust_pairings'):
+            if not self.creating and (
+                self.instance.status in ('ONGOING', 'COMPLETED')
+                or self.instance.entries.filter(score__isnull=False).exists()
+                or self.instance.entries.filter(is_winner=True).exists()
+                or self.instance.previous_matches.exists()
+            ):
+                raise forms.ValidationError(
+                    'Opponents cannot be replaced after play starts, results are recorded, '
+                    'or when they are determined by earlier bracket matches.',
+                )
+            first, second = cleaned.get('opponent_1'), cleaned.get('opponent_2')
+            if not first or not second:
+                raise forms.ValidationError('Choose two confirmed event entries to assign opponents.')
+            if first == second:
+                self.add_error('opponent_2', 'A contestant cannot play against itself.')
+        return cleaned
+
+    def save(self, commit=True):
+        if not commit:
+            raise ValueError('Manual matches must be saved with their opponents.')
+        from django.db import transaction
+        with transaction.atomic():
+            match = super().save()
+            if self.creating or self.cleaned_data.get('adjust_pairings'):
+                match.entries.all().delete()
+                for side in (1, 2):
+                    opponent = self.cleaned_data[f'opponent_{side}']
+                    MatchEntry.objects.create(
+                        match=match, side=side, team_id=opponent.team_id,
+                        participant_id=opponent.participant_id,
+                    )
+            return match

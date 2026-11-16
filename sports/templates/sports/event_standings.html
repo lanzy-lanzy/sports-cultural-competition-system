@@ -4,13 +4,13 @@
 {% block header_title %}Standings{% endblock %}
 
 {% block content %}
+{% include 'sports/event_navigation.html' with section='standings' %}
 <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
         <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sport Event</p>
         <h1 class="mt-1 font-display text-3xl font-bold text-ink">Standings</h1>
         <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}</p>
     </div>
-    <a href="{% url 'sport_event_detail' event.id %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-campus">&larr; Event</a>
 </div>
 
 {% if standings %}

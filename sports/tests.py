@@ -740,8 +740,9 @@ class SportsNavigationPagesTest(TestCase):
         self.assertContains(response, reverse('create_sport_event', args=[fresh.id]))
         # Existing events expose direct management links.
         self.assertContains(response, reverse('create_sport_event', args=[self.competition.id]))
-        self.assertContains(response, reverse('edit_sport_event', args=[event.id]))
-        self.assertContains(response, 'Manage events')
+        self.assertContains(response, reverse('match_schedule', args=[event.id]))
+        self.assertContains(response, 'Open event')
+        self.assertNotContains(response, '<details class="sh-events">')
         self.assertContains(response, 'Add sport event')
 
     def test_hub_events_stat_card(self):
@@ -982,3 +983,105 @@ class SportsNavigationPagesTest(TestCase):
             self.client.get(reverse('match_schedule', args=[event.id])),
             reverse('match_board'),
         )
+
+class ManualMatchManagementTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('manual-admin', '', 'pass')
+        self.competition = Competition.objects.create(name='Manual meet', description='Meet', start_date='2026-03-01T08:00:00Z', end_date='2026-03-05T17:00:00Z', status='ACTIVE', created_by=self.admin)
+        self.sport = SportType.objects.create(name='Manual basketball')
+        self.event = SportsEvent.objects.create(competition=self.competition, sport_type=self.sport, name='Manual event', team_based=True, format='ROUND_ROBIN')
+        self.entries = []
+        for name in ('SOCJE', 'SAFES', 'STE'):
+            team = Team.objects.create(name=name, category='SPORTS', created_by=self.admin)
+            self.entries.append(EventEntry.objects.create(event=self.event, team=team, status='CONFIRMED'))
+        self.client.force_login(self.admin)
+        self.url = reverse('create_match', args=[self.event.pk])
+
+    def data(self, **overrides):
+        data = {'name': 'Manual final', 'round_number': 1, 'status': 'SCHEDULED', 'opponent_1': self.entries[0].pk, 'opponent_2': self.entries[1].pk, 'scheduled_start': '2026-03-02T10:00', 'scheduled_end': '2026-03-02T11:00'}
+        data.update(overrides)
+        return data
+
+    def create_match(self):
+        response = self.client.post(self.url, self.data())
+        self.assertEqual(response.status_code, 302)
+        return self.event.matches.get()
+
+    def test_create_manual_match_and_render_controls(self):
+        self.assertContains(self.client.get(self.url), 'Create manual match')
+        match = self.create_match()
+        self.assertEqual(list(match.entries.values_list('team_id', flat=True)), [e.team_id for e in self.entries[:2]])
+        self.assertIsNotNone(match.scheduled_start)
+        self.assertContains(self.client.get(reverse('match_schedule', args=[self.event.pk])), 'Create manual match')
+        self.assertContains(self.client.get(reverse('edit_match', args=[match.pk])), '2026-03-02T10:00')
+
+    def test_reject_self_pairing_and_unconfirmed_or_foreign_entry(self):
+        for entry in (self.entries[0], self.entries[2]):
+            if entry == self.entries[2]:
+                entry.status = 'WITHDRAWN'
+                entry.save()
+            response = self.client.post(self.url, self.data(opponent_2=entry.pk))
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.context['form'].errors)
+            self.assertFalse(self.event.matches.exists())
+        other = SportsEvent.objects.create(competition=self.competition, sport_type=self.sport, name='Other')
+        foreign = EventEntry.objects.create(event=other, team=self.entries[1].team, status='CONFIRMED')
+        response = self.client.post(self.url, self.data(opponent_2=foreign.pk))
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(self.event.matches.exists())
+
+    def test_edit_pairing_preserves_bracket_link_and_schedule_only_preserves_entries(self):
+        match = self.create_match()
+        final = Match.objects.create(event=self.event, round_number=2)
+        match.next_match = final
+        match.save()
+        url = reverse('edit_match', args=[match.pk])
+        response = self.client.post(url, self.data(adjust_pairings='on', opponent_2=self.entries[2].pk))
+        self.assertEqual(response.status_code, 302)
+        match.refresh_from_db()
+        self.assertEqual(match.next_match_id, final.pk)
+        self.assertEqual(match.entries.get(side=2).team_id, self.entries[2].team_id)
+        original = list(match.entries.values_list('pk', flat=True))
+        data = self.data()
+        data.pop('opponent_1')
+        data.pop('opponent_2')
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        self.assertEqual(list(match.entries.values_list('pk', flat=True)), original)
+
+    def test_block_result_and_feeder_pairing_changes(self):
+        match = self.create_match()
+        url = reverse('edit_match', args=[match.pk])
+        Match.objects.create(event=self.event, next_match=match)
+        response = self.client.post(url, self.data(adjust_pairings='on', opponent_2=self.entries[2].pk))
+        self.assertTrue(response.context['form'].errors)
+        match.previous_matches.all().delete()
+        match.entries.filter(side=1).update(score=10)
+        response = self.client.post(url, self.data(adjust_pairings='on', opponent_2=self.entries[2].pk))
+        self.assertTrue(response.context['form'].errors)
+        self.assertEqual(match.entries.get(side=2).team_id, self.entries[1].team_id)
+
+    def test_closed_event_and_invalid_schedule_cannot_mutate(self):
+        response = self.client.post(self.url, self.data(scheduled_end=''))
+        self.assertTrue(response.context['form'].errors)
+        self.event.status = 'COMPLETED'
+        self.event.save()
+        response = self.client.post(self.url, self.data())
+        self.assertTrue(response.context['form'].errors)
+        self.assertFalse(self.event.matches.exists())
+
+    def test_individual_pairing(self):
+        self.event.team_based = False
+        self.event.save()
+        people = [Participant.objects.create(name=name, phone='0') for name in ('Player A', 'Player B')]
+        entries = [EventEntry.objects.create(event=self.event, participant=person, status='CONFIRMED') for person in people]
+        response = self.client.post(self.url, self.data(opponent_1=entries[0].pk, opponent_2=entries[1].pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(self.event.matches.get().entries.values_list('participant_id', flat=True)), [p.pk for p in people])
+
+    def test_access_permissions(self):
+        viewer = User.objects.create_user('manual-viewer', password='pass')
+        self.client.force_login(viewer)
+        self.assertEqual(self.client.post(self.url, self.data()).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+        self.assertFalse(self.event.matches.exists())

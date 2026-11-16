@@ -1,5 +1,6 @@
 (function () {
     const hub = document.querySelector('.sports-hub');
+    if (!hub) return;
     const search = hub.querySelector('#sh-search');
     if (!search) return;
     const cards = Array.from(hub.querySelectorAll('.sh-competition'));
@@ -13,9 +14,10 @@
             const matches = (selected === 'all' || card.dataset.competitionStatus === selected) && searchable.get(card).includes(query);
             card.hidden = !matches;
             if (matches) visible++;
-            const events = card.querySelector('details');
-            if (events && query) { events.open = matches; events.dataset.searchOpened = 'true'; }
-            else if (events && events.dataset.searchOpened) { events.open = false; delete events.dataset.searchOpened; }
+            const competitionMatches = card.querySelector('h3').textContent.toLocaleLowerCase().includes(query);
+            card.querySelectorAll('[data-event-name]').forEach(event => {
+                event.hidden = Boolean(query) && !competitionMatches && !event.dataset.eventName.toLocaleLowerCase().includes(query);
+            });
         });
         hub.querySelector('#sh-no-matches').hidden = visible !== 0;
         hub.querySelector('#sh-filter-count').textContent = visible + ' competition' + (visible === 1 ? '' : 's');

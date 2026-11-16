@@ -24,6 +24,7 @@ urlpatterns = [
     path('sports/events/<int:event_id>/bracket/generate/', views.generate_event_bracket, name='generate_event_bracket'),
     path('sports/events/<int:event_id>/bracket/clear/', views.clear_event_bracket, name='clear_event_bracket'),
     path('sports/events/<int:event_id>/matches/', views.match_schedule, name='match_schedule'),
+    path('sports/events/<int:event_id>/matches/create/', views.create_match, name='create_match'),
     path('sports/events/<int:event_id>/standings/', views.event_standings, name='event_standings'),
     path('sports/events/<int:event_id>/bracket/', views.event_bracket, name='event_bracket'),
     path('sports/matches/<int:match_id>/edit/', views.edit_match, name='edit_match'),

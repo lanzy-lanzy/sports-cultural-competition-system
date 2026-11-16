@@ -14,6 +14,8 @@ class AuditLog(models.Model):
         RANKINGS_CALCULATED = 'RANKINGS_CALCULATED', 'Rankings calculated'
         RESULTS_VISIBILITY = 'RESULTS_VISIBILITY', 'Results visibility changed'
         MATCH_RESULT = 'MATCH_RESULT', 'Match result recorded'
+        MATCH_CREATED = 'MATCH_CREATED', 'Manual match created'
+        MATCH_UPDATED = 'MATCH_UPDATED', 'Match schedule or opponents updated'
         BRACKET_GENERATED = 'BRACKET_GENERATED', 'Bracket generated'
         BRACKET_CLEARED = 'BRACKET_CLEARED', 'Bracket cleared'
         REGISTRATION_REVIEW = 'REGISTRATION_REVIEW', 'Registration reviewed'
