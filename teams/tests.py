@@ -107,6 +107,29 @@ class TeamEventRosterTest(TestCase):
         self.assertTrue(team.memberships.get(participant=self.alex).events.filter(pk=self.basketball.pk).exists())
         self.assertEqual(team.event_entries.get().event, self.basketball)
 
+    def test_workspace_can_remove_an_assignment_when_a_retained_entry_is_pending(self):
+        team = Team.objects.create(
+            name='Existing team', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        team.sports_categories.add(self.volleyball.sport_type)
+        self.volleyball.team_based = False
+        self.volleyball.save(update_fields=['team_based'])
+        retained = TeamMembership.objects.create(team=team, participant=self.alex)
+        removed = TeamMembership.objects.create(team=team, participant=self.sam)
+        retained.events.add(self.volleyball)
+        removed.events.add(self.volleyball)
+        self.volleyball.entries.create(participant=self.alex, status=EventEntry.Status.PENDING)
+
+        workspace = reverse('team_detail', args=[team.pk])
+        response = self.client.post(workspace, {
+            'roster-event': [self.volleyball.pk],
+            f'event-players-{self.volleyball.pk}': [self.alex.pk],
+        })
+        self.assertRedirects(response, workspace)
+        self.assertTrue(retained.events.filter(pk=self.volleyball.pk).exists())
+        self.assertFalse(removed.events.exists())
+
     def test_individual_event_gets_an_entry_for_each_selected_player(self):
         self.volleyball.team_based = False
         self.volleyball.save(update_fields=['team_based'])
@@ -123,6 +146,12 @@ class TeamEventRosterTest(TestCase):
         EligibilityRecord.objects.create(
             participant=self.alex, competition=self.competition, status=EligibilityRecord.Status.PENDING,
         )
+        response = self.client.get(reverse('create_team'))
+        player_field = response.context['roster_form'][str(self.basketball.pk)]
+        self.assertIn('Eligibility approval required', str(player_field))
+        options = list(player_field.field.widget.options(player_field.html_name, []))
+        blocked = next(option for option in options if option['value'] == str(self.alex.pk))
+        self.assertTrue(blocked['attrs']['disabled'])
         response = self.client.post(reverse('create_team'), self.payload([self.alex], [self.sam]))
         self.assertContains(response, 'eligibility must be approved before assignment')
         self.assertFalse(Team.objects.exists())

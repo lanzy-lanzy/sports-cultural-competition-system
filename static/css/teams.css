@@ -27,6 +27,8 @@
 .team-event-options{display:grid;gap:8px;max-height:240px;overflow-y:auto;padding:2px}
 .team-event-options label{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid #e0e9e3;border-radius:9px;background:#fff;font-size:12px;line-height:1.5;color:#40584a;cursor:pointer}
 .team-event-options label:has(input:checked){border-color:#8bc5a0;background:#edf7f0}
+.team-event-options label:has(input:disabled) { background: #f5f7f6; color: #58655d; cursor: default; }
+.team-event-options input:disabled { cursor: default; }
 
 .event-roster-panel {
     position: fixed;

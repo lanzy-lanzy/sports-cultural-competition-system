@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 
 from accounts.models import UserProfile
+from eligibility.models import EligibilityRecord
 from participants.models import Participant
 from sports.models import SportsEvent
 from .models import Team, TeamMembership, TeamStaff
@@ -86,6 +87,18 @@ class TeamForm(forms.ModelForm):
         return team
 
 
+class RosterPlayerCheckboxes(forms.CheckboxSelectMultiple):
+    def __init__(self, unavailable):
+        super().__init__()
+        self.unavailable = unavailable
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if str(value) in self.unavailable:
+            option['attrs']['disabled'] = True
+        return option
+
+
 class TeamEventRosterForm(forms.Form):
     def __init__(self, *args, team, selected_sports_only=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,25 +113,42 @@ class TeamEventRosterForm(forms.Form):
             return
 
         assigned = {}
+        inactive_members = set()
         if team.pk:
             for member in team.memberships.prefetch_related('events'):
+                if member.status != TeamMembership.Status.ACTIVE:
+                    inactive_members.add(member.participant_id)
                 for event in member.events.all():
                     assigned.setdefault(event.pk, []).append(member.participant_id)
-        players = list(assignment_players(team))
+        player_options = assignment_players(team)
+        players = list(player_options)
+        unapproved_eligibility = set(EligibilityRecord.objects.filter(
+            competition_id__in={event.competition_id for event in self.events},
+            participant_id__in=player_options.order_by().values('pk'),
+        ).exclude(status=EligibilityRecord.Status.APPROVED).values_list('participant_id', 'competition_id'))
         for event in self.events:
             name = str(event.pk)
             initial = assigned.get(event.pk, [])
             current = set(initial)
-            choices = [
-                (str(player.pk), f'{player.name} ({player.participant_id})')
-                for player in players if player.pk in current or (
-                    player.status == 'ACTIVE'
-                    and (event.gender not in ('male', 'female') or player.gender == event.gender)
-                    and (event.category == 'OPEN' or player.category == event.category)
-                )
-            ]
+            choices = []
+            unavailable = set()
+            for player in players:
+                player_id = str(player.pk)
+                label = f'{player.name} ({player.participant_id})'
+                if player.pk not in current:
+                    if player.status != 'ACTIVE' or (
+                        event.gender in ('male', 'female') and player.gender != event.gender
+                    ) or (event.category != 'OPEN' and player.category != event.category):
+                        continue
+                    if player.pk in inactive_members:
+                        label += ' · Inactive roster member'
+                        unavailable.add(player_id)
+                    elif (player.pk, event.competition_id) in unapproved_eligibility:
+                        label += ' · Eligibility approval required'
+                        unavailable.add(player_id)
+                choices.append((player_id, label))
             self.fields[name] = forms.MultipleChoiceField(
-                choices=choices, initial=initial, required=False, widget=forms.CheckboxSelectMultiple,
+                choices=choices, initial=initial, required=False, widget=RosterPlayerCheckboxes(unavailable),
                 label=f'{event.name} · {event.get_category_display()} · {event.get_gender_display()}',
             )
             self.event_rosters.append((event, self[name]))

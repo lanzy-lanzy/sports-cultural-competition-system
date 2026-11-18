@@ -86,11 +86,12 @@ def save_team_event_roster(team, selections, user):
         raise ValidationError('A selected player is no longer available. Review the roster.')
 
     for event_id, selected in changed.items():
-        if not selected:
+        additions = selected - current[event_id]
+        if not additions:
             continue
         event = available[event_id]
         contestant_type = 'team' if event.team_based else 'participant'
-        contestants = [team] if event.team_based else [players[pk] for pk in sorted(selected)]
+        contestants = [team] if event.team_based else [players[pk] for pk in sorted(additions)]
         for contestant in contestants:
             owner = {contestant_type: contestant}
             entry = event.entries.filter(**owner).first()
