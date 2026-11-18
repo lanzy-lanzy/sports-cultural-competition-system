@@ -9,8 +9,12 @@ from django.views.decorators.http import require_POST
 
 from accounts.access import MANAGEMENT_ROLES, get_user_role, role_required
 from accounts.models import UserProfile
-from .forms import TeamForm, TeamMembershipForm, TeamMemberEventsForm, TeamRosterFilterForm, TeamStaffForm
+from .forms import (
+    TeamEventRosterForm, TeamForm, TeamMembershipForm, TeamMemberEventsForm,
+    TeamRosterFilterForm, TeamStaffForm,
+)
 from .models import Team, TeamMembership, TeamStaff
+from .services import save_team_event_roster
 
 
 TEAM_EDITOR_ROLES = MANAGEMENT_ROLES | {UserProfile.Role.TEAM_MANAGER}
@@ -48,15 +52,9 @@ def create_team(request):
         allow_status=can_approve,
         force_approved=can_approve,
     )
-    if request.method == 'POST' and form.is_valid():
-        with transaction.atomic():
-            team = form.save(commit=False)
-            team.created_by = request.user
-            if not can_approve:
-                team.status = Team.Status.PENDING
-            team.save()
-            if get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER:
-                TeamStaff.objects.create(team=team, user=request.user, role=TeamStaff.Role.MANAGER)
+    roster_form = _event_roster_form(request, form.instance) if can_approve else None
+    team = _save_team_form(request, form, roster_form)
+    if team is not None:
         if can_approve:
             messages.success(
                 request,
@@ -71,6 +69,7 @@ def create_team(request):
         return redirect('team_detail', team_id=team.id)
     return render(request, 'teams/team_form.html', {
         'form': form,
+        'roster_form': roster_form,
         'team': None,
         'auto_approved': can_approve,
     })
@@ -86,11 +85,48 @@ def edit_team(request, team_id):
         instance=team,
         allow_status=can_approve,
     )
-    if request.method == 'POST' and form.is_valid():
-        form.save()
+    roster_form = _event_roster_form(request, team) if can_approve else None
+    if _save_team_form(request, form, roster_form) is not None:
         messages.success(request, 'Team details updated successfully.')
         return redirect('team_detail', team_id=team.id)
-    return render(request, 'teams/team_form.html', {'form': form, 'team': team})
+    return render(request, 'teams/team_form.html', {'form': form, 'team': team, 'roster_form': roster_form})
+
+
+def _event_roster_form(request, team):
+    return TeamEventRosterForm(
+        request.POST if request.method == 'POST' else None,
+        team=team,
+        prefix='event-players',
+    )
+
+
+def _save_team_form(request, form, roster_form):
+    if request.method != 'POST':
+        return None
+    valid = form.is_valid()
+    roster_valid = roster_form is None or roster_form.is_valid()
+    if not (valid and roster_valid):
+        return None
+
+    team = form.save(commit=False)
+    creating = team.pk is None
+    if creating:
+        team.created_by = request.user
+    selections = roster_form.selections() if roster_form is not None else {}
+    try:
+        with transaction.atomic():
+            team.save()
+            if creating and get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER:
+                TeamStaff.objects.create(team=team, user=request.user, role=TeamStaff.Role.MANAGER)
+            if selections:
+                save_team_event_roster(team, selections, request.user)
+    except ValidationError as error:
+        roster_form.add_error(None, error)
+    except IntegrityError:
+        form.add_error(None, 'The team or roster changed while you were editing. Reload and try again.')
+    else:
+        return team
+    return None
 
 
 @team_editor_required

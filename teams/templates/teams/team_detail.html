@@ -45,6 +45,9 @@
                 <h2 class="mt-3 font-display text-xl font-bold text-ink">Team roster</h2>
                 <p class="mt-1 text-sm text-slate-500">{{ page_obj.paginator.count }} matching of {{ total_members }} assigned member{{ total_members|pluralize }}</p>
                 {% if team.description %}<p class="mt-2 text-sm text-slate-600">{{ team.description }}</p>{% endif %}
+                {% if can_approve_teams %}
+                <a href="{% url 'edit_team' team.pk %}#event-roster" class="mt-3 inline-block text-sm font-bold text-campus">Assign players by sports event</a>
+                {% endif %}
             </div>
             <form method="get" class="grid gap-3 border-b border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-2" aria-label="Filter team players">
                 {% for field in filter_form %}
@@ -69,7 +72,7 @@
                                 </div>
                                 {% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.id %}" class="mt-2 inline-block text-xs font-bold text-campus">View player profile</a>{% endif %}
                             </td>
-                            <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p><div class="mt-2 flex flex-wrap gap-1">{% for event in membership.events.all %}<span class="rounded-md bg-teal-50 px-2 py-1 text-campus">{{ event.name }}</span>{% empty %}<span>No sports events assigned</span>{% endfor %}</div></td>
+                            <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p><div class="mt-2 flex flex-wrap gap-1">{% for event in membership.events.all %}<span class="rounded-md bg-teal-50 px-2 py-1 text-campus">{{ event.name }} &middot; {{ event.get_category_display }} &middot; {{ event.get_gender_display }} &middot; {{ event.competition.name }}</span>{% empty %}<span>No sports events assigned</span>{% endfor %}</div></td>
                             <td class="px-5 py-4 align-top text-xs"><p class="font-bold text-ink">{{ membership.get_status_display }} member</p><p class="mt-1 text-slate-500">Player: {{ membership.participant.get_status_display }}</p></td>
                             <td class="px-5 py-4 align-top"><details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-campus">Manage events</summary><form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">{% csrf_token %}<p class="text-xs text-slate-500">Select all events for this player. Only confirmed team or individual entries can be assigned.</p>{{ membership.events_form.events }}<button class="tw-button tw-button-primary">Save events</button></form></details><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
                         </tr>

@@ -1,0 +1,34 @@
+<section class="border-t border-slate-100 px-6 py-5 sm:px-8" id="event-roster" aria-labelledby="event-roster-heading">
+    <h2 id="event-roster-heading" class="font-display text-xl font-bold text-ink">Sports event rosters</h2>
+    {% if roster_form.non_field_errors %}
+        <div class="mt-2 text-sm text-rose-600" role="alert">{{ roster_form.non_field_errors }}</div>
+    {% endif %}
+    {% if roster_form.event_rosters %}
+        <p class="mt-2 text-sm text-slate-600">Select the players for each event. A player can join multiple events. Selecting an available player adds them to the team roster.</p>
+        <p class="mt-2 text-sm text-slate-600">Saving creates confirmed entries where needed. Clearing a selection removes the player from that event roster and keeps their team membership and any confirmed entries.</p>
+        {% regroup roster_form.event_rosters by 0.competition as competitions %}
+        {% for competition in competitions %}
+            <h3 class="mt-5 text-base font-bold text-ink">{{ competition.grouper }}</h3>
+            {% regroup competition.list by 0.sport_type as sports %}
+            {% for sport in sports %}
+                <h4 class="mb-2 mt-3 text-sm font-bold text-slate-600">{{ sport.grouper }}</h4>
+                {% for event, field in sport.list %}
+                    <details class="mb-2 rounded-md border border-slate-200 px-4 py-3" data-event-roster {% if field.value or field.errors %}open{% endif %}>
+                        <summary class="cursor-pointer text-sm font-bold text-campus">
+                            {{ field.label }}
+                            <span class="ml-2 text-xs font-normal text-slate-500" data-roster-count aria-live="polite">{{ field.value|length }} selected</span>
+                        </summary>
+                        <input type="hidden" name="roster-event" value="{{ event.pk }}">
+                        <fieldset class="team-event-options mt-2 max-h-64 overflow-y-auto">
+                            <legend class="sr-only">Players for {{ field.label }}</legend>
+                            {% if field.field.choices %}{{ field }}{% else %}<p class="text-sm text-slate-500">No players match this division.</p>{% endif %}
+                        </fieldset>
+                        {% if field.errors %}<div class="mt-2 text-sm text-rose-600" role="alert">{{ field.errors }}</div>{% endif %}
+                    </details>
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+    {% else %}
+        <p class="mt-2 text-sm text-slate-500">No sports events are open for assignment in active competitions.</p>
+    {% endif %}
+</section>

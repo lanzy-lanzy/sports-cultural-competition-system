@@ -6,6 +6,7 @@ from accounts.access import MANAGEMENT_ROLES, get_user_role
 from audit.models import record_action
 from eligibility.models import EligibilityRecord
 from participants.models import Participant
+from competitions.models import Competition
 from sports.models import EventEntry, SportsEvent
 from .models import Team, TeamMembership
 
@@ -22,6 +23,104 @@ def available_member_events(team, participant=None):
     if participant is not None:
         query |= Q(team_based=False, entries__participant=participant, entries__status=EventEntry.Status.CONFIRMED)
     return SportsEvent.objects.filter(query).select_related('competition').distinct().order_by('competition__name', 'name')
+
+
+def assignable_team_events():
+    return SportsEvent.objects.filter(
+        competition__status='ACTIVE',
+        competition__kind__in=(Competition.Kind.SPORTS, Competition.Kind.MIXED),
+        sport_type__is_active=True,
+        confirmed_at__isnull=True,
+    ).exclude(status__in=(SportsEvent.Status.COMPLETED, SportsEvent.Status.CANCELLED))
+
+
+def assignment_players(team):
+    available = Q(team_membership__isnull=True, status='ACTIVE')
+    if team.pk:
+        available |= Q(team_membership__team=team.pk)
+    return Participant.objects.filter(available).order_by('name', 'pk')
+
+
+def save_team_event_roster(team, selections, user):
+    """Save management's event rosters inside the team form's transaction."""
+    from sports.forms import EventEntryForm
+
+    members = {
+        member.participant_id: member
+        for member in team.memberships.select_for_update().order_by('pk').prefetch_related('events')
+    }
+    current = {event_id: set() for event_id in selections}
+    for player_id, member in members.items():
+        for event in member.events.all():
+            if event.pk in current:
+                current[event.pk].add(player_id)
+    changed = {
+        event_id: player_ids
+        for event_id, player_ids in selections.items()
+        if player_ids != current[event_id]
+    }
+    if not changed:
+        return
+
+    event_ids = set(changed)
+    for member in members.values():
+        event_ids.update(event.pk for event in member.events.all())
+    list(SportsEvent.objects.select_for_update().filter(pk__in=event_ids).order_by('pk'))
+    available = assignable_team_events().in_bulk(changed)
+    if set(changed) != set(available):
+        raise ValidationError('An event is no longer available. Review the event selections.')
+
+    player_ids = set().union(*changed.values())
+    players = {
+        player.pk: player for player in Participant.objects.select_for_update().filter(
+            pk__in=assignment_players(team).filter(pk__in=player_ids).values('pk'),
+        ).order_by('pk')
+    }
+    if set(players) != player_ids:
+        raise ValidationError('A selected player is no longer available. Review the roster.')
+
+    for event_id, selected in changed.items():
+        if not selected:
+            continue
+        event = available[event_id]
+        contestant_type = 'team' if event.team_based else 'participant'
+        contestants = [team] if event.team_based else [players[pk] for pk in sorted(selected)]
+        for contestant in contestants:
+            owner = {contestant_type: contestant}
+            entry = event.entries.filter(**owner).first()
+            if entry and entry.status == EventEntry.Status.CONFIRMED:
+                continue
+            if entry:
+                raise ValidationError(f'{event.name}: resolve the existing entry status in the event workspace.')
+            entry_form = EventEntryForm({
+                'contestant_type': contestant_type,
+                contestant_type: contestant.pk,
+            }, event=event)
+            if not entry_form.is_valid():
+                errors = ' '.join(error for errors in entry_form.errors.values() for error in errors)
+                raise ValidationError(f'{event.name}: {errors}')
+            EventEntry.objects.create(event=event, status=EventEntry.Status.CONFIRMED, **owner)
+
+    for player_id in sorted(player_ids - members.keys()):
+        player = players[player_id]
+        members[player_id] = TeamMembership.objects.create(team=team, participant=player)
+        player.team_name = team.name
+        player.save(update_fields=['team_name'])
+
+    for player_id, member in members.items():
+        previous = {event.pk: event for event in member.events.all()}
+        selected = {**previous}
+        for event_id, roster in changed.items():
+            if player_id in roster:
+                selected[event_id] = available[event_id]
+            else:
+                selected.pop(event_id, None)
+        if selected.keys() != previous.keys():
+            try:
+                set_member_events(member, selected.values(), user)
+            except ValidationError as error:
+                name = member.participant.name
+                raise ValidationError([f'{name}: {message}' for message in error.messages]) from error
 
 
 def validate_member_events(membership, events):
@@ -51,6 +150,7 @@ def validate_member_events(membership, events):
 
 @transaction.atomic
 def set_member_events(membership, events, user):
+    Team.objects.select_for_update().get(pk=membership.team_id)
     membership = TeamMembership.objects.select_for_update().select_related('team', 'participant').get(pk=membership.pk)
     require_team_access(user, membership.team)
     selected_ids = {event.pk for event in events}

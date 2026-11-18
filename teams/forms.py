@@ -6,6 +6,7 @@ from accounts.models import UserProfile
 from participants.models import Participant
 from sports.models import SportsEvent
 from .models import Team, TeamMembership, TeamStaff
+from .services import assignable_team_events, assignment_players
 
 
 INPUT_CLASS = (
@@ -63,6 +64,51 @@ class TeamForm(forms.ModelForm):
             team.save()
             self.save_m2m()
         return team
+
+
+class TeamEventRosterForm(forms.Form):
+    def __init__(self, *args, team, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.events = list(assignable_team_events().select_related(
+            'competition', 'sport_type',
+        ).order_by('competition__name', 'competition_id', 'sport_type__name', 'name', 'pk'))
+        self.event_rosters = []
+        if not self.events:
+            return
+
+        assigned = {}
+        if team.pk:
+            for member in team.memberships.prefetch_related('events'):
+                for event in member.events.all():
+                    assigned.setdefault(event.pk, []).append(member.participant_id)
+        players = list(assignment_players(team))
+        for event in self.events:
+            name = str(event.pk)
+            initial = assigned.get(event.pk, [])
+            current = set(initial)
+            choices = [
+                (str(player.pk), f'{player.name} ({player.participant_id})')
+                for player in players if player.pk in current or (
+                    player.status == 'ACTIVE'
+                    and (event.gender not in ('male', 'female') or player.gender == event.gender)
+                    and (event.category == 'OPEN' or player.category == event.category)
+                )
+            ]
+            self.fields[name] = forms.MultipleChoiceField(
+                choices=choices, initial=initial, required=False, widget=forms.CheckboxSelectMultiple,
+                label=f'{event.name} · {event.get_category_display()} · {event.get_gender_display()}',
+            )
+            self.event_rosters.append((event, self[name]))
+
+    def clean(self):
+        cleaned = super().clean()
+        submitted = set(self.data.getlist('roster-event'))
+        if submitted - self.fields.keys():
+            raise forms.ValidationError('An event is no longer available. Review the event selections.')
+        return {key: values for key, values in cleaned.items() if key in submitted}
+
+    def selections(self):
+        return {int(key): {int(value) for value in values} for key, values in self.cleaned_data.items()}
 
 
 class TeamStaffForm(forms.Form):

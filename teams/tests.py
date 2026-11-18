@@ -1,10 +1,95 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import UserProfile
+from competitions.models import Competition
+from eligibility.models import EligibilityRecord
 from participants.models import Participant
+from sports.models import EventEntry, SportsEvent, SportType
 from .models import Team, TeamMembership, TeamStaff
+
+
+class TeamEventRosterTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'pass')
+        self.client.force_login(self.admin)
+        self.competition = Competition.objects.create(
+            name='Campus Games', kind=Competition.Kind.SPORTS, status='ACTIVE',
+            start_date=timezone.now(), end_date=timezone.now(), created_by=self.admin,
+        )
+        self.basketball = self.make_event('Basketball')
+        self.volleyball = self.make_event('Volleyball')
+        self.alex = Participant.objects.create(name='Alex Athlete', gender='male', status='ACTIVE')
+        self.sam = Participant.objects.create(name='Sam Athlete', gender='male', status='ACTIVE')
+
+    def make_event(self, name):
+        sport = SportType.objects.create(name=name)
+        return SportsEvent.objects.create(
+            name=f'{name} Open Division', competition=self.competition, sport_type=sport,
+        )
+
+    def payload(self, basketball_players, volleyball_players):
+        return {
+            'name': 'Blue Warriors', 'category': Team.Category.SPORTS,
+            'status': Team.Status.APPROVED,
+            'roster-event': [self.basketball.pk, self.volleyball.pk],
+            f'event-players-{self.basketball.pk}': [player.pk for player in basketball_players],
+            f'event-players-{self.volleyball.pk}': [player.pk for player in volleyball_players],
+        }
+
+    def test_create_and_edit_overlapping_event_rosters(self):
+        response = self.client.get(reverse('create_team'))
+        self.assertContains(response, 'Campus Games')
+        self.assertContains(response, 'Basketball Open Division')
+        self.assertContains(response, self.alex.participant_id)
+        response = self.client.post(reverse('create_team'), self.payload([self.alex, self.sam], [self.alex]))
+        team = Team.objects.get()
+        self.assertRedirects(response, reverse('team_detail', args=[team.pk]))
+        self.assertSetEqual(set(self.alex.team_membership.events.all()), {self.basketball, self.volleyball})
+        self.assertSetEqual(set(self.sam.team_membership.events.all()), {self.basketball})
+        self.assertEqual(team.event_entries.filter(status=EventEntry.Status.CONFIRMED).count(), 2)
+
+        edit_url = reverse('edit_team', args=[team.pk])
+        response = self.client.get(edit_url)
+        self.assertContains(response, 'Sports event rosters')
+        self.assertEqual(response.context['roster_form'][str(self.volleyball.pk)].value(), [self.alex.pk])
+        response = self.client.post(edit_url, self.payload([], [self.alex, self.sam]))
+        self.assertRedirects(response, reverse('team_detail', args=[team.pk]))
+        self.assertSetEqual(set(self.sam.team_membership.events.all()), {self.volleyball})
+        self.assertEqual(team.memberships.count(), 2)
+        self.assertEqual(team.event_entries.count(), 2)
+
+    def test_rejects_inactive_competition_submission(self):
+        self.competition.status = 'DRAFT'
+        self.competition.save(update_fields=['status'])
+        self.assertNotContains(self.client.get(reverse('create_team')), 'Basketball Open Division')
+        response = self.client.post(reverse('create_team'), self.payload([self.alex], []))
+        self.assertContains(response, 'An event is no longer available')
+        self.assertFalse(Team.objects.exists())
+
+    def test_individual_event_gets_an_entry_for_each_selected_player(self):
+        self.volleyball.team_based = False
+        self.volleyball.save(update_fields=['team_based'])
+        response = self.client.post(reverse('create_team'), self.payload([], [self.alex, self.sam]))
+        team = Team.objects.get()
+        self.assertRedirects(response, reverse('team_detail', args=[team.pk]))
+        self.assertSetEqual(
+            set(self.volleyball.entries.values_list('participant_id', flat=True)),
+            {self.alex.pk, self.sam.pk},
+        )
+        self.assertEqual(self.volleyball.assigned_team_members.filter(team=team).count(), 2)
+
+    def test_ineligible_player_rolls_back_team_roster_and_entries(self):
+        EligibilityRecord.objects.create(
+            participant=self.alex, competition=self.competition, status=EligibilityRecord.Status.PENDING,
+        )
+        response = self.client.post(reverse('create_team'), self.payload([self.alex], [self.sam]))
+        self.assertContains(response, 'eligibility must be approved before assignment')
+        self.assertFalse(Team.objects.exists())
+        self.assertFalse(TeamMembership.objects.exists())
+        self.assertFalse(EventEntry.objects.exists())
 
 
 class TeamManagementTest(TestCase):

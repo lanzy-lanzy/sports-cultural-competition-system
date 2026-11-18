@@ -15,3 +15,11 @@ document.querySelectorAll('[data-select-all]').forEach(toggle => {
     boxes.forEach(box => box.addEventListener('change', update));
     update();
 });
+
+document.querySelectorAll('[data-event-roster]').forEach(roster => {
+    const counter = roster.querySelector('[data-roster-count]');
+    roster.addEventListener('change', () => {
+        const count = roster.querySelectorAll('input[type="checkbox"]:checked').length;
+        counter.textContent = `${count} selected`;
+    });
+});
