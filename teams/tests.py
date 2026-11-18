@@ -88,6 +88,25 @@ class TeamEventRosterTest(TestCase):
         self.assertContains(response, 'select its sport in Sports categories')
         self.assertFalse(Team.objects.exists())
 
+    def test_workspace_saves_assignments_directly_for_selected_sports(self):
+        team = Team.objects.create(
+            name='Existing team', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        team.sports_categories.add(self.basketball.sport_type)
+        workspace = reverse('team_detail', args=[team.pk])
+        response = self.client.get(workspace)
+        self.assertContains(response, 'Save assignments')
+        self.assertContains(response, self.basketball.name)
+        self.assertNotContains(response, self.volleyball.name)
+        response = self.client.post(workspace, {
+            'roster-event': [self.basketball.pk],
+            f'event-players-{self.basketball.pk}': [self.alex.pk],
+        })
+        self.assertRedirects(response, workspace)
+        self.assertTrue(team.memberships.get(participant=self.alex).events.filter(pk=self.basketball.pk).exists())
+        self.assertEqual(team.event_entries.get().event, self.basketball)
+
     def test_individual_event_gets_an_entry_for_each_selected_player(self):
         self.volleyball.team_based = False
         self.volleyball.save(update_fields=['team_based'])

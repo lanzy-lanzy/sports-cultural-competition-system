@@ -5,7 +5,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.access import MANAGEMENT_ROLES, get_user_role, role_required
 from accounts.models import UserProfile
@@ -131,8 +131,31 @@ def _save_team_form(request, form, roster_form):
 
 
 @team_editor_required
+@require_http_methods(['GET', 'HEAD', 'POST'])
 def team_detail(request, team_id):
     team = _get_accessible_team(request.user, team_id)
+    can_approve = get_user_role(request.user) in MANAGEMENT_ROLES
+    can_assign = can_approve and team.category != Team.Category.CULTURAL
+    if request.method == 'POST' and not can_assign:
+        raise PermissionDenied
+    roster_form = None
+    if can_assign:
+        roster_form = TeamEventRosterForm(
+            request.POST if request.method == 'POST' else None,
+            team=team, prefix='event-players', selected_sports_only=True,
+        )
+        if request.method == 'POST' and roster_form.is_valid():
+            try:
+                with transaction.atomic():
+                    locked_team = Team.objects.select_for_update().get(pk=team.pk)
+                    save_team_event_roster(locked_team, roster_form.selections(), request.user)
+            except ValidationError as error:
+                roster_form.add_error(None, error)
+            except IntegrityError:
+                roster_form.add_error(None, 'The roster changed while you were editing. Reload and try again.')
+            else:
+                messages.success(request, 'Event assignments saved.')
+                return redirect('team_detail', team_id=team.pk)
     from sports.services import compute_team_standings
     memberships = team.memberships.select_related('participant').prefetch_related('events__competition').order_by(
         'participant__name', 'pk',
@@ -164,6 +187,7 @@ def team_detail(request, team_id):
     query_params.pop('page', None)
     return render(request, 'teams/team_detail.html', {
         'team': team,
+        'roster_form': roster_form,
         'sports_standings': compute_team_standings(team),
         'memberships': page_obj.object_list,
         'page_obj': page_obj,
@@ -173,8 +197,8 @@ def team_detail(request, team_id):
         'staff_assignments': team.staff_assignments.select_related('user'),
         'membership_form': TeamMembershipForm(team=team),
         'staff_form': TeamStaffForm(),
-        'can_approve_teams': get_user_role(request.user) in MANAGEMENT_ROLES,
-    })
+        'can_approve_teams': can_approve,
+    }, status=400 if request.method == 'POST' else 200)
 
 
 @team_editor_required

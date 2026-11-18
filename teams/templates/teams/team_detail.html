@@ -3,105 +3,199 @@
 
 {% block title %}{{ team.name }} - Team Workspace{% endblock %}
 {% block header_title %}Team Workspace{% endblock %}
-
 {% block extra_head %}<link rel="stylesheet" href="{% static_v 'css/teams.css' %}">{% endblock %}
 
 {% block content %}
-<div class="team-ui">
-<div class="space-y-6">
-    <section class="overflow-hidden rounded-[2rem] bg-ink p-7 text-white shadow-soft sm:p-9">
-        <div class="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-            <div class="flex items-center gap-5">{% if team.logo %}<img src="{{ team.logo.url }}" alt="{{ team.name }} logo" class="h-20 w-20 rounded-md bg-white object-cover p-1">{% else %}<div class="flex h-20 w-20 items-center justify-center rounded-md bg-campus font-display text-3xl font-bold">{{ team.name|make_list|first|upper }}</div>{% endif %}<div><p class="text-xs font-bold uppercase tracking-[0.16em] text-teal-300">{{ team.code }}</p><h1 class="mt-1 font-display text-3xl font-bold">{{ team.name }}</h1><p class="mt-2 text-sm text-slate-300">{{ team.get_category_display }} &middot; {{ team.get_status_display }}</p></div></div>
-            {% if can_approve_teams %}<form method="post" action="{% url 'update_team_status' team.id %}" class="team-header-actions">{% csrf_token %}{% else %}<div class="team-header-actions team-header-actions-simple">{% endif %}
-                <a href="{% url 'edit_team' team.id %}" class="tw-button tw-button-glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6L16 3Z"/><path d="m13 6 5 5"/></svg>Edit details</a>
-                {% if can_approve_teams %}
-                    <label for="team-status" class="team-status-label">Team status</label><select id="team-status" name="status">
-                        {% for value, label in team.Status.choices %}<option value="{{ value }}" {% if team.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-                    </select>
-                    <button type="submit" class="tw-button tw-button-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Update status</button>
-                {% endif %}
-            {% if can_approve_teams %}</form>{% else %}</div>{% endif %}
-        </div>
-    </section>
+<div class="team-ui team-workspace">
+    <a href="{% url 'team_list' %}" class="team-workspace-back">&larr; All teams</a>
 
-    <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm" aria-labelledby="team-standings-title">
-        <div class="border-b border-slate-100 px-6 py-5"><h2 id="team-standings-title" class="font-display text-xl font-bold text-ink">Sports standings</h2><p class="mt-1 text-sm text-slate-500">Completed, scored matches only. Byes do not count as wins. Each tournament stage has its own record.</p></div>
-        {% if sports_standings %}
-        <div class="overflow-x-auto"><table class="w-full text-left text-sm">
-            <caption class="sr-only">{{ team.name }} standings by event and stage</caption>
-            <thead class="bg-slate-50 text-xs text-slate-500"><tr><th scope="col" class="px-5 py-3">Event / stage</th><th scope="col" class="px-5 py-3">Rank</th><th scope="col" class="px-5 py-3">Played</th><th scope="col" class="px-5 py-3">Wins</th><th scope="col" class="px-5 py-3">Draws</th><th scope="col" class="px-5 py-3">Losses</th><th scope="col" class="px-5 py-3">Points</th></tr></thead>
-            <tbody class="divide-y divide-slate-100">{% for row in sports_standings %}<tr>
-                <td class="px-5 py-4"><p class="font-bold text-ink">{% if can_approve_teams %}<a href="{% url 'event_standings' row.event.id %}" class="hover:text-campus">{{ row.event.name }}</a>{% else %}{{ row.event.name }}{% endif %}</p><p class="mt-1 text-xs text-slate-500">{{ row.event.competition.name }} &middot; {{ row.stage }}</p></td>
-                <td class="px-5 py-4"><span class="team-rank {% if row.rank == 1 and row.played %}team-rank-leading{% endif %}">{% if row.played %}{{ row.rank }}{% else %}&mdash;{% endif %}</span></td><td class="px-5 py-4">{{ row.played }}</td><td class="px-5 py-4 team-wins">{{ row.wins }}</td><td class="px-5 py-4">{{ row.draws|default:0 }}</td><td class="px-5 py-4">{{ row.losses }}</td><td class="px-5 py-4">{{ row.total_points|default_if_none:'—' }}</td>
-            </tr>{% endfor %}</tbody>
-        </table></div>
-        {% else %}<p class="px-6 py-8 text-center text-sm text-slate-500">No confirmed sports event entries for this team yet.</p>{% endif %}
-    </section>
-
-    <div class="grid grid-cols-1 gap-6">
-        <section id="team-roster" style="scroll-margin-top:110px" class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-6 py-5">
-                <a href="{% url 'team_list' %}" class="text-sm font-bold text-campus">&larr; All teams</a>
-                <h2 class="mt-3 font-display text-xl font-bold text-ink">Team roster</h2>
-                {% with sports=team.sports_categories.all %}
-                    {% if sports %}<p class="mt-1 text-sm text-slate-600">Sports{% for sport in sports %}{% if forloop.first %} &middot; {% else %}, {% endif %}{{ sport.name }}{% endfor %}</p>{% endif %}
-                {% endwith %}
-                <p class="mt-1 text-sm text-slate-500">{{ page_obj.paginator.count }} matching of {{ total_members }} assigned member{{ total_members|pluralize }}</p>
-                {% if team.description %}<p class="mt-2 text-sm text-slate-600">{{ team.description }}</p>{% endif %}
-                {% if can_approve_teams %}
-                <a href="{% url 'edit_team' team.pk %}#event-roster" class="mt-3 inline-block text-sm font-bold text-campus">Assign players by sports event</a>
-                {% endif %}
-            </div>
-            <form method="get" class="grid gap-3 border-b border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-2" aria-label="Filter team players">
-                {% for field in filter_form %}
-                <div><label for="{{ field.id_for_label }}" class="mb-1 block text-xs font-bold text-slate-600">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ error }}</p>{% endfor %}</div>
-                {% endfor %}
-                <div class="flex items-center gap-4 sm:col-span-2"><button type="submit" class="rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white tw-button tw-button-primary">Search players</button><a href="{% url 'team_detail' team.id %}" class="text-sm font-bold text-slate-600 tw-button tw-button-secondary">Clear filters</a></div>
-            </form>
-            <form id="bulk-member-delete" method="post" action="{% url 'bulk_delete_members' team.pk %}" class="team-bulk-bar">{% csrf_token %}<label><input type="checkbox" data-select-all="bulk-member-delete"> Select visible members</label><span data-selection-count="bulk-member-delete" aria-live="polite">0 selected</span><button class="tw-button tw-button-danger" data-bulk-submit>Review force removal</button></form>
-            {% if memberships %}
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <caption class="sr-only">Players assigned to {{ team.name }}</caption>
-                    <thead class="bg-slate-50 text-xs text-slate-500"><tr><th scope="col" class="px-3 py-3"><span class="sr-only">Select member</span></th><th scope="col" class="px-5 py-3">Player</th><th scope="col" class="px-5 py-3">Details</th><th scope="col" class="px-5 py-3">Status</th><th scope="col" class="px-5 py-3">Actions</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for membership in memberships %}
-                        <tr>
-                            <td class="px-3 py-4 align-top"><input type="checkbox" name="selected" value="{{ membership.pk }}" form="bulk-member-delete" aria-label="Select {{ membership.participant.name }} for removal"></td>
-                            <td class="px-5 py-4 align-top">
-                                <div class="flex items-center gap-3">
-                                    {% if membership.participant.profile_image %}<img src="{{ membership.participant.profile_image.url }}" alt="" class="h-10 w-10 rounded-md object-cover">{% endif %}
-                                    <div><p class="font-bold text-ink">{{ membership.participant.name }}</p><p class="mt-1 text-xs text-slate-500">{{ membership.participant.participant_id }}</p><p class="mt-1 text-xs text-slate-500">Jersey #{{ membership.member_number|default_if_none:'—' }}</p></div>
-                                </div>
-                                {% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.id %}" class="mt-2 inline-block text-xs font-bold text-campus">View player profile</a>{% endif %}
-                            </td>
-                            <td class="px-5 py-4 align-top text-xs text-slate-600"><p>{{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}</p><p class="mt-1">Age: {{ membership.participant.age|default_if_none:'Not provided' }}</p><p class="mt-1">Joined {{ membership.joined_at|date:'M j, Y' }}</p><div class="mt-2 flex flex-wrap gap-1">{% for event in membership.events.all %}<span class="rounded-md bg-teal-50 px-2 py-1 text-campus">{{ event.name }} &middot; {{ event.get_category_display }} &middot; {{ event.get_gender_display }} &middot; {{ event.competition.name }}</span>{% empty %}<span>No sports events assigned</span>{% endfor %}</div></td>
-                            <td class="px-5 py-4 align-top text-xs"><p class="font-bold text-ink">{{ membership.get_status_display }} member</p><p class="mt-1 text-slate-500">Player: {{ membership.participant.get_status_display }}</p></td>
-                            <td class="px-5 py-4 align-top"><details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-campus">Manage events</summary><form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">{% csrf_token %}<p class="text-xs text-slate-500">Select all events for this player. Only confirmed team or individual entries can be assigned.</p>{{ membership.events_form.events }}<button class="tw-button tw-button-primary">Save events</button></form></details><form method="post" action="{% url 'remove_team_member' team.id membership.id %}">{% csrf_token %}<button class="rounded-md px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove</button></form></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}<div class="px-6 py-10 text-center text-sm text-slate-500">{% if total_members %}No players match these filters. Clear filters to see the full roster.{% else %}No team members assigned.{% endif %}</div>{% endif %}
-            {% if page_obj.has_other_pages %}
-            <nav aria-label="Team roster pages" class="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 text-sm">
-                <div>{% if page_obj.has_previous %}<a class="font-bold text-campus" href="?{{ filter_query }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}</div>
-                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-                <div>{% if page_obj.has_next %}<a class="font-bold text-campus" href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div>
-            </nav>
+    <header class="team-workspace-card team-workspace-header">
+        <div class="team-workspace-identity">
+            {% if team.logo %}
+                <img src="{{ team.logo.url }}" alt="" class="team-workspace-logo">
+            {% else %}
+                <span class="team-workspace-logo team-workspace-initial" aria-hidden="true">{{ team.name|first|upper }}</span>
             {% endif %}
-            <form method="post" action="{% url 'add_team_member' team.id %}" class="grid gap-3 border-t border-slate-100 bg-slate-50/70 p-5 sm:grid-cols-[1fr_150px_auto] items-end">{% csrf_token %}<div><label for="{{ membership_form.participant.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Player</label>{{ membership_form.participant }}{% for error in membership_form.participant.errors %}<p class="text-xs text-rose-600">{{ error }}</p>{% endfor %}</div><div><label for="{{ membership_form.member_number.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Jersey number</label>{{ membership_form.member_number }}</div><fieldset class="sm:col-span-3"><legend class="mb-2 text-xs font-bold text-slate-600">Sports events (optional; select multiple)</legend>{{ membership_form.events }}<p class="mt-2 text-xs text-slate-500">Confirm this team's event entries first. Eligibility and division rules are checked when saving.</p></fieldset><button class="rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Add member</button></form>
-        </section>
+            <div>
+                <h1 class="font-display">{{ team.name }}</h1>
+                <p class="team-workspace-meta">{{ team.get_category_display }} &middot; {{ team.get_status_display }} &middot; {{ team.code }}</p>
+            </div>
+        </div>
+        <a href="{% url 'edit_team' team.pk %}" class="tw-button tw-button-secondary">Edit team</a>
+        {% if team.description %}<p class="team-workspace-description">{{ team.description }}</p>{% endif %}
+        {% with sports=team.sports_categories.all %}
+            {% if sports %}
+            <ul class="team-workspace-tags" aria-label="Team sports">
+                {% for sport in sports %}<li>{{ sport.name }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+    </header>
 
-        <section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <section id="team-roster" class="team-workspace-card" aria-labelledby="roster-heading">
+        <div class="team-workspace-roster-head">
+            <div>
+                <h2 id="roster-heading" class="font-display">Team roster</h2>
+                <p class="team-workspace-meta">{{ total_members }} player{{ total_members|pluralize }}{% if page_obj.paginator.count != total_members %} &middot; {{ page_obj.paginator.count }} matching{% endif %}</p>
+            </div>
+            {% if roster_form is not None %}
+                <form method="post" data-workspace-assignments>
+                    {% csrf_token %}
+                    {% include 'teams/event_roster_fields.html' with workspace_assignments=True %}
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="team-roster-tools">
+            <details class="team-roster-tool" {% if filter_query %}open{% endif %}>
+                <summary>Search and filter</summary>
+                <form method="get" class="team-workspace-form" aria-label="Filter team players">
+                    {% for field in filter_form %}
+                        <div>
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+                            {% for error in field.errors %}<p class="text-xs text-rose-600" role="alert">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    <div class="team-workspace-form-actions">
+                        <button class="tw-button tw-button-primary" type="submit">Search players</button>
+                        <a class="tw-button tw-button-secondary" href="{% url 'team_detail' team.pk %}">Clear filters</a>
+                    </div>
+                </form>
+            </details>
+            <details class="team-roster-tool">
+                <summary>Add player</summary>
+                <form method="post" action="{% url 'add_team_member' team.pk %}" class="team-workspace-form">
+                    {% csrf_token %}
+                    <div><label for="{{ membership_form.participant.id_for_label }}">Player</label>{{ membership_form.participant }}</div>
+                    <div><label for="{{ membership_form.member_number.id_for_label }}">Jersey number</label>{{ membership_form.member_number }}</div>
+                    {% if membership_form.events.field.queryset.exists %}
+                        <details class="team-workspace-form-actions">
+                            <summary>Choose events (optional)</summary>
+                            {{ membership_form.events }}
+                        </details>
+                    {% endif %}
+                    <div class="team-workspace-form-actions"><button type="submit" class="tw-button tw-button-primary">Add to roster</button></div>
+                </form>
+            </details>
+        </div>
+
+        {% if memberships %}
+            <form id="bulk-member-delete" method="post" action="{% url 'bulk_delete_members' team.pk %}" class="team-bulk-bar team-roster-bulk">
+                {% csrf_token %}
+                <label><input type="checkbox" data-select-all="bulk-member-delete"> Select visible players</label>
+                <span data-selection-count="bulk-member-delete" aria-live="polite">0 selected</span>
+                <button type="submit" class="tw-button tw-button-danger" data-bulk-submit>Review removal</button>
+            </form>
+            <ul class="team-roster-list" aria-label="Team players">
+                {% for membership in memberships %}
+                <li class="team-roster-player">
+                    <div class="team-roster-person">
+                        <label class="team-roster-select">
+                            <input type="checkbox" name="selected" value="{{ membership.pk }}" form="bulk-member-delete" aria-label="Select {{ membership.participant.name }} for removal">
+                        </label>
+                        {% if membership.participant.profile_image %}<img src="{{ membership.participant.profile_image.url }}" alt="" class="team-roster-avatar">{% endif %}
+                        <div>
+                            <h3>{% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.pk %}">{{ membership.participant.name }}</a>{% else %}{{ membership.participant.name }}{% endif %}</h3>
+                            <p class="team-workspace-meta">{{ membership.participant.participant_id }}{% if membership.member_number is not None %} &middot; #{{ membership.member_number }}{% endif %}</p>
+                            <p class="team-workspace-meta">{{ membership.get_status_display }} member{% if membership.participant.status != 'ACTIVE' %} &middot; Player {{ membership.participant.get_status_display|lower }}{% endif %}</p>
+                        </div>
+                    </div>
+                    <div class="team-roster-assignments">
+                        <ul class="team-workspace-tags" aria-label="Assigned events">
+                            {% for event in membership.events.all %}
+                                <li title="{{ event.competition.name }} · {{ event.get_category_display }} · {{ event.get_gender_display }}">{{ event.name }}</li>
+                            {% empty %}<li class="team-roster-no-events">No sports events assigned</li>{% endfor %}
+                        </ul>
+                    </div>
+                    <details class="team-roster-player-tools">
+                        <summary>Manage events</summary>
+                        <p class="team-workspace-meta mb-2">
+                            {{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}
+                            {% if membership.participant.age is not None %} &middot; Age {{ membership.participant.age }}{% endif %}
+                            <br>Joined {{ membership.joined_at|date:'M j, Y' }}
+                        </p>
+                        <form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">
+                            {% csrf_token %}
+                            {% if membership.events_form.events.field.queryset.exists %}
+                                {{ membership.events_form.events }}
+                                <button type="submit" class="tw-button tw-button-primary">Save events</button>
+                            {% else %}
+                                <p class="team-workspace-meta">No confirmed entries available for this player.</p>
+                            {% endif %}
+                        </form>
+                        <form method="post" action="{% url 'remove_team_member' team.pk membership.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove player</button>
+                        </form>
+                    </details>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="team-roster-empty">{% if total_members %}No players match these filters.{% else %}No team members assigned. Use Add player to start the roster.{% endif %}</p>
+        {% endif %}
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Team roster pages" class="team-roster-pages">
+            <div>{% if page_obj.has_previous %}<a href="?{{ filter_query }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}</div>
+            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <div>{% if page_obj.has_next %}<a href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div>
+        </nav>
+        {% endif %}
+    </section>
+
+    <div class="team-workspace-secondary">
+        <section class="team-workspace-card" aria-labelledby="team-standings-title">
+            <div class="team-workspace-roster-head">
+                <div>
+                    <h2 id="team-standings-title" class="font-display">Sports standings</h2>
+                    <p class="team-workspace-meta">Completed, scored matches by stage. Byes do not count as wins.</p>
+                </div>
+            </div>
+            {% if sports_standings %}
+                <ul aria-label="Results by event">
+                {% for row in sports_standings %}
+                    <li class="team-standings-row">
+                        <div>
+                            <h3 class="font-bold">{% if can_approve_teams %}<a href="{% url 'event_standings' row.event.id %}">{{ row.event.name }}</a>{% else %}{{ row.event.name }}{% endif %}</h3>
+                            <p class="team-workspace-meta">{{ row.event.competition.name }} &middot; {{ row.stage }}</p>
+                        </div>
+                        <dl>
+                            <div><dt>Rank</dt><dd>{% if row.played %}{{ row.rank }}{% else %}&mdash;{% endif %}</dd></div>
+                            <div><dt>Played</dt><dd>{{ row.played }}</dd></div>
+                            <div><dt>Wins</dt><dd>{{ row.wins }}</dd></div>
+                            <div><dt>Draws</dt><dd>{{ row.draws|default:0 }}</dd></div>
+                            <div><dt>Losses</dt><dd>{{ row.losses }}</dd></div>
+                            <div><dt>Points</dt><dd>{{ row.total_points|default_if_none:'—' }}</dd></div>
+                        </dl>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="team-roster-empty">No confirmed sports event entries for this team yet.</p>
+            {% endif %}
+        </section>
+<section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-6 py-5"><h2 class="font-display text-xl font-bold text-ink">Coaches and managers</h2></div>
             {% if staff_assignments %}<div class="divide-y divide-slate-100">{% for assignment in staff_assignments %}<div class="flex items-center justify-between gap-3 px-5 py-4"><div><p class="font-bold text-ink">{{ assignment.user.get_full_name|default:assignment.user.username }}</p><p class="text-xs text-slate-500">{{ assignment.get_role_display }}</p></div>{% if can_approve_teams %}<form method="post" action="{% url 'remove_team_staff' team.id assignment.id %}">{% csrf_token %}<button class="text-xs font-bold text-rose-600 tw-button tw-button-danger">Remove</button></form>{% endif %}</div>{% endfor %}</div>{% else %}<div class="px-5 py-8 text-center text-sm text-slate-500">No staff assigned.</div>{% endif %}
             {% if can_approve_teams %}<form method="post" action="{% url 'add_team_staff' team.id %}" class="space-y-3 border-t border-slate-100 bg-slate-50/70 p-5">{% csrf_token %}<div><label for="{{ staff_form.user.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Staff member</label>{{ staff_form.user }}</div><div><label for="{{ staff_form.role.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Role</label>{{ staff_form.role }}</div><button class="w-full rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Assign staff</button></form>{% endif %}
         </section>
+        {% if can_approve_teams %}
+        <details class="team-workspace-card team-workspace-settings">
+            <summary>Team status</summary>
+            <form method="post" action="{% url 'update_team_status' team.pk %}" class="team-workspace-form">
+                {% csrf_token %}
+                <div>
+                    <label for="team-status">Status</label>
+                    <select id="team-status" name="status">
+                        {% for value, label in team.Status.choices %}<option value="{{ value }}" {% if team.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="team-workspace-form-actions"><button type="submit" class="tw-button tw-button-secondary">Update status</button></div>
+            </form>
+        </details>
+        {% endif %}
     </div>
 </div>
-</div>
 {% endblock %}
-
 {% block extra_scripts %}<script src="{% static_v 'js/team-management.js' %}" defer></script>{% endblock %}

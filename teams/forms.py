@@ -87,9 +87,12 @@ class TeamForm(forms.ModelForm):
 
 
 class TeamEventRosterForm(forms.Form):
-    def __init__(self, *args, team, **kwargs):
+    def __init__(self, *args, team, selected_sports_only=False, **kwargs):
         super().__init__(*args, **kwargs)
-        self.events = list(assignable_team_events().select_related(
+        events = assignable_team_events()
+        if selected_sports_only:
+            events = events.filter(sport_type__in=team.sports_categories.all())
+        self.events = list(events.select_related(
             'competition', 'sport_type',
         ).order_by('competition__name', 'competition_id', 'sport_type__name', 'name', 'pk'))
         self.event_rosters = []

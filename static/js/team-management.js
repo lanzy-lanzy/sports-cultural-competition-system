@@ -52,8 +52,8 @@ if (typeof rosterPanel?.showModal === 'function') {
         const selected = active?.querySelectorAll('input[type="checkbox"]:checked').length ?? 0;
         rosterPanel.querySelector('[data-roster-active-count]').textContent = `${selected} selected`;
         const players = new Set(Array.from(fields.querySelectorAll('input[type="checkbox"]:checked'), input => input.value));
-        section.querySelector('[data-roster-summary]').textContent =
-            players.size === 1 ? '1 player selected' : `${players.size} players selected`;
+        const summary = section.querySelector('[data-roster-summary]');
+        if (summary) summary.textContent = players.size === 1 ? '1 player selected' : `${players.size} players selected`;
     }
 
     function filterPlayers() {
@@ -95,9 +95,14 @@ if (typeof rosterPanel?.showModal === 'function') {
         sportHelp.hidden = !trigger.hidden;
         selectEvent();
     }
-    updateAvailableEvents();
-    sportsField.addEventListener('change', updateAvailableEvents);
-    teamCategory.addEventListener('change', updateAvailableEvents);
+    if (sportsField) {
+        updateAvailableEvents();
+        sportsField.addEventListener('change', updateAvailableEvents);
+        teamCategory.addEventListener('change', updateAvailableEvents);
+    } else {
+        trigger.hidden = false;
+        selectEvent();
+    }
     picker.addEventListener('change', selectEvent);
     search.addEventListener('input', filterPlayers);
     search.addEventListener('keydown', event => {
@@ -105,6 +110,17 @@ if (typeof rosterPanel?.showModal === 'function') {
     });
     fields.addEventListener('change', updateCounts);
     trigger.addEventListener('click', () => rosterPanel.showModal());
+    const assignmentForm = rosterPanel.closest('[data-workspace-assignments]');
+    if (assignmentForm) {
+        let submitted = false;
+        assignmentForm.addEventListener('submit', () => { submitted = true; });
+        rosterPanel.addEventListener('close', () => {
+            if (!submitted) {
+                assignmentForm.reset();
+                selectEvent();
+            }
+        });
+    }
     rosterPanel.querySelectorAll('[data-roster-close]').forEach(button => {
         button.addEventListener('click', () => rosterPanel.close());
     });

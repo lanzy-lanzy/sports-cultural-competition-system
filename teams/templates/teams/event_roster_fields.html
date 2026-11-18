@@ -1,11 +1,15 @@
-<section class="border-t border-slate-100 px-6 py-5 sm:px-8" id="event-roster" aria-labelledby="event-roster-heading" {% if roster_form.errors %}data-roster-errors{% endif %}>
+<section {% if not workspace_assignments %}class="border-t border-slate-100 px-6 py-5 sm:px-8"{% endif %} id="event-roster" aria-label="Sports event rosters" {% if roster_form.errors %}data-roster-errors{% endif %}>
     <div class="flex flex-wrap items-center justify-between gap-3">
+        {% if not workspace_assignments %}
         <div>
             <h2 id="event-roster-heading" class="font-display text-lg font-bold text-ink">Sports event rosters</h2>
             {% if roster_form.event_rosters %}<p class="mt-1 text-sm text-slate-600" data-roster-summary></p>{% endif %}
         </div>
+        {% endif %}
         {% if roster_form.event_rosters %}
-        <button type="button" class="tw-button tw-button-secondary" aria-haspopup="dialog" aria-controls="event-roster-panel" data-roster-open hidden>Assign players</button>
+        <button type="button" class="tw-button {% if workspace_assignments %}tw-button-primary{% else %}tw-button-secondary{% endif %}" aria-haspopup="dialog" aria-controls="event-roster-panel" data-roster-open hidden>Assign players</button>
+        {% elif workspace_assignments and not team.sports_categories.exists %}
+        <a href="{% url 'edit_team' team.pk %}#team-sports-help" class="tw-button tw-button-secondary">Choose sports</a>
         {% endif %}
     </div>
     {% if roster_form.event_rosters %}
@@ -34,8 +38,13 @@
             <p class="mt-2 text-sm text-slate-500" data-roster-no-results hidden>No players match your search.</p>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white p-5">
-            <p class="text-sm text-slate-600">Save the team to apply assignments.</p>
-            <button type="button" class="tw-button tw-button-primary" data-roster-close>Done</button>
+            {% if workspace_assignments %}
+                <button type="button" class="tw-button tw-button-secondary" data-roster-close>Cancel</button>
+                <button type="submit" class="tw-button tw-button-primary">Save assignments</button>
+            {% else %}
+                <p class="text-sm text-slate-600">Save the team to apply assignments.</p>
+                <button type="button" class="tw-button tw-button-primary" data-roster-close>Done</button>
+            {% endif %}
         </div>
     </dialog>
     <p class="mt-2 text-sm text-slate-500" data-roster-sport-help hidden>Check a sports category with open events to assign its players.</p>
@@ -68,8 +77,11 @@
                 {% endfor %}
             {% endfor %}
         {% endfor %}
-    {% else %}
+    {% elif not workspace_assignments or team.sports_categories.exists %}
         <p class="mt-2 text-sm text-slate-500">No sports events are open for assignment in active competitions.</p>
+    {% endif %}
+    {% if workspace_assignments and roster_form.event_rosters %}
+        <button type="submit" class="mt-3 tw-button tw-button-primary">Save assignments</button>
     {% endif %}
     </div>
 </section>
