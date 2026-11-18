@@ -43,6 +43,9 @@
             <div class="border-b border-slate-100 px-6 py-5">
                 <a href="{% url 'team_list' %}" class="text-sm font-bold text-campus">&larr; All teams</a>
                 <h2 class="mt-3 font-display text-xl font-bold text-ink">Team roster</h2>
+                {% with sports=team.sports_categories.all %}
+                    {% if sports %}<p class="mt-1 text-sm text-slate-600">Sports{% for sport in sports %}{% if forloop.first %} &middot; {% else %}, {% endif %}{{ sport.name }}{% endfor %}</p>{% endif %}
+                {% endwith %}
                 <p class="mt-1 text-sm text-slate-500">{{ page_obj.paginator.count }} matching of {{ total_members }} assigned member{{ total_members|pluralize }}</p>
                 {% if team.description %}<p class="mt-2 text-sm text-slate-600">{{ team.description }}</p>{% endif %}
                 {% if can_approve_teams %}

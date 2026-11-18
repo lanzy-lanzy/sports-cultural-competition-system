@@ -70,6 +70,12 @@ def save_team_event_roster(team, selections, user):
     if set(changed) != set(available):
         raise ValidationError('An event is no longer available. Review the event selections.')
 
+    sports = set(team.sports_categories.values_list('pk', flat=True))
+    for event_id, player_ids in changed.items():
+        event = available[event_id]
+        if player_ids - current[event_id] and event.sport_type_id not in sports:
+            raise ValidationError(f'{event.name}: select its sport in Sports categories before assigning players.')
+
     player_ids = set().union(*changed.values())
     players = {
         player.pk: player for player in Participant.objects.select_for_update().filter(

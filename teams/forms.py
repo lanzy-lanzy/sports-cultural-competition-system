@@ -42,8 +42,11 @@ class TeamRosterFilterForm(forms.Form):
 class TeamForm(forms.ModelForm):
     class Meta:
         model = Team
-        fields = ('name', 'category', 'description', 'logo', 'status')
-        widgets = {'description': forms.Textarea(attrs={'rows': 3})}
+        fields = ('name', 'category', 'description', 'logo', 'status', 'sports_categories')
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'sports_categories': forms.CheckboxSelectMultiple,
+        }
 
     def __init__(self, *args, allow_status=True, force_approved=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -55,6 +58,23 @@ class TeamForm(forms.ModelForm):
             self.fields.pop('status')
         for field in self.fields.values():
             field.widget.attrs['class'] = INPUT_CLASS
+        sports = self.fields['sports_categories']
+        available = Q(is_active=True)
+        if self.instance.pk:
+            available |= Q(teams=self.instance.pk)
+        sports.queryset = sports.queryset.filter(available).distinct()
+        sports.widget.attrs['class'] = 'team-sport-options'
+
+    def clean(self):
+        cleaned = super().clean()
+        category = cleaned.get('category')
+        sports = cleaned.get('sports_categories')
+        if sports is not None:
+            if category == Team.Category.CULTURAL:
+                cleaned['sports_categories'] = sports.none()
+            elif self.instance._state.adding and category == Team.Category.SPORTS and not sports:
+                self.add_error('sports_categories', 'Select at least one sport for a Sports Team.')
+        return cleaned
 
     def save(self, commit=True):
         team = super().save(commit=False)

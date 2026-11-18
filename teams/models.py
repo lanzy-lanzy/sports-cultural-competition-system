@@ -20,6 +20,7 @@ class Team(models.Model):
     code = models.CharField(max_length=20, unique=True, editable=False)
     name = models.CharField(max_length=150, unique=True)
     category = models.CharField(max_length=20, choices=Category.choices)
+    sports_categories = models.ManyToManyField('sports.SportType', blank=True, related_name='teams')
     description = models.TextField(blank=True)
     logo = models.ImageField(upload_to='team_logos/', blank=True, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)

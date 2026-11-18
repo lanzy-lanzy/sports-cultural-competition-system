@@ -34,6 +34,7 @@ class TeamEventRosterTest(TestCase):
         return {
             'name': 'Blue Warriors', 'category': Team.Category.SPORTS,
             'status': Team.Status.APPROVED,
+            'sports_categories': [self.basketball.sport_type_id, self.volleyball.sport_type_id],
             'roster-event': [self.basketball.pk, self.volleyball.pk],
             f'event-players-{self.basketball.pk}': [player.pk for player in basketball_players],
             f'event-players-{self.volleyball.pk}': [player.pk for player in volleyball_players],
@@ -50,6 +51,10 @@ class TeamEventRosterTest(TestCase):
         self.assertSetEqual(set(self.alex.team_membership.events.all()), {self.basketball, self.volleyball})
         self.assertSetEqual(set(self.sam.team_membership.events.all()), {self.basketball})
         self.assertEqual(team.event_entries.filter(status=EventEntry.Status.CONFIRMED).count(), 2)
+        self.assertSetEqual(
+            set(team.sports_categories.values_list('pk', flat=True)),
+            {self.basketball.sport_type_id, self.volleyball.sport_type_id},
+        )
 
         edit_url = reverse('edit_team', args=[team.pk])
         response = self.client.get(edit_url)
@@ -67,6 +72,20 @@ class TeamEventRosterTest(TestCase):
         self.assertNotContains(self.client.get(reverse('create_team')), 'Basketball Open Division')
         response = self.client.post(reverse('create_team'), self.payload([self.alex], []))
         self.assertContains(response, 'An event is no longer available')
+        self.assertFalse(Team.objects.exists())
+
+    def test_sports_team_requires_a_category(self):
+        payload = self.payload([], [])
+        payload.pop('sports_categories')
+        response = self.client.post(reverse('create_team'), payload)
+        self.assertContains(response, 'Select at least one sport for a Sports Team.')
+        self.assertFalse(Team.objects.exists())
+
+    def test_rejects_assignment_for_an_unselected_sport(self):
+        payload = self.payload([], [self.alex])
+        payload['sports_categories'] = [self.basketball.sport_type_id]
+        response = self.client.post(reverse('create_team'), payload)
+        self.assertContains(response, 'select its sport in Sports categories')
         self.assertFalse(Team.objects.exists())
 
     def test_individual_event_gets_an_entry_for_each_selected_player(self):
@@ -105,9 +124,11 @@ class TeamManagementTest(TestCase):
 
     def test_management_can_create_approved_team(self):
         self.client.force_login(self.admin)
+        sport = SportType.objects.create(name='Basketball')
         response = self.client.post(reverse('create_team'), {
             'name': 'Blue Warriors', 'category': Team.Category.SPORTS,
             'description': 'College sports team', 'status': Team.Status.APPROVED,
+            'sports_categories': [sport.pk],
         })
 
         team = Team.objects.get(name='Blue Warriors')
@@ -187,11 +208,13 @@ class AdminTeamApprovalTest(TestCase):
         self.organizer = User.objects.create_user('organizer', 'org@example.com', 'pass')
         self.organizer.account_profile.role = UserProfile.Role.EVENT_ORGANIZER
         self.organizer.account_profile.save(update_fields=['role', 'updated_at'])
+        self.sport = SportType.objects.create(name='Volleyball')
 
     def _create(self, name):
         return self.client.post(reverse('create_team'), {
             'name': name, 'category': Team.Category.SPORTS,
             'description': 'Created in the workspace',
+            'sports_categories': [self.sport.pk],
         })
 
     def test_admin_created_team_is_approved(self):
@@ -214,6 +237,7 @@ class AdminTeamApprovalTest(TestCase):
         self.client.post(reverse('create_team'), {
             'name': 'Sneaky Squad', 'category': Team.Category.SPORTS,
             'status': Team.Status.PENDING,
+            'sports_categories': [self.sport.pk],
         })
         self.assertEqual(
             Team.objects.get(name='Sneaky Squad').status,
@@ -225,6 +249,7 @@ class AdminTeamApprovalTest(TestCase):
         self.client.post(reverse('create_team'), {
             'name': 'Sneakier Squad', 'category': Team.Category.SPORTS,
             'status': Team.Status.SUSPENDED,
+            'sports_categories': [self.sport.pk],
         })
         self.assertEqual(
             Team.objects.get(name='Sneakier Squad').status,

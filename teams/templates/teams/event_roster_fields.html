@@ -22,7 +22,7 @@
                 {% for competition in competitions %}
                     <optgroup label="{{ competition.grouper }}">
                         {% for event, field in competition.list %}
-                            <option value="{{ event.pk }}">{{ field.label }}</option>
+                            <option value="{{ event.pk }}" data-sport="{{ event.sport_type_id }}">{{ field.label }}</option>
                         {% endfor %}
                     </optgroup>
                 {% endfor %}
@@ -38,6 +38,7 @@
             <button type="button" class="tw-button tw-button-primary" data-roster-close>Done</button>
         </div>
     </dialog>
+    <p class="mt-2 text-sm text-slate-500" data-roster-sport-help hidden>Check a sports category with open events to assign its players.</p>
     {% endif %}
     <div data-roster-fields>
     {% if roster_form.non_field_errors %}

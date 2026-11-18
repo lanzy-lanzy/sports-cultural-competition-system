@@ -16,6 +16,16 @@ document.querySelectorAll('[data-select-all]').forEach(toggle => {
     update();
 });
 
+const sportsField = document.querySelector('[data-team-sports]');
+const teamCategory = sportsField?.form.querySelector('[name="category"]');
+function updateSportsField() {
+    sportsField.hidden = teamCategory.value === 'CULTURAL';
+}
+if (sportsField) {
+    updateSportsField();
+    teamCategory.addEventListener('change', updateSportsField);
+}
+
 const rosterPanel = document.querySelector('#event-roster-panel');
 if (typeof rosterPanel?.showModal === 'function') {
     const section = document.querySelector('#event-roster');
@@ -35,11 +45,11 @@ if (typeof rosterPanel?.showModal === 'function') {
         fields.append(roster.element);
     }
     section.querySelector('[data-roster-fields]').hidden = true;
-    trigger.hidden = false;
+    const sportHelp = section.querySelector('[data-roster-sport-help]');
 
     function updateCounts() {
-        const active = rosters.get(picker.value).element;
-        const selected = active.querySelectorAll('input[type="checkbox"]:checked').length;
+        const active = rosters.get(picker.value)?.element;
+        const selected = active?.querySelectorAll('input[type="checkbox"]:checked').length ?? 0;
         rosterPanel.querySelector('[data-roster-active-count]').textContent = `${selected} selected`;
         const players = new Set(Array.from(fields.querySelectorAll('input[type="checkbox"]:checked'), input => input.value));
         section.querySelector('[data-roster-summary]').textContent =
@@ -48,7 +58,7 @@ if (typeof rosterPanel?.showModal === 'function') {
 
     function filterPlayers() {
         const query = search.value.trim().toLowerCase();
-        const { labels } = rosters.get(picker.value);
+        const labels = rosters.get(picker.value)?.labels ?? [];
         let matches = 0;
         for (const label of labels) {
             label.hidden = !label.textContent.toLowerCase().includes(query);
@@ -66,7 +76,28 @@ if (typeof rosterPanel?.showModal === 'function') {
 
     const firstError = fields.querySelector('[data-event-errors]');
     if (firstError) picker.value = firstError.dataset.eventRoster;
-    selectEvent();
+    function updateAvailableEvents() {
+        const selectedSports = new Set(Array.from(sportsField.querySelectorAll('input:checked'), input => input.value));
+        const previous = picker.value;
+        let firstAvailable = '';
+        for (const group of picker.querySelectorAll('optgroup')) {
+            for (const option of group.children) {
+                option.disabled = !selectedSports.has(option.dataset.sport);
+                option.hidden = option.disabled;
+                if (!firstAvailable && !option.disabled) firstAvailable = option.value;
+            }
+            group.hidden = Array.from(group.children).every(option => option.disabled);
+        }
+        picker.value = Array.from(picker.options).some(option => option.value === previous && !option.disabled)
+            ? previous : firstAvailable;
+        section.hidden = sportsField.hidden && !section.hasAttribute('data-roster-errors');
+        trigger.hidden = sportsField.hidden || !firstAvailable;
+        sportHelp.hidden = !trigger.hidden;
+        selectEvent();
+    }
+    updateAvailableEvents();
+    sportsField.addEventListener('change', updateAvailableEvents);
+    teamCategory.addEventListener('change', updateAvailableEvents);
     picker.addEventListener('change', selectEvent);
     search.addEventListener('input', filterPlayers);
     search.addEventListener('keydown', event => {
@@ -78,5 +109,9 @@ if (typeof rosterPanel?.showModal === 'function') {
         button.addEventListener('click', () => rosterPanel.close());
     });
     rosterPanel.addEventListener('close', () => trigger.focus());
-    if (location.hash === '#event-roster' || section.hasAttribute('data-roster-errors')) rosterPanel.showModal();
+    if (!trigger.hidden && (location.hash === '#event-roster' || section.hasAttribute('data-roster-errors'))) {
+        rosterPanel.showModal();
+    } else if (error) {
+        section.prepend(error);
+    }
 }

@@ -20,7 +20,21 @@
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="px-6 pt-5 text-sm text-rose-600" role="alert">{{ form.non_field_errors }}</div>{% endif %}
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
-            {% for field in form %}<div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}</div>{% endfor %}
+            {% for field in form %}
+                {% if field.name != 'sports_categories' %}
+                <div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}</div>
+                {% endif %}
+            {% endfor %}
+            <fieldset class="sm:col-span-2" data-team-sports aria-describedby="team-sports-help">
+                <legend class="mb-1.5 text-sm font-bold text-ink">Sports categories</legend>
+                <p id="team-sports-help" class="mb-3 text-sm text-slate-600">Select all sports this team will participate in.{% if not team %} Sports Teams must select at least one.{% endif %}</p>
+                {% if form.sports_categories.field.queryset.exists %}
+                    {{ form.sports_categories }}
+                {% else %}
+                    <p class="text-sm text-slate-500">No sports categories are available.</p>
+                {% endif %}
+                {% for error in form.sports_categories.errors %}<p class="mt-2 text-sm text-rose-600" role="alert">{{ error }}</p>{% endfor %}
+            </fieldset>
         </div>
         {% if roster_form is not None %}
             {% include 'teams/event_roster_fields.html' %}

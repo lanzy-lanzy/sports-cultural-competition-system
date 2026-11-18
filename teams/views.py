@@ -116,6 +116,7 @@ def _save_team_form(request, form, roster_form):
     try:
         with transaction.atomic():
             team.save()
+            form.save_m2m()
             if creating and get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER:
                 TeamStaff.objects.create(team=team, user=request.user, role=TeamStaff.Role.MANAGER)
             if selections:
