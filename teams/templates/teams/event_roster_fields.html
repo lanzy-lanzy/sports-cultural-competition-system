@@ -1,11 +1,50 @@
-<section class="border-t border-slate-100 px-6 py-5 sm:px-8" id="event-roster" aria-labelledby="event-roster-heading">
-    <h2 id="event-roster-heading" class="font-display text-xl font-bold text-ink">Sports event rosters</h2>
+<section class="border-t border-slate-100 px-6 py-5 sm:px-8" id="event-roster" aria-labelledby="event-roster-heading" {% if roster_form.errors %}data-roster-errors{% endif %}>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h2 id="event-roster-heading" class="font-display text-lg font-bold text-ink">Sports event rosters</h2>
+            {% if roster_form.event_rosters %}<p class="mt-1 text-sm text-slate-600" data-roster-summary></p>{% endif %}
+        </div>
+        {% if roster_form.event_rosters %}
+        <button type="button" class="tw-button tw-button-secondary" aria-haspopup="dialog" aria-controls="event-roster-panel" data-roster-open hidden>Assign players</button>
+        {% endif %}
+    </div>
+    {% if roster_form.event_rosters %}
+    <dialog id="event-roster-panel" class="event-roster-panel" aria-labelledby="event-roster-panel-title">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-200 p-5">
+            <h3 id="event-roster-panel-title" class="font-display text-xl font-bold text-ink">Assign players</h3>
+            <button type="button" class="tw-button tw-button-secondary" data-roster-close aria-label="Close assignment panel">Close</button>
+        </div>
+        <div class="event-roster-panel-body">
+            <p id="event-roster-help" class="text-sm text-slate-600">Choose an event, then select its players. Players can join multiple events. Selecting an available player adds them to the team.</p>
+            <label for="roster-event-picker" class="mt-4 block text-sm font-bold text-ink">Event</label>
+            <select id="roster-event-picker" class="mt-1 w-full rounded-md border border-slate-300 bg-white p-2 text-sm" aria-describedby="event-roster-help" autofocus>
+                {% regroup roster_form.event_rosters by 0.competition as competitions %}
+                {% for competition in competitions %}
+                    <optgroup label="{{ competition.grouper }}">
+                        {% for event, field in competition.list %}
+                            <option value="{{ event.pk }}">{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endfor %}
+            </select>
+            <label for="roster-player-search" class="mt-4 block text-sm font-bold text-ink">Find a player</label>
+            <input type="search" id="roster-player-search" class="mb-4 mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" placeholder="Name or player ID">
+            <p class="mb-2 text-sm font-semibold text-ink" data-roster-active-count aria-live="polite"></p>
+            <div data-roster-panel-fields></div>
+            <p class="mt-2 text-sm text-slate-500" data-roster-no-results hidden>No players match your search.</p>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white p-5">
+            <p class="text-sm text-slate-600">Save the team to apply assignments.</p>
+            <button type="button" class="tw-button tw-button-primary" data-roster-close>Done</button>
+        </div>
+    </dialog>
+    {% endif %}
+    <div data-roster-fields>
     {% if roster_form.non_field_errors %}
-        <div class="mt-2 text-sm text-rose-600" role="alert">{{ roster_form.non_field_errors }}</div>
+        <div class="mt-2 text-sm text-rose-600" role="alert" data-roster-error>{{ roster_form.non_field_errors }}</div>
     {% endif %}
     {% if roster_form.event_rosters %}
         <p class="mt-2 text-sm text-slate-600">Select the players for each event. A player can join multiple events. Selecting an available player adds them to the team roster.</p>
-        <p class="mt-2 text-sm text-slate-600">Saving creates confirmed entries where needed. Clearing a selection removes the player from that event roster and keeps their team membership and any confirmed entries.</p>
         {% regroup roster_form.event_rosters by 0.competition as competitions %}
         {% for competition in competitions %}
             <h3 class="mt-5 text-base font-bold text-ink">{{ competition.grouper }}</h3>
@@ -13,7 +52,7 @@
             {% for sport in sports %}
                 <h4 class="mb-2 mt-3 text-sm font-bold text-slate-600">{{ sport.grouper }}</h4>
                 {% for event, field in sport.list %}
-                    <details class="mb-2 rounded-md border border-slate-200 px-4 py-3" data-event-roster {% if field.value or field.errors %}open{% endif %}>
+                    <details class="mb-2 rounded-md border border-slate-200 px-4 py-3" data-event-roster="{{ event.pk }}" {% if field.errors %}data-event-errors{% endif %} {% if field.value or field.errors %}open{% endif %}>
                         <summary class="cursor-pointer text-sm font-bold text-campus">
                             {{ field.label }}
                             <span class="ml-2 text-xs font-normal text-slate-500" data-roster-count aria-live="polite">{{ field.value|length }} selected</span>
@@ -31,4 +70,5 @@
     {% else %}
         <p class="mt-2 text-sm text-slate-500">No sports events are open for assignment in active competitions.</p>
     {% endif %}
+    </div>
 </section>
