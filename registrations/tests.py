@@ -337,3 +337,103 @@ class RegistrationTest(TestCase):
         resp = self.client.post(reverse('registration_review', args=[registration.id]), {'action': 'delete'})
         self.assertEqual(resp.status_code, 403)
         self.assertTrue(EventRegistration.objects.filter(id=registration.id).exists())
+
+    def test_registration_categories_sync_with_admin_competition_kinds(self):
+        sports_comp_no_events = Competition.objects.create(
+            name='INTRAMURAL BASKETBALL',
+            description='Basketball tournament',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-01-10',
+            end_date='2026-01-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        cultural_comp = Competition.objects.create(
+            name='SOLO SINGING',
+            description='Vocal competition',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            start_date='2026-01-10',
+            end_date='2026-01-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.client.force_login(self.participant_user)
+        resp = self.client.get(reverse('register_for_event'))
+        form = resp.context['form']
+
+        cultural_ids = list(form.fields['competition'].queryset.values_list('id', flat=True))
+        self.assertEqual(cultural_ids, [cultural_comp.id])
+        self.assertNotIn(sports_comp_no_events.id, cultural_ids)
+        self.assertNotIn(self.competition.id, cultural_ids)
+
+        sport_choice_values = [value for value, _ in form.fields['sport_event'].choices]
+        self.assertIn(str(self.sport_event.id), sport_choice_values)
+        self.assertIn(f'comp:{sports_comp_no_events.id}', sport_choice_values)
+        self.assertNotIn(f'comp:{cultural_comp.id}', sport_choice_values)
+        self.assertNotIn(f'comp:{self.competition.id}', sport_choice_values)
+
+    def test_participant_registers_for_sports_competition_without_sport_event(self):
+        sports_comp = Competition.objects.create(
+            name='INTRAMURAL VOLLEYBALL',
+            description='Volleyball tournament',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.ROUND_ROBIN,
+            start_date='2026-01-10',
+            end_date='2026-01-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.client.force_login(self.participant_user)
+        resp = self.client.post(reverse('register_for_event'), {
+            'target_type': 'sport_event',
+            'sport_event': f'comp:{sports_comp.id}',
+        })
+        self.assertRedirects(resp, reverse('my_registrations'))
+        registration = EventRegistration.objects.get(registrant=self.participant_user)
+        self.assertEqual(registration.competition, sports_comp)
+        self.assertIsNone(registration.sport_event)
+        self.assertEqual(registration.participant, self.participant)
+
+    def test_sports_competition_rejected_under_cultural_category(self):
+        sports_comp = Competition.objects.create(
+            name='INTRAMURAL BADMINTON',
+            description='Badminton tournament',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-01-10',
+            end_date='2026-01-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.client.force_login(self.participant_user)
+        resp = self.client.post(reverse('register_for_event'), {
+            'target_type': 'competition',
+            'competition': sports_comp.id,
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('competition', resp.context['form'].errors)
+        self.assertFalse(EventRegistration.objects.filter(registrant=self.participant_user).exists())
+
+    def test_participant_registers_for_cultural_competition(self):
+        cultural_comp = Competition.objects.create(
+            name='MODERN DANCE',
+            description='Dance showdown',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.DANCE,
+            start_date='2026-01-10',
+            end_date='2026-01-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.client.force_login(self.participant_user)
+        resp = self.client.post(reverse('register_for_event'), {
+            'target_type': 'competition',
+            'competition': cultural_comp.id,
+        })
+        self.assertRedirects(resp, reverse('my_registrations'))
+        registration = EventRegistration.objects.get(registrant=self.participant_user)
+        self.assertEqual(registration.competition, cultural_comp)
+        self.assertIsNone(registration.sport_event)
+        self.assertEqual(registration.participant, self.participant)

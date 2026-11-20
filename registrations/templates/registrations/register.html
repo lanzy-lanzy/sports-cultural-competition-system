@@ -7,7 +7,7 @@
 <div class="mx-auto max-w-3xl">
     <div class="mb-6">
         <h1 class="font-display text-2xl font-semibold text-slate-900">Register for a competition</h1>
-        <p class="mt-1 text-sm text-slate-500">Choose a sport event or cultural competition. Your registration is reviewed by an organizer before it is confirmed.</p>
+        <p class="mt-1 text-sm text-slate-500">Choose a Sports or Socio Cultural competition. Your registration is reviewed by an organizer before it is confirmed.</p>
     </div>
 
     <div class="rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
@@ -15,7 +15,7 @@
             {% csrf_token %}
             {% if form.non_field_errors %}<div role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
             <div>
-                <label for="{{ form.target_type.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Register for</label>
+                <label for="target-type-select" class="mb-1.5 block text-sm font-medium text-slate-700">Category</label>
                 <select name="target_type" id="target-type-select" class="w-full cursor-pointer rounded-md border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-800 shadow-sm focus:border-campus focus:outline-none focus:ring-4 focus:ring-teal-100">
                     {% for value, label in form.target_type.field.choices %}
                     <option value="{{ value }}" {% if form.target_type.value == value %}selected{% endif %}>{{ label }}</option>
@@ -24,13 +24,13 @@
             </div>
 
             <div id="sport-event-field">
-                <label for="{{ form.sport_event.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Sport event</label>
+                <label for="{{ form.sport_event.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Sports event / competition</label>
                 {{ form.sport_event }}
                 {% if form.sport_event.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.sport_event.errors.0 }}</p>{% endif %}
             </div>
 
             <div id="competition-field" class="hidden">
-                <label for="{{ form.competition.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Competition</label>
+                <label for="{{ form.competition.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">Socio Cultural competition</label>
                 {{ form.competition }}
                 {% if form.competition.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ form.competition.errors.0 }}</p>{% endif %}
             </div>
