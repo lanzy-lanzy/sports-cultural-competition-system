@@ -4,25 +4,38 @@
 {% block header_title %}Match Board{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-3xl">
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Match Board &middot; Manual Match</p>
-            <h1 class="mt-1 font-display text-2xl font-bold text-ink">Create match</h1>
-            <p class="mt-1 text-sm text-slate-500">Choose the event, pick the two {% if form and not form.team_based %}participants{% else %}teams{% endif %} playing versus each other, and save directly to the Match Board.</p>
+<div class="mx-auto max-w-3xl space-y-6">
+    <!-- ===== Formal Page Header ===== -->
+    <header class="overflow-hidden rounded-xl border border-slate-200/90 border-t-4 border-t-pine bg-white p-5 shadow-soft sm:p-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-pine">Match Board &middot; Manual Scheduling</p>
+                <h1 class="mt-1 font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Create Match</h1>
+                <p class="mt-1 text-sm text-slate-500">
+                    Select an event, pair two {% if form and not form.team_based %}participants{% else %}teams{% endif %} versus each other, and publish directly to the Match Board.
+                </p>
+            </div>
+            <a href="{% url 'match_board' %}"
+               class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-paper ui-button ui-button--secondary">
+                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                <span>Back to Match Board</span>
+            </a>
         </div>
-        <a href="{% url 'match_board' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-teal-200 ui-button ui-button--secondary">&larr; Back to Match Board</a>
-    </div>
+    </header>
 
     {% if target_options %}
-    <!-- Step 1: Competition / Event -->
-    <form method="GET" id="event-selector-form" class="mb-5 rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="mb-3 flex items-center gap-2.5">
-            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-campus text-xs font-bold text-white">1</span>
-            <h2 class="font-display text-base font-bold text-ink">Competition / Sport Event</h2>
+    <!-- ===== Step 1: Competition / Sport Event ===== -->
+    <form method="GET" id="event-selector-form" class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft sm:p-6">
+        <div class="mb-4 flex items-center gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-moss font-display text-xs font-bold text-pine-deep ring-1 ring-inset ring-pine/15">1</span>
+            <div>
+                <h2 class="font-display text-base font-semibold text-ink">Competition / Sport Event</h2>
+                <p class="text-xs text-slate-500">Choose which active competition or open sport event this match belongs to.</p>
+            </div>
         </div>
+
         <select id="board-match-event" name="event" onchange="this.form.submit()"
-                class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
+                class="h-12 w-full rounded-xl border border-slate-200 bg-paper/60 px-4 text-sm font-medium text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-4 focus:ring-pine/10">
             {% for opt in target_options %}
             <option value="{{ opt.value }}" {% if selected_option and selected_option.value == opt.value %}selected{% endif %}>
                 {{ opt.label }}
@@ -30,134 +43,142 @@
             {% endfor %}
         </select>
         <noscript>
-            <button type="submit" class="mt-3 rounded-md bg-ink px-4 py-2 text-xs font-bold text-white ui-button ui-button--secondary">Load event</button>
+            <button type="submit" class="mt-3 rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white ui-button ui-button--secondary">Load event</button>
         </noscript>
+
         {% if selected_event %}
-        <p class="mt-2 text-xs text-slate-500">
-            Format: <span class="font-semibold text-slate-700">{{ selected_event.get_format_display }}</span>
-            &middot; Mode: <span class="font-semibold text-slate-700">{% if selected_event.team_based %}Team vs Team{% else %}Individual vs Individual{% endif %}</span>
-        </p>
+        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span class="inline-flex items-center rounded-md bg-paper px-2.5 py-1 font-medium text-slate-700 ring-1 ring-slate-200/80">{{ selected_event.get_format_display }}</span>
+            <span class="inline-flex items-center rounded-md bg-paper px-2.5 py-1 font-medium text-slate-700 ring-1 ring-slate-200/80">{% if selected_event.team_based %}Team vs Team{% else %}Individual vs Individual{% endif %}</span>
+        </div>
         {% elif selected_competition %}
-        <p class="mt-2 text-xs text-slate-500">
-            A default sport event will be set up automatically under <span class="font-semibold text-slate-700">{{ selected_competition.name }}</span> when you save this match.
+        <p class="mt-3 rounded-lg border border-pine/15 bg-moss/50 px-3.5 py-2.5 text-xs text-pine-deep">
+            A default sport event will be configured automatically under <span class="font-semibold">{{ selected_competition.name }}</span> when you save this match.
         </p>
         {% endif %}
     </form>
 
     {% if selected_option and form %}
-    <form method="POST" class="space-y-5">
+    <form method="POST" class="space-y-6">
         {% csrf_token %}
         <input type="hidden" name="event" value="{{ selected_option.value }}">
 
         {% if form.non_field_errors %}
-        <div role="alert" class="rounded-md border border-rose-200 bg-rose-50 px-5 py-3.5 text-sm text-rose-700">
+        <div role="alert" class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-3.5 text-sm text-rose-700">
             {{ form.non_field_errors }}
         </div>
         {% endif %}
 
-        <!-- Step 2: Matchup (Team 1 VS Team 2) -->
-        <div class="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="mb-4 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-campus text-xs font-bold text-white">2</span>
-                    <h2 class="font-display text-base font-bold text-ink">Matchup ({% if form.team_based %}Teams{% else %}Participants{% endif %} Versus)</h2>
+        <!-- ===== Step 2: Matchup (Team 1 VS Team 2) ===== -->
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft sm:p-6">
+            <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-moss font-display text-xs font-bold text-pine-deep ring-1 ring-inset ring-pine/15">2</span>
+                    <div>
+                        <h2 class="font-display text-base font-semibold text-ink">Matchup ({% if form.team_based %}Teams{% else %}Participants{% endif %} Versus)</h2>
+                        <p class="text-xs text-slate-500">Selected {% if form.team_based %}teams{% else %}participants{% endif %} are automatically enrolled in the event.</p>
+                    </div>
                 </div>
-                <span class="text-xs text-slate-400">Selected {% if form.team_based %}teams{% else %}participants{% endif %} are auto-added to the event</span>
             </div>
 
             {% if form.available_contestants_count < 2 %}
-            <div role="alert" class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div role="alert" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-900">
                 <p class="font-semibold">At least 2 {% if form.team_based %}teams{% else %}active participants{% endif %} are needed to create a match.</p>
-                <p class="mt-1 text-xs text-amber-700">
+                <p class="mt-1 text-xs text-amber-800">
                     {% if form.team_based %}
-                    <a href="{% url 'create_team' %}" class="font-semibold underline">Create a team</a> first, then return here.
+                    <a href="{% url 'create_team' %}" class="font-semibold underline">Create a team</a> first, then return here to schedule the matchup.
                     {% else %}
-                    <a href="{% url 'create_participant' %}" class="font-semibold underline">Add a participant</a> first, then return here.
+                    <a href="{% url 'create_participant' %}" class="font-semibold underline">Add a participant</a> first, then return here to schedule the matchup.
                     {% endif %}
                 </p>
             </div>
             {% else %}
-            <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[1fr_auto_1fr]">
-                <div>
-                    <label for="{{ form.opponent_1.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.opponent_1.label }} <span class="text-rose-500">*</span></label>
-                    {{ form.opponent_1 }}
-                    {% for error in form.opponent_1.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
-                </div>
+            <div class="rounded-xl border border-slate-200/80 bg-paper/60 p-4 sm:p-5">
+                <div class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[1fr_auto_1fr]">
+                    <div>
+                        <label for="{{ form.opponent_1.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.opponent_1.label }} <span class="text-rose-500">*</span></label>
+                        {{ form.opponent_1 }}
+                        {% for error in form.opponent_1.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    </div>
 
-                <div class="flex items-center justify-center sm:pt-8">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 font-display text-xs font-extrabold tracking-wider text-white shadow-sm">VS</span>
-                </div>
+                    <div class="flex items-center justify-center sm:pt-7">
+                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-ink font-display text-xs font-bold tracking-widest text-white shadow-sm">VS</span>
+                    </div>
 
-                <div>
-                    <label for="{{ form.opponent_2.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.opponent_2.label }} <span class="text-rose-500">*</span></label>
-                    {{ form.opponent_2 }}
-                    {% for error in form.opponent_2.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    <div>
+                        <label for="{{ form.opponent_2.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.opponent_2.label }} <span class="text-rose-500">*</span></label>
+                        {{ form.opponent_2 }}
+                        {% for error in form.opponent_2.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    </div>
                 </div>
             </div>
             {% endif %}
-        </div>
+        </section>
 
-        <!-- Step 3: Schedule & Details -->
-        <div class="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="mb-4 flex items-center gap-2.5">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-campus text-xs font-bold text-white">3</span>
-                <h2 class="font-display text-base font-bold text-ink">Schedule &amp; Match Details</h2>
+        <!-- ===== Step 3: Schedule & Details ===== -->
+        <section class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft sm:p-6">
+            <div class="mb-5 flex items-center gap-3">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-moss font-display text-xs font-bold text-pine-deep ring-1 ring-inset ring-pine/15">3</span>
+                <div>
+                    <h2 class="font-display text-base font-semibold text-ink">Schedule &amp; Match Details</h2>
+                    <p class="text-xs text-slate-500">Assign a venue and time window, or leave start and end times blank to schedule later.</p>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                 <div>
-                    <label for="{{ form.name.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.name.label }}</label>
+                    <label for="{{ form.name.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.name.label }}</label>
                     {{ form.name }}
-                    {% for error in form.name.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.name.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
-                    <label for="{{ form.round_number.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.round_number.label }}</label>
+                    <label for="{{ form.round_number.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.round_number.label }}</label>
                     {{ form.round_number }}
-                    {% for error in form.round_number.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.round_number.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
-                    <label for="{{ form.venue.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.venue.label }}</label>
+                    <label for="{{ form.venue.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.venue.label }}</label>
                     {{ form.venue }}
-                    {% for error in form.venue.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.venue.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
-                    <label for="{{ form.status.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.status.label }}</label>
+                    <label for="{{ form.status.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.status.label }}</label>
                     {{ form.status }}
-                    {% for error in form.status.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.status.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
-                    <label for="{{ form.scheduled_start.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.scheduled_start.label }} <span class="font-normal text-slate-400">(optional)</span></label>
+                    <label for="{{ form.scheduled_start.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.scheduled_start.label }} <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                     {{ form.scheduled_start }}
-                    {% for error in form.scheduled_start.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.scheduled_start.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
-                    <label for="{{ form.scheduled_end.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.scheduled_end.label }} <span class="font-normal text-slate-400">(optional)</span></label>
+                    <label for="{{ form.scheduled_end.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.scheduled_end.label }} <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                     {{ form.scheduled_end }}
-                    {% for error in form.scheduled_end.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.scheduled_end.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
                 <div class="sm:col-span-2">
-                    <label for="{{ form.notes.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ form.notes.label }}</label>
+                    <label for="{{ form.notes.id_for_label }}" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">{{ form.notes.label }}</label>
                     {{ form.notes }}
-                    {% for error in form.notes.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                    {% for error in form.notes.errors %}<p class="mt-1.5 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
-                <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400 ui-button ui-button--secondary">Cancel</a>
+            <div class="mt-6 flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <a href="{% url 'match_board' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-paper ui-button ui-button--secondary">Cancel</a>
                 <button type="submit" {% if form.available_contestants_count < 2 %}disabled{% endif %}
-                        class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow disabled:cursor-not-allowed disabled:opacity-50 ui-button ui-button--primary">
+                        class="inline-flex items-center justify-center rounded-lg bg-pine px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep disabled:cursor-not-allowed disabled:opacity-50 ui-button ui-button--primary">
                     Create Match
                 </button>
             </div>
-        </div>
+        </section>
     </form>
     {% endif %}
 
     {% else %}
-    <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
-        <p class="font-display text-lg font-bold text-ink">No active Sports competitions available</p>
-        <p class="mt-2 text-sm text-slate-500">Create an active Sports competition first, then return here to schedule matches.</p>
-        <a href="{% url 'create_competition' %}" class="mt-4 inline-block rounded-md bg-campus px-5 py-2.5 text-sm font-bold text-white shadow ui-button ui-button--primary">Create Competition</a>
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-soft">
+        <h2 class="font-display text-xl font-semibold text-ink">No active Sports competitions available</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Create an active Sports competition first, then return here to schedule matches.</p>
+        <a href="{% url 'create_competition' %}" class="mt-5 inline-flex items-center rounded-lg bg-pine px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep ui-button ui-button--primary">Create Competition</a>
     </div>
     {% endif %}
 </div>

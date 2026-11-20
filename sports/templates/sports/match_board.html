@@ -1,236 +1,412 @@
 ﻿{% extends 'base.html' %}
 
 {% block title %}Match Board - Competrack{% endblock %}
-{% block header_title %}Sports{% endblock %}
+{% block header_title %}Match Board{% endblock %}
 
 {% block content %}
-<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-    <div>
-        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Sports &amp; Socio Cultural Operations &middot; All Competitions</p>
-        <h1 class="mt-1 font-display text-3xl font-bold text-ink">Match board</h1>
-        <p class="mt-2 text-sm text-slate-500">Every scheduled and completed match across every competition, split into Sports and Socio Cultural categories and grouped by day.</p>
-    </div>
-    <div class="flex flex-wrap gap-3">
-        <a href="{% url 'sports_hub' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">&larr; Sports</a>
-        <a href="{% url 'create_board_match' %}{% if filter_state.competition %}?competition={{ filter_state.competition }}{% endif %}" class="inline-flex items-center justify-center gap-2 rounded-md bg-campus px-5 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Create Match
-        </a>
-        <a href="{% url 'export_schedule_csv' %}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 ui-button ui-button--secondary">Export CSV</a>
-    </div>
-</div>
+<div class="space-y-6">
+    <!-- ===== Formal Header Card ===== -->
+    <header class="overflow-hidden rounded-xl border border-slate-200/90 border-t-4 border-t-pine bg-white shadow-soft">
+        <div class="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-pine">Sports &amp; Socio Cultural Operations &middot; All Competitions</p>
+                <h1 class="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Match Board</h1>
+                <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+                    Central schedule of matches across all competitions, organized by date and category.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 sm:shrink-0">
+                <a href="{% url 'sports_hub' %}"
+                   class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-paper sm:flex-none ui-button ui-button--secondary">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                    <span>Sports Hub</span>
+                </a>
+                <a href="{% url 'export_schedule_csv' %}"
+                   class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-paper sm:flex-none ui-button ui-button--secondary">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                    <span>Export CSV</span>
+                </a>
+                <a href="{% url 'create_board_match' %}{% if filter_state.competition %}?competition={{ filter_state.competition }}{% endif %}"
+                   class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-pine px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep sm:w-auto ui-button ui-button--primary">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    <span>Create Match</span>
+                </a>
+            </div>
+        </div>
 
-<form method="GET" id="board-filters" class="mb-7 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Category</label>
-            <select name="category" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-                <option value="">All categories</option>
-                <option value="sports" {% if filter_state.category == 'sports' %}selected{% endif %}>Sports</option>
-                <option value="cultural" {% if filter_state.category == 'cultural' %}selected{% endif %}>Socio Cultural</option>
-            </select>
+        <!-- Compact summary bar -->
+        <div class="grid grid-cols-2 divide-x divide-y divide-slate-200/80 border-t border-slate-200/80 bg-paper/70 sm:grid-cols-4 sm:divide-y-0">
+            <div class="px-5 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Matches Shown</p>
+                <p class="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink">{{ total }}</p>
+            </div>
+            <div class="px-5 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Match Days</p>
+                <p class="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink">{{ sections|length }}</p>
+            </div>
+            <div class="px-5 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Unscheduled</p>
+                <p class="mt-0.5 font-display text-lg font-semibold tabular-nums {% if unscheduled %}text-amber-700{% else %}text-ink{% endif %}">{{ unscheduled|length }}</p>
+            </div>
+            <div class="px-5 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Filters</p>
+                <p class="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink">{{ active_count }}</p>
+            </div>
         </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Competition</label>
-            <select name="competition" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-                <option value="">All competitions</option>
-                {% for competition in competitions %}
-                <option value="{{ competition.id }}" {% if filter_state.competition == competition.id|stringformat:'s' %}selected{% endif %}>{{ competition.name|truncatechars:40 }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Sport</label>
-            <select name="sport" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-                <option value="">All sports</option>
-                {% for sport in sport_types %}
-                <option value="{{ sport.id }}" {% if filter_state.sport == sport.id|stringformat:'s' %}selected{% endif %}>{{ sport.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Venue</label>
-            <select name="venue" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-                <option value="">All venues</option>
-                {% for venue in venues %}
-                <option value="{{ venue.id }}" {% if filter_state.venue == venue.id|stringformat:'s' %}selected{% endif %}>{{ venue.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Status</label>
-            <select name="status" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-                <option value="">Any status</option>
-                {% for value, label in statuses %}
-                <option value="{{ value }}" {% if filter_state.status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-600">Day</label>
-            <input type="date" name="day" value="{{ filter_state.day }}" class="h-11 w-full rounded-md border border-slate-200 bg-slate-50/70 px-3 text-sm text-slate-800 outline-none focus:border-campus focus:bg-white">
-        </div>
-    </div>
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-slate-500">
-            <span class="font-bold text-ink">{{ total }}</span> match{{ total|pluralize }}
-            {% if active_count %}<span class="text-slate-400"> &middot; {{ active_count }} filter{{ active_count|pluralize }} applied</span>{% endif %}
-        </p>
-        <div class="flex gap-2">
+    </header>
+
+    <!-- ===== Filter Toolbar ===== -->
+    <section class="rounded-xl border border-slate-200/90 bg-white shadow-soft">
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 md:hidden">
+            <button type="button" id="toggle-filters-btn" aria-expanded="{% if active_count %}true{% else %}false{% endif %}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-ink">
+                <svg class="h-4 w-4 text-pine" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
+                <span>Filter Schedule</span>
+                {% if active_count %}
+                <span class="rounded-full bg-moss px-2 py-0.5 text-[11px] font-semibold text-pine-deep">{{ active_count }}</span>
+                {% endif %}
+            </button>
             {% if active_count %}
-            <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary">Clear filters</a>
-            {% endif %}
-            <button type="submit" class="rounded-md bg-ink px-5 py-2 text-sm font-bold text-white hover:bg-campus ui-button ui-button--primary">Apply</button>
-        </div>
-    </div>
-</form>
-
-{% if days or unscheduled %}
-{% if day_keys|length > 1 %}
-<div class="mb-6 flex flex-wrap items-center gap-2">
-    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Jump to day</span>
-    <a href="{% url 'match_board' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not filter_state.day %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">All</a>
-    {% for day_key in day_keys %}
-    <a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ day_key|date:'Y-m-d' }}"
-       class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if filter_state.day == day_key|date:'Y-m-d' %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">{{ day_key|date:'D, M j' }}</a>
-    {% endfor %}
-</div>
-{% endif %}
-
-{% for section in sections %}
-<section class="mb-7">
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h2 class="font-display text-xl font-bold text-ink">{{ section.day|date:'l, F j, Y' }}</h2>
-        <div class="flex items-center gap-2">
-            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{{ section.count }} match{{ section.count|pluralize }}</span>
-            {% if filter_state.day == section.day|date:'Y-m-d' %}
-            {% if prev_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ prev_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">&larr; Prev</a>{% endif %}
-            {% if next_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ next_day|date:'Y-m-d' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Next &rarr;</a>{% endif %}
+            <a href="{% url 'match_board' %}" class="text-xs font-semibold text-pine hover:underline">Reset</a>
             {% endif %}
         </div>
-    </div>
-    {% for group in section.groups %}
-    {% if group.matches %}
-    <div class="mb-4">
-        <h3 class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider {% if group.key == 'cultural' %}text-violet-700{% else %}text-campus{% endif %}">
-            <span class="h-2 w-2 rounded-full {% if group.key == 'cultural' %}bg-violet-500{% else %}bg-campus{% endif %}"></span>{{ group.label }}
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 normal-case tracking-normal">{{ group.matches|length }} match{{ group.matches|length|pluralize }}</span>
-        </h3>
-        <div class="overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-left text-sm">
-            <thead>
-                <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
-                    <th class="px-5 py-3">Time</th>
-                    <th class="px-5 py-3">Match</th>
-                    <th class="px-5 py-3">Contestants</th>
-                    <th class="px-5 py-3">Venue</th>
-                    <th class="px-5 py-3">Status</th>
-                    <th class="px-5 py-3 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for match in group.matches %}
-                <tr class="border-b border-l-4 border-slate-100 align-top last:border-b-0 transition-colors {% if match.status == 'ONGOING' %}border-l-cyan-400 bg-cyan-50/40{% elif match.status == 'COMPLETED' %}border-l-emerald-200{% elif match.status == 'POSTPONED' %}border-l-amber-300{% elif match.status == 'CANCELLED' %}border-l-rose-300{% else %}border-l-transparent{% endif %} hover:bg-teal-50/40">
-                    <td class="whitespace-nowrap px-5 py-4 font-semibold text-slate-700">{{ match.scheduled_start|date:'H:i' }}<span class="block text-[10px] font-normal text-slate-400">{{ match.scheduled_end|date:'H:i' }}</span></td>
-                    <td class="px-5 py-4">
-                        <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-slate-800 hover:text-campus">{{ match.event.name }}</a>
-                        <span class="mt-0.5 block text-xs text-slate-500">{{ match.label }}{% if match.group %} &middot; Group {{ match.group }}{% endif %}</span>
-                        <span class="mt-0.5 block text-[10px] text-slate-400">{{ match.event.competition.name|truncatechars:40 }} &middot; {{ match.event.sport_type.name }}</span>
-                    </td>
-                    <td class="px-5 py-4">
-                        {% for entry in match.entries.all %}
-                        <div class="flex items-center gap-2 py-0.5">
-                            <span class="h-1.5 w-1.5 rounded-full {% if entry.is_winner %}bg-emerald-500{% elif entry.is_draw %}bg-amber-400{% else %}bg-slate-300{% endif %}"></span>
-                            <span class="{% if entry.is_winner %}font-semibold text-emerald-700{% else %}text-slate-600{% endif %}">{{ entry.display_name }}</span>
-                            {% if entry.score is not None %}<span class="ml-auto rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">{{ entry.score }}</span>{% endif %}
-                        </div>
-                        {% empty %}
-                        <span class="text-slate-400">Awaiting winners</span>
+
+        <form method="GET" id="board-filters" class="{% if not active_count %}hidden md:block{% endif %} p-5">
+            <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+                <div>
+                    <label for="filter-category" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Category</label>
+                    <select id="filter-category" name="category" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                        <option value="">All categories</option>
+                        <option value="sports" {% if filter_state.category == 'sports' %}selected{% endif %}>Sports</option>
+                        <option value="cultural" {% if filter_state.category == 'cultural' %}selected{% endif %}>Socio Cultural</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-competition" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Competition</label>
+                    <select id="filter-competition" name="competition" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                        <option value="">All competitions</option>
+                        {% for competition in competitions %}
+                        <option value="{{ competition.id }}" {% if filter_state.competition == competition.id|stringformat:'s' %}selected{% endif %}>{{ competition.name|truncatechars:40 }}</option>
                         {% endfor %}
-                    </td>
-                    <td class="px-5 py-4 text-slate-500">{% if match.venue %}<a href="{% url 'venue_detail' match.venue_id %}" class="hover:text-campus">{{ match.venue.name }}</a>{% else %}<span class="text-slate-400">Not assigned</span>{% endif %}</td>
-                    <td class="px-5 py-4">
-                        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if match.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif match.status == 'ONGOING' %}bg-cyan-100 text-cyan-700{% elif match.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% elif match.status == 'POSTPONED' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{% if match.status == 'ONGOING' %}<span class="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 align-middle"></span>{% endif %}{{ match.get_status_display }}</span>
-                    </td>
-                    <td class="px-5 py-4">
-                        <div class="flex justify-end gap-2">
-                            <a href="{% url 'event_bracket' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Bracket</a>
-                            <a href="{% url 'match_schedule' match.event_id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Schedule</a>
-                            <a href="{% url 'edit_match' match.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Edit</a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-    </div>
-    {% endif %}
-    {% endfor %}
-</section>
-{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-sport" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Sport</label>
+                    <select id="filter-sport" name="sport" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                        <option value="">All sports</option>
+                        {% for sport in sport_types %}
+                        <option value="{{ sport.id }}" {% if filter_state.sport == sport.id|stringformat:'s' %}selected{% endif %}>{{ sport.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-venue" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Venue</label>
+                    <select id="filter-venue" name="venue" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                        <option value="">All venues</option>
+                        {% for venue in venues %}
+                        <option value="{{ venue.id }}" {% if filter_state.venue == venue.id|stringformat:'s' %}selected{% endif %}>{{ venue.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-status" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Status</label>
+                    <select id="filter-status" name="status" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                        <option value="">Any status</option>
+                        {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if filter_state.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-day" class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Date</label>
+                    <input id="filter-day" type="date" name="day" value="{{ filter_state.day }}" class="h-10 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15">
+                </div>
+            </div>
 
-{% if unscheduled %}
-<section class="mb-7">
-    <h2 class="mb-3 font-display text-xl font-bold text-ink">Not scheduled yet</h2>
-    {% for group in unscheduled_groups %}
-    {% if group.matches %}
-    <div class="mb-4">
-        <h3 class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider {% if group.key == 'cultural' %}text-violet-700{% else %}text-campus{% endif %}">
-            <span class="h-2 w-2 rounded-full {% if group.key == 'cultural' %}bg-violet-500{% else %}bg-campus{% endif %}"></span>{{ group.label }}
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 normal-case tracking-normal">{{ group.matches|length }} match{{ group.matches|length|pluralize }}</span>
-        </h3>
-        <div class="overflow-x-auto rounded-md border border-dashed border-slate-300 bg-white/70 shadow-sm">
-            <table class="w-full text-left text-sm">
-                <tbody>
-                    {% for match in group.matches %}
-                    <tr class="border-b border-slate-100 last:border-0">
-                        <td class="px-5 py-4">
-                            <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-slate-800 hover:text-campus">{{ match.event.name }}</a>
-                            <span class="block text-xs text-slate-500">{{ match.label }} &middot; {{ match.contestants_display }}</span>
-                        </td>
-                        <td class="px-5 py-4 text-right">
-                            <a href="{% url 'edit_match' match.id %}" class="rounded-md bg-ink px-3 py-1.5 text-xs font-bold text-white hover:bg-campus ui-button ui-button--primary ui-button--small">Set time and venue</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-    {% endfor %}
-</section>
-{% endif %}
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
+                <p class="text-xs text-slate-500">
+                    Showing <span class="font-semibold text-ink">{{ total }}</span> match{{ total|pluralize }}
+                    {% if active_count %}<span class="text-slate-400"> &middot; {{ active_count }} filter{{ active_count|pluralize }} applied</span>{% endif %}
+                </p>
+                <div class="flex items-center gap-2">
+                    {% if active_count %}
+                    <a href="{% url 'match_board' %}" class="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary ui-button--small">Clear filters</a>
+                    {% endif %}
+                    <button type="submit" class="rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:bg-pine ui-button ui-button--primary ui-button--small">Apply</button>
+                </div>
+            </div>
+        </form>
+    </section>
 
-{% else %}
-<div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
-    <p class="font-display text-lg font-bold text-ink">No matches match these filters</p>
-    <p class="mt-2 text-sm text-slate-500">Clear the filters, create a match manually, or generate a bracket from a sport event.</p>
-    <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
-        <a href="{% url 'create_board_match' %}{% if filter_state.competition %}?competition={{ filter_state.competition }}{% endif %}" class="inline-flex items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-bold text-white shadow ui-button ui-button--primary">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Create Match
+    {% if days or unscheduled %}
+    <!-- ===== Day Jump Navigation ===== -->
+    {% if day_keys|length > 1 %}
+    <nav aria-label="Jump to match day" class="flex items-center gap-2 overflow-x-auto pb-1">
+        <span class="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Schedule days</span>
+        <a href="{% url 'match_board' %}"
+           class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition {% if not filter_state.day %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:text-pine{% endif %}">
+            All Days
         </a>
-        {% if active_count %}
-        <a href="{% url 'match_board' %}" class="inline-block rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-campus ui-button ui-button--secondary">Clear filters</a>
+        {% for day_key in day_keys %}
+        <a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ day_key|date:'Y-m-d' }}"
+           class="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition {% if filter_state.day == day_key|date:'Y-m-d' %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:text-pine{% endif %}">
+            {{ day_key|date:'D, M j' }}
+        </a>
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+    <!-- ===== Scheduled Day Sections ===== -->
+    {% for section in sections %}
+    <section class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-2.5">
+            <div class="flex items-center gap-3">
+                <h2 class="font-display text-xl font-semibold text-ink sm:text-2xl">{{ section.day|date:'l, F j, Y' }}</h2>
+                <span class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold tabular-nums text-slate-600">{{ section.count }} match{{ section.count|pluralize }}</span>
+            </div>
+            {% if filter_state.day == section.day|date:'Y-m-d' %}
+            <div class="flex items-center gap-2">
+                {% if prev_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ prev_day|date:'Y-m-d' }}" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-pine/40 hover:text-pine">&larr; Prev</a>{% endif %}
+                {% if next_day %}<a href="?{% if filter_state.competition %}competition={{ filter_state.competition }}&amp;{% endif %}{% if filter_state.sport %}sport={{ filter_state.sport }}&amp;{% endif %}{% if filter_state.venue %}venue={{ filter_state.venue }}&amp;{% endif %}{% if filter_state.status %}status={{ filter_state.status }}&amp;{% endif %}{% if filter_state.category %}category={{ filter_state.category }}&amp;{% endif %}day={{ next_day|date:'Y-m-d' }}" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-pine/40 hover:text-pine">Next &rarr;</a>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% for group in section.groups %}
+        {% if group.matches %}
+        <div class="space-y-3">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider {% if group.key == 'cultural' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200/80{% else %}bg-moss text-pine-deep ring-1 ring-inset ring-pine/15{% endif %}">
+                    <span class="h-1.5 w-1.5 rounded-full {% if group.key == 'cultural' %}bg-amber-500{% else %}bg-pine{% endif %}"></span>
+                    {{ group.label }}
+                </span>
+                <span class="text-xs font-medium text-slate-400">{{ group.matches|length }} match{{ group.matches|length|pluralize }}</span>
+            </div>
+
+            <!-- Mobile / Tablet Card List (< lg) -->
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
+                {% for match in group.matches %}
+                <article class="flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/90 border-l-4 bg-white p-4 shadow-soft {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-slate-300{% endif %}">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-ink">
+                                <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>{{ match.scheduled_start|date:'H:i' }}{% if match.scheduled_end %} &ndash; {{ match.scheduled_end|date:'H:i' }}{% endif %}</span>
+                            </div>
+                            <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold {% if match.status == 'COMPLETED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif match.status == 'ONGOING' %}bg-moss text-pine-deep ring-1 ring-inset ring-pine/20{% elif match.status == 'CANCELLED' %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% elif match.status == 'POSTPONED' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {% if match.status == 'ONGOING' %}<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pine"></span>{% endif %}
+                                {{ match.get_status_display }}
+                            </span>
+                        </div>
+
+                        <div class="mt-2.5">
+                            <a href="{% url 'sport_event_detail' match.event_id %}" class="font-display text-base font-semibold text-ink hover:text-pine">{{ match.event.name }}</a>
+                            <p class="mt-0.5 text-xs text-slate-500">
+                                {{ match.label }}{% if match.group %} &middot; Group {{ match.group }}{% endif %}
+                                <span class="text-slate-300">&middot;</span> {{ match.event.sport_type.name }}
+                            </p>
+                            <p class="mt-0.5 truncate text-[11px] text-slate-400">{{ match.event.competition.name }}</p>
+                        </div>
+
+                        <div class="mt-3 rounded-lg border border-slate-200/70 bg-paper/70 px-3 py-2.5">
+                            {% for entry in match.entries.all %}
+                            <div class="flex items-center justify-between gap-2 py-1 {% if not forloop.first %}border-t border-slate-200/60{% endif %}">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <span class="h-2 w-2 shrink-0 rounded-full {% if entry.is_winner %}bg-emerald-500{% elif entry.is_draw %}bg-amber-400{% else %}bg-slate-300{% endif %}"></span>
+                                    <span class="truncate text-sm {% if entry.is_winner %}font-semibold text-emerald-800{% else %}font-medium text-slate-700{% endif %}">{{ entry.display_name }}</span>
+                                </div>
+                                {% if entry.score is not None %}
+                                <span class="shrink-0 rounded-md bg-white px-2 py-0.5 text-xs font-bold tabular-nums text-ink ring-1 ring-slate-200">{{ entry.score }}</span>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <p class="py-1 text-xs italic text-slate-400">Awaiting winners</p>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                            <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                            {% if match.venue %}
+                            <a href="{% url 'venue_detail' match.venue_id %}" class="truncate font-medium hover:text-pine">{{ match.venue.name }}</a>
+                            {% else %}
+                            <span class="text-slate-400">Venue not assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+                        <a href="{% url 'event_bracket' match.event_id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-pine/40 hover:text-pine">Bracket</a>
+                        <a href="{% url 'match_schedule' match.event_id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-pine/40 hover:text-pine">Schedule</a>
+                        <a href="{% url 'edit_match' match.id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-paper px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-pine hover:bg-pine hover:text-white">Edit</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            <!-- Desktop Formal Table (>= lg) -->
+            <div class="hidden overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft lg:block">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200/90 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                <th class="w-28 px-5 py-3.5">Time</th>
+                                <th class="px-5 py-3.5">Event &amp; Match</th>
+                                <th class="px-5 py-3.5">Matchup</th>
+                                <th class="px-5 py-3.5">Venue</th>
+                                <th class="w-32 px-5 py-3.5">Status</th>
+                                <th class="w-56 px-5 py-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for match in group.matches %}
+                            <tr class="border-l-4 align-middle transition-colors {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-transparent{% endif %} hover:bg-paper/70">
+                                <td class="whitespace-nowrap px-5 py-4 tabular-nums">
+                                    <span class="font-semibold text-ink">{{ match.scheduled_start|date:'H:i' }}</span>
+                                    {% if match.scheduled_end %}
+                                    <span class="mt-0.5 block text-xs text-slate-400">{{ match.scheduled_end|date:'H:i' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-5 py-4">
+                                    <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-ink hover:text-pine">{{ match.event.name }}</a>
+                                    <span class="mt-0.5 block text-xs font-medium text-slate-500">{{ match.label }}{% if match.group %} &middot; Group {{ match.group }}{% endif %}</span>
+                                    <span class="mt-0.5 block text-[11px] text-slate-400">{{ match.event.competition.name|truncatechars:42 }} &middot; {{ match.event.sport_type.name }}</span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="min-w-[200px] space-y-1">
+                                        {% for entry in match.entries.all %}
+                                        <div class="flex items-center gap-2">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full {% if entry.is_winner %}bg-emerald-500{% elif entry.is_draw %}bg-amber-400{% else %}bg-slate-300{% endif %}"></span>
+                                            <span class="{% if entry.is_winner %}font-semibold text-emerald-800{% else %}text-slate-700{% endif %}">{{ entry.display_name }}</span>
+                                            {% if entry.score is not None %}
+                                            <span class="ml-auto rounded-md bg-paper px-2 py-0.5 text-xs font-bold tabular-nums text-ink ring-1 ring-slate-200/80">{{ entry.score }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% empty %}
+                                        <span class="text-xs italic text-slate-400">Awaiting winners</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 text-slate-600">
+                                    {% if match.venue %}
+                                    <a href="{% url 'venue_detail' match.venue_id %}" class="font-medium hover:text-pine">{{ match.venue.name }}</a>
+                                    {% else %}
+                                    <span class="text-xs text-slate-400">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold {% if match.status == 'COMPLETED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif match.status == 'ONGOING' %}bg-moss text-pine-deep ring-1 ring-inset ring-pine/20{% elif match.status == 'CANCELLED' %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% elif match.status == 'POSTPONED' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                        {% if match.status == 'ONGOING' %}<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pine"></span>{% endif %}
+                                        {{ match.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="flex justify-end gap-1.5">
+                                        <a href="{% url 'event_bracket' match.event_id %}" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine">Bracket</a>
+                                        <a href="{% url 'match_schedule' match.event_id %}" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine">Schedule</a>
+                                        <a href="{% url 'edit_match' match.id %}" class="rounded-lg border border-slate-200 bg-paper px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-pine hover:bg-pine hover:text-white">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         {% endif %}
+        {% endfor %}
+    </section>
+    {% endfor %}
+
+    <!-- ===== Unscheduled Matches ===== -->
+    {% if unscheduled %}
+    <section class="space-y-4">
+        <div class="flex items-center gap-3 border-b border-slate-200/80 pb-2.5">
+            <h2 class="font-display text-xl font-semibold text-ink">Awaiting Schedule</h2>
+            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800">{{ unscheduled|length }} unscheduled</span>
+        </div>
+
+        {% for group in unscheduled_groups %}
+        {% if group.matches %}
+        <div class="space-y-2.5">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider {% if group.key == 'cultural' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200/80{% else %}bg-moss text-pine-deep ring-1 ring-inset ring-pine/15{% endif %}">
+                    <span class="h-1.5 w-1.5 rounded-full {% if group.key == 'cultural' %}bg-amber-500{% else %}bg-pine{% endif %}"></span>
+                    {{ group.label }}
+                </span>
+                <span class="text-xs font-medium text-slate-400">{{ group.matches|length }} match{{ group.matches|length|pluralize }}</span>
+            </div>
+
+            <div class="divide-y divide-slate-200/80 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white shadow-soft">
+                {% for match in group.matches %}
+                <div class="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-paper/70 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-ink hover:text-pine">{{ match.event.name }}</a>
+                            <span class="text-xs text-slate-300">&middot;</span>
+                            <span class="text-xs font-medium text-slate-500">{{ match.label }}</span>
+                        </div>
+                        <p class="mt-1 text-sm font-medium text-slate-700">{{ match.contestants_display }}</p>
+                        <p class="mt-0.5 text-[11px] text-slate-400">{{ match.event.competition.name }} &middot; {{ match.event.sport_type.name }}</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <a href="{% url 'edit_match' match.id %}"
+                           class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-pine sm:w-auto ui-button ui-button--primary ui-button--small">
+                            Set Time &amp; Venue
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% else %}
+    <!-- ===== Formal Empty State ===== -->
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-soft">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-moss text-pine">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+        </div>
+        <h2 class="font-display text-xl font-semibold text-ink">No matches match these filters</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            Clear your active filters, create a match manually from the board, or generate a bracket from a sport event.
+        </p>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a href="{% url 'create_board_match' %}{% if filter_state.competition %}?competition={{ filter_state.competition }}{% endif %}"
+               class="inline-flex items-center gap-2 rounded-lg bg-pine px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep ui-button ui-button--primary">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <span>Create Match</span>
+            </a>
+            {% if active_count %}
+            <a href="{% url 'match_board' %}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary">
+                Clear Filters
+            </a>
+            {% endif %}
+        </div>
     </div>
+    {% endif %}
 </div>
-{% endif %}
 
 <script>
 (function () {
     var form = document.getElementById('board-filters');
-    if (!form) { return; }
-    // Apply filters the moment a dropdown or date changes — no Apply click needed.
-    form.addEventListener('change', function (event) {
-        if (event.target.matches('select, input[type="date"]')) { form.requestSubmit(); }
-    });
+    if (form) {
+        form.addEventListener('change', function (event) {
+            if (event.target.matches('select, input[type="date"]')) {
+                form.requestSubmit();
+            }
+        });
+    }
+    var toggleBtn = document.getElementById('toggle-filters-btn');
+    if (toggleBtn && form) {
+        toggleBtn.addEventListener('click', function () {
+            var isHidden = form.classList.toggle('hidden');
+            toggleBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+        });
+    }
 }());
 </script>
 {% endblock %}
