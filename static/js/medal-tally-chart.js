@@ -141,6 +141,30 @@
             });
         }
 
+        function computeXScale() {
+            if (state.metric === 'points') {
+                var maxPts = state.rows.reduce(function (acc, row) {
+                    return Math.max(acc, Number(row.points) || 0);
+                }, 0);
+                return {
+                    suggestedMax: Math.max(20, Math.ceil((maxPts + 5) / 5) * 5),
+                    stepSize: undefined
+                };
+            }
+            var maxMedals = state.rows.reduce(function (acc, row) {
+                var sum = (state.visibleSeries[0] ? row.gold : 0)
+                    + (state.visibleSeries[1] ? row.silver : 0)
+                    + (state.visibleSeries[2] ? row.bronze : 0);
+                return Math.max(acc, sum);
+            }, 0);
+            return {
+                suggestedMax: Math.max(5, maxMedals + 2),
+                stepSize: maxMedals <= 15 ? 1 : undefined
+            };
+        }
+
+        var initialScale = computeXScale();
+
         var chart = new Chart(canvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -171,10 +195,12 @@
                     x: {
                         stacked: true,
                         beginAtZero: true,
+                        suggestedMax: initialScale.suggestedMax,
                         border: { display: false },
                         grid: { color: '#e2e8f0', tickLength: 4 },
                         ticks: {
                             precision: 0,
+                            stepSize: initialScale.stepSize,
                             color: '#475569',
                             font: { size: 11, weight: '500' }
                         },
@@ -233,8 +259,11 @@
             chart.data.labels = state.rows.map(function (row) { return row.name; });
             chart.data.datasets = makeDatasets();
             var isMedals = state.metric === 'medals';
+            var xScale = computeXScale();
             chart.options.scales.x.stacked = isMedals;
             chart.options.scales.y.stacked = isMedals;
+            chart.options.scales.x.suggestedMax = xScale.suggestedMax;
+            chart.options.scales.x.ticks.stepSize = xScale.stepSize;
             chart.options.scales.x.title.text = isMedals ? 'Medals' : 'Points';
             chart.update();
         }
