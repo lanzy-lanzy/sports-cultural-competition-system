@@ -5,130 +5,259 @@
 {% block header_title %}Medal Tally{% endblock %}
 
 {% block content %}
-<div class="records-page">
-<section class="records-hero mb-7 px-6 py-8 sm:px-8 sm:py-9">
-    <div class="flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
-        <div class="max-w-2xl">
-            <p class="records-kicker">Competition standings</p>
-            <h1 class="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">Medal tally</h1>
-            <p class="mt-2 break-words font-display text-lg text-emerald-100">{{ competition.name }}</p>
-            <p class="records-description mt-3 text-sm">Points: gold = 10, silver = 5, bronze = 3. Records and status reflect each registered team's completed matches.</p>
+<div class="records-page space-y-6">
+    <!-- ===== Formal Executive Hero ===== -->
+    <section class="records-hero px-6 py-8 sm:px-8 sm:py-9">
+        <div class="flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
+            <div class="max-w-2xl">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <p class="records-kicker">Competition standings</p>
+                    {% if tally.rows %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/35 bg-emerald-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-100">
+                        {% if competition.status == 'COMPLETED' %}Official Tally{% else %}Provisional Tally{% endif %}
+                    </span>
+                    {% elif overall.partial_rows %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-100">
+                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300"></span>
+                        Partial Tally
+                    </span>
+                    {% endif %}
+                </div>
+                <h1 class="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">Medal tally</h1>
+                <p class="mt-2 break-words font-display text-lg font-medium text-emerald-100">{{ competition.name }}</p>
+                <p class="records-description mt-2 text-sm leading-relaxed">
+                    {{ competition.start_date|date:'M j, Y' }} &ndash; {{ competition.end_date|date:'M j, Y' }} &middot;
+                    Standings reflect official medal awards, event podiums, and verified match win&ndash;loss records.
+                </p>
+                <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold tabular-nums">
+                    <span class="rounded-full border border-amber-200/30 bg-white/10 px-3 py-1.5 text-amber-100">Gold &middot; {{ competition.gold_points|floatformat:"-2" }} pts</span>
+                    <span class="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100">Silver &middot; {{ competition.silver_points|floatformat:"-2" }} pts</span>
+                    <span class="rounded-full border border-orange-200/30 bg-white/10 px-3 py-1.5 text-orange-100">Bronze &middot; {{ competition.bronze_points|floatformat:"-2" }} pts</span>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2.5">
+                {% if can_manage %}
+                <a href="{% url 'overall_medal_tally' %}" class="records-hero-link">Overall tally</a>
+                {% endif %}
+                <a href="{% url 'scoreboard' competition.id %}" class="records-hero-link">Scoreboard</a>
+                <a href="{% url 'competition_detail' competition.id %}" class="records-hero-link"><span aria-hidden="true">&larr;</span> Competition</a>
+            </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-            {% if can_manage %}<a href="{% url 'overall_medal_tally' %}" class="records-hero-link">Overall tally</a>{% endif %}
-            <a href="{% url 'competition_detail' competition.id %}" class="records-hero-link"><span aria-hidden="true">&larr;</span> Competition</a>
-        </div>
-    </div>
-</section>
+    </section>
 
-{% if tally.rows %}
-<div class="mb-8 grid gap-4 md:grid-cols-3">
-    {% for row in tally.rows %}
-    {% if row.rank <= 3 %}
-    <div class="rounded-xl border p-6 text-center shadow-soft {% if row.rank == 1 %}border-amber-200 bg-gradient-to-b from-amber-50 to-white{% elif row.rank == 2 %}border-slate-200 bg-gradient-to-b from-slate-50 to-white{% else %}border-orange-200 bg-gradient-to-b from-orange-50 to-white{% endif %}">
-        <span class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full font-display text-lg font-bold {% if row.rank == 1 %}bg-amber-100 text-amber-800{% elif row.rank == 2 %}bg-slate-200 text-slate-700{% else %}bg-orange-100 text-orange-800{% endif %}">{{ row.rank }}</span>
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {% if row.rank == 1 %}Overall Champion{% elif row.rank == 2 %}Runner-up{% else %}Third place{% endif %}
-        </p>
-        <p class="mt-2 break-words font-display text-xl font-semibold text-ink">{{ row.name }}</p>
-        <p class="mt-1 font-display text-3xl font-bold {% if row.rank == 1 %}text-yellow-600{% elif row.rank == 2 %}text-slate-500{% else %}text-orange-500{% endif %}">{{ row.points }} pts</p>
-        <p class="mt-2 text-xs text-slate-500">
-            <span class="text-yellow-600 font-bold">{{ row.gold }}</span> gold &middot;
-            <span class="text-slate-500 font-bold">{{ row.silver }}</span> silver &middot;
-            <span class="text-orange-500 font-bold">{{ row.bronze }}</span> bronze
-        </p>
-        {% if row.played %}
-        <p class="mt-1 text-xs text-slate-500">
-            <span class="font-bold text-emerald-600">{{ row.wins }}W</span>-<span class="font-bold text-rose-500">{{ row.losses }}L</span>-<span class="font-bold text-slate-400">{{ row.draws }}D</span>
-            {% if row.status_display %}&middot; <span class="font-bold">{{ row.status_display }}</span>{% endif %}
-        </p>
+    {% if tally.rows %}
+    <!-- ===== Formal Top 3 Podium Showcase ===== -->
+    <section aria-label="Top three delegations" class="grid gap-4 md:grid-cols-3">
+        {% for row in tally.rows %}
+        {% if row.rank <= 3 %}
+        <article class="relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/90 border-t-4 bg-white p-6 text-center shadow-soft {% if row.rank == 1 %}border-t-amber-400 bg-gradient-to-b from-amber-50/60 via-white to-white{% elif row.rank == 2 %}border-t-slate-400 bg-gradient-to-b from-slate-50/80 via-white to-white{% else %}border-t-orange-400 bg-gradient-to-b from-orange-50/50 via-white to-white{% endif %}">
+            <div>
+                <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full font-display text-lg font-bold shadow-sm {% if row.rank == 1 %}bg-amber-100 text-amber-800 ring-2 ring-amber-200{% elif row.rank == 2 %}bg-slate-200 text-slate-700 ring-2 ring-slate-300/70{% else %}bg-orange-100 text-orange-800 ring-2 ring-orange-200{% endif %}">
+                    {{ row.rank }}
+                </div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] {% if row.rank == 1 %}text-amber-700{% elif row.rank == 2 %}text-slate-500{% else %}text-orange-700{% endif %}">
+                    {% if row.rank == 1 %}Overall Champion{% elif row.rank == 2 %}Runner-up{% else %}Third Place{% endif %}
+                </p>
+                <h2 class="mt-2 break-words font-display text-xl font-semibold text-ink">{{ row.name }}</h2>
+                <p class="mt-2 font-display text-3xl font-bold tabular-nums {% if row.rank == 1 %}text-amber-600{% elif row.rank == 2 %}text-slate-600{% else %}text-orange-600{% endif %}">
+                    {{ row.points }} <span class="text-sm font-semibold text-slate-400">pts</span>
+                </p>
+            </div>
+
+            <div class="mt-5 border-t border-slate-100 pt-4">
+                <div class="flex items-center justify-center gap-3 text-xs tabular-nums">
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 font-bold text-amber-800 ring-1 ring-amber-200/70">{{ row.gold }} Gold</span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-bold text-slate-700 ring-1 ring-slate-200">{{ row.silver }} Silver</span>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 font-bold text-orange-800 ring-1 ring-orange-200/70">{{ row.bronze }} Bronze</span>
+                </div>
+                {% if row.played %}
+                <p class="mt-2.5 text-xs text-slate-500 tabular-nums">
+                    Record: <span class="font-bold text-emerald-700">{{ row.wins }}W</span>-<span class="font-bold text-rose-600">{{ row.losses }}L</span>{% if row.draws %}-<span class="font-bold text-slate-400">{{ row.draws }}D</span>{% endif %}
+                    {% if row.status_display %}&middot; <span class="font-semibold text-slate-600">{{ row.status_display }}</span>{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </article>
         {% endif %}
+        {% endfor %}
+    </section>
+
+    <!-- ===== Performance Bar Chart ===== -->
+    <section class="records-panel rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft sm:p-7">
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="font-display text-xl font-semibold text-ink">Performance at a glance</h2>
+                <p class="mt-1 text-sm text-slate-500">Stacked gold, silver, and bronze medal counts for this competition.</p>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-yellow-400"></span>Gold</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-slate-400"></span>Silver</span>
+                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-orange-400"></span>Bronze</span>
+            </div>
+        </div>
+        <div>
+            <h3 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Teams &amp; Delegations</h3>
+            {% include 'scoring/partials/medal_bar_chart.html' with series=tally.team_chart chart_id='competition-team-medal-chart' chart_max=tally.chart_max_medals empty_note='No team or delegation medals yet.' %}
+        </div>
+    </section>
+
+    <!-- ===== Competition Rankings (Mobile Cards + Desktop Table) ===== -->
+    <section class="records-panel overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="competition-rankings-title">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
+            <div>
+                <h2 id="competition-rankings-title" class="font-display text-xl font-semibold text-ink">Competition rankings</h2>
+                <p class="mt-0.5 text-xs text-slate-500">Official medals, match win&ndash;loss records, and total points per delegation.</p>
+            </div>
+            <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold tabular-nums text-slate-600 ring-1 ring-slate-200">{{ tally.rows|length }} ranked</span>
+        </div>
+
+        <!-- Mobile Cards (< md) -->
+        <div class="divide-y divide-slate-100 md:hidden">
+            {% for row in tally.rows %}
+            <div class="p-4 {% if row.rank == 1 %}bg-amber-50/40{% endif %}">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if row.rank == 1 %}bg-amber-100 text-amber-800{% else %}bg-paper text-ink ring-1 ring-slate-200{% endif %} font-display text-sm font-bold tabular-nums">{{ row.rank }}</span>
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold text-ink">{{ row.name }}</p>
+                            {% if row.played %}
+                            <p class="text-xs text-slate-500 tabular-nums">
+                                <span class="font-bold text-emerald-700">{{ row.wins }}W</span>-<span class="font-bold text-rose-600">{{ row.losses }}L</span>{% if row.draws %}-<span class="font-bold text-slate-400">{{ row.draws }}D</span>{% endif %} ({{ row.played }} GP)
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="shrink-0 font-display text-lg font-bold tabular-nums text-ink">{{ row.points }} pts</span>
+                </div>
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums">
+                    <div class="flex items-center gap-1.5">
+                        <span class="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800">{{ row.gold }}G</span>
+                        <span class="rounded-full bg-slate-200 px-2 py-0.5 font-bold text-slate-700">{{ row.silver }}S</span>
+                        <span class="rounded-full bg-orange-100 px-2 py-0.5 font-bold text-orange-800">{{ row.bronze }}B</span>
+                    </div>
+                    {% if row.status_display %}
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-50 text-emerald-700{% elif row.status == 'PENDING' %}bg-amber-50 text-amber-800{% else %}bg-rose-50 text-rose-700{% endif %}">{{ row.status_display|upper }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Desktop Formal Table (>= md) -->
+        <div class="hidden overflow-x-auto md:block">
+            <table class="records-table min-w-[820px] w-full text-left text-sm" aria-labelledby="competition-rankings-title">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th scope="col" class="px-5 py-3.5">Rank</th>
+                        <th scope="col" class="px-5 py-3.5">Team / Delegation</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Status</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Record (W-L-D)</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Gold</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Silver</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Bronze</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Points</th>
+                        <th scope="col" class="px-5 py-3.5 text-center">Source</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in tally.rows %}
+                    <tr class="{% if row.rank == 1 %}bg-amber-50/40{% endif %} transition-colors hover:bg-paper/70">
+                        <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-ink">{{ row.name }}</td>
+                        <td class="px-5 py-3.5 text-center">
+                            {% if row.status_display %}
+                            <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif row.status == 'PENDING' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% endif %}">{{ row.status_display|upper }}</span>
+                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-center tabular-nums">
+                            {% if row.played %}
+                            <span class="font-bold text-emerald-700">{{ row.wins }}</span>-<span class="font-bold text-rose-600">{{ row.losses }}</span>-<span class="font-bold text-slate-400">{{ row.draws }}</span>
+                            <span class="ml-1 text-[11px] text-slate-400">({{ row.played }} GP)</span>
+                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-amber-600">{{ row.gold }}</td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-slate-500">{{ row.silver }}</td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-orange-600">{{ row.bronze }}</td>
+                        <td class="px-5 py-3.5 text-center font-display text-base font-bold tabular-nums text-ink">{{ row.points }}</td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex flex-wrap justify-center gap-1.5">
+                                {% if row.sports %}<span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold text-pine-deep">{{ row.sports }} sport</span>{% endif %}
+                                {% if row.award %}<span class="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">{{ row.award }} award</span>{% endif %}
+                                {% if row.standings %}<span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">{{ row.standings }} judged</span>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% elif overall.partial_rows %}
+    <!-- ===== Partial Tally Mode for This Competition ===== -->
+    <div role="status" class="flex flex-col gap-3 rounded-xl border border-amber-200/90 border-l-4 border-l-amber-500 bg-amber-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold text-amber-950">Partial Tally &mdash; Live Match Win&ndash;Loss Standings</p>
+            <p class="mt-0.5 text-xs text-amber-900/80">Official medals will appear once event placements are confirmed. Standings below reflect {{ overall.partial_totals.matches_completed }} completed match{{ overall.partial_totals.matches_completed|pluralize:'es' }}.</p>
+        </div>
+        <span class="inline-flex shrink-0 self-start rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 sm:self-center">Medals Pending</span>
+    </div>
+
+    <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft">
+        <div class="border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
+            <h2 class="font-display text-xl font-semibold text-ink">Partial Standings</h2>
+            <p class="mt-0.5 text-xs text-slate-500">Ranked by wins, win percentage, fewest losses, and total match score.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-[700px] w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="w-16 px-5 py-3.5">Rank</th>
+                        <th class="px-5 py-3.5">Team / Contestant</th>
+                        <th class="px-4 py-3.5 text-center">GP</th>
+                        <th class="px-4 py-3.5 text-center">Wins</th>
+                        <th class="px-4 py-3.5 text-center">Losses</th>
+                        <th class="px-4 py-3.5 text-center">Draws</th>
+                        <th class="w-44 px-5 py-3.5">Win Rate</th>
+                        <th class="px-4 py-3.5 text-center">Score Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in overall.partial_rows %}
+                    <tr class="{% if row.rank == 1 %}bg-moss/25{% endif %} transition-colors hover:bg-paper/70">
+                        <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-ink">{{ row.name }}</td>
+                        <td class="px-4 py-3.5 text-center font-semibold tabular-nums text-slate-600">{{ row.played }}</td>
+                        <td class="px-4 py-3.5 text-center font-bold tabular-nums text-emerald-700">{{ row.wins }}</td>
+                        <td class="px-4 py-3.5 text-center font-bold tabular-nums text-rose-600">{{ row.losses }}</td>
+                        <td class="px-4 py-3.5 text-center font-semibold tabular-nums text-slate-400">{{ row.draws }}</td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%"></div>
+                                </div>
+                                <span class="w-11 text-right text-xs font-semibold tabular-nums text-ink">{{ row.win_pct|floatformat:0 }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3.5 text-center font-semibold tabular-nums text-slate-700">{{ row.points_for|floatformat:"-2" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% else %}
+    <!-- ===== Formal Empty State ===== -->
+    <div class="records-panel records-empty rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-soft">
+        <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-moss text-pine" aria-hidden="true">
+            <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 3l4 7 4-7M7 16a5 5 0 1010 0 5 5 0 00-10 0zm5-2v4m-2-2h4"/></svg>
+        </span>
+        <p class="font-display text-xl font-semibold text-ink">No medals awarded yet</p>
+        <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Medals come from the podium of each completed sport event, from medal awards entered manually, or from the final standings of a completed competition.</p>
+        <a href="{% url 'competition_detail' competition.id %}" class="mt-6 inline-flex items-center rounded-lg bg-pine px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-deep ui-button ui-button--primary">Back to competition</a>
     </div>
     {% endif %}
-    {% endfor %}
-</div>
-
-{% if tally.rows %}
-<section class="records-panel mb-7 border bg-white p-5 sm:p-7">
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h2 class="font-display text-xl font-bold text-ink">Performance at a glance</h2>
-            <p class="mt-1 text-sm text-slate-500">Stacked medal counts for this competition.</p>
-        </div>
-        <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-yellow-400"></span>Gold</span>
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-slate-400"></span>Silver</span>
-            <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-orange-400"></span>Bronze</span>
-        </div>
-    </div>
-    <div>
-        <h3 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Teams &amp; Delegations</h3>
-        {% include 'scoring/partials/medal_bar_chart.html' with series=tally.team_chart chart_id='competition-team-medal-chart' chart_max=tally.chart_max_medals empty_note='No team or delegation medals yet.' %}
-    </div>
-</section>
-{% endif %}
-
-<section class="records-panel overflow-hidden border bg-white" aria-labelledby="competition-rankings-title">
-    <div class="border-b border-slate-100 px-5 py-4">
-        <h2 id="competition-rankings-title" class="font-display text-xl font-semibold text-ink">Competition rankings</h2>
-        <p class="mt-1 text-xs text-slate-500">Medals, match records, and total points for each delegation.</p>
-    </div>
-    <div class="overflow-x-auto">
-    <table class="records-table min-w-[860px] w-full text-left text-sm" aria-labelledby="competition-rankings-title">
-        <thead>
-            <tr class="border-b border-slate-200 bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
-                <th scope="col" class="px-5 py-3">Rank</th>
-                <th scope="col" class="px-5 py-3">Team / Delegation</th>
-                <th scope="col" class="px-5 py-3 text-center">Status</th>
-                <th scope="col" class="px-5 py-3 text-center">Record (W-L-D)</th>
-                <th scope="col" class="px-5 py-3 text-center">Gold</th>
-                <th scope="col" class="px-5 py-3 text-center">Silver</th>
-                <th scope="col" class="px-5 py-3 text-center">Bronze</th>
-                <th scope="col" class="px-5 py-3 text-center">Points</th>
-                <th scope="col" class="px-5 py-3 text-center">Source</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in tally.rows %}
-            <tr class="border-b border-slate-100 last:border-0 {% if row.rank == 1 %}bg-yellow-50/60{% endif %}">
-                <td class="px-5 py-3 font-display text-base font-bold text-ink">{{ row.rank }}</td>
-                <td class="px-5 py-3 font-semibold text-slate-800">{{ row.name }}</td>
-                <td class="px-5 py-3 text-center">
-                    {% if row.status_display %}
-                    <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-100 text-emerald-700{% elif row.status == 'PENDING' %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ row.status_display|upper }}</span>
-                    {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
-                </td>
-                <td class="px-5 py-3 text-center whitespace-nowrap">
-                    {% if row.played %}
-                    <span class="font-bold text-emerald-600">{{ row.wins }}</span>-<span class="font-bold text-rose-500">{{ row.losses }}</span>-<span class="font-bold text-slate-400">{{ row.draws }}</span>
-                    <span class="text-[10px] text-slate-400">({{ row.played }} GP)</span>
-                    {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
-                </td>
-                <td class="px-5 py-3 text-center font-bold text-yellow-600">{{ row.gold }}</td>
-                <td class="px-5 py-3 text-center font-bold text-slate-500">{{ row.silver }}</td>
-                <td class="px-5 py-3 text-center font-bold text-orange-500">{{ row.bronze }}</td>
-                <td class="px-5 py-3 text-center font-display text-base font-bold text-ink">{{ row.points }}</td>
-                <td class="px-5 py-3">
-                    <div class="flex flex-wrap justify-center gap-1.5">
-                        {% if row.sports %}<span class="rounded-full bg-campus/10 px-2.5 py-1 text-[10px] font-bold text-campus">{{ row.sports }} sport</span>{% endif %}
-                        {% if row.award %}<span class="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold text-sky-700">{{ row.award }} award</span>{% endif %}
-                        {% if row.standings %}<span class="rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-bold text-violet-700">{{ row.standings }} judged</span>{% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-</section>
-{% else %}
-<div class="records-panel records-empty border border-dashed px-6 py-14 text-center">
-    <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-moss font-display text-2xl text-pine" aria-hidden="true">&mdash;</span>
-    <p class="font-display text-lg font-bold text-ink">No medals awarded yet</p>
-    <p class="mt-2 text-sm text-slate-500">Medals come from the podium of each completed sport event, from medal awards entered manually, or from the final standings of a completed competition.</p>
-    <a href="{% url 'competition_detail' competition.id %}" class="mt-5 inline-block rounded-md bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep ui-button ui-button--primary">Back to competition</a>
-</div>
-{% endif %}
 </div>
 {% endblock %}
 
