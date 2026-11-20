@@ -16,17 +16,15 @@ from accounts.access import management_required, role_required
 from accounts.models import UserProfile
 
 
-def _participant_team_groups():
+def _participant_team_groups(queryset=None):
     """Return teams/groups that have at least one associated participant.
 
     Each entry is a dict with keys: ``key``, ``name``, ``team`` (Team or None),
-    ``participant_ids`` (list[int]), and ``count`` (int).
+    ``participants`` (list[Participant]), ``participant_ids`` (list[int]), and
+    ``count`` (int).
     """
-    participants = (
-        Participant.objects
-        .select_related('team_membership__team')
-        .order_by('-registration_date')
-    )
+    base_qs = queryset if queryset is not None else Participant.objects.all().order_by('-registration_date')
+    participants = base_qs.select_related('team_membership__team')
     teams_by_lower_name = {
         team.name.strip().lower(): team
         for team in Team.objects.all()
@@ -53,8 +51,10 @@ def _participant_team_groups():
             'key': key,
             'name': name,
             'team': team,
+            'participants': [],
             'participant_ids': [],
         })
+        bucket['participants'].append(participant)
         bucket['participant_ids'].append(participant.id)
 
     result = []
@@ -425,34 +425,12 @@ def assign_participants(request, competition_id):
             messages.warning(request, 'Selected participants are already assigned to this competition.')
         return redirect('manage_participants', competition_id=competition_id)
 
-    available_participants = Participant.objects.exclude(competitions=competition)
-
-    grouped_participants = {
-        'male': available_participants.filter(gender='male').order_by('name'),
-        'female': available_participants.filter(gender='female').order_by('name'),
-        'other': available_participants.filter(gender='other').order_by('name'),
-        'prefer_not_to_say': available_participants.filter(gender='prefer_not_to_say').order_by('name'),
-    }
-
-    age_ranges = []
-    if available_participants.filter(age__isnull=False).exists():
-        min_age = available_participants.filter(age__isnull=False).order_by('age').first().age
-        max_age = available_participants.filter(age__isnull=False).order_by('-age').first().age
-
-        current_range = min_age
-        while current_range <= max_age:
-            next_range = current_range + 9
-            age_ranges.append({
-                'start': current_range,
-                'end': next_range,
-                'participants': available_participants.filter(age__gte=current_range, age__lte=next_range)
-            })
-            current_range = next_range + 1
+    available_participants = Participant.objects.exclude(competitions=competition).order_by('name')
+    team_groups = _participant_team_groups(available_participants)
 
     context = {
         'competition': competition,
-        'grouped_participants': grouped_participants,
-        'age_ranges': age_ranges,
+        'team_groups': team_groups,
         'total_available': available_participants.count(),
     }
 
@@ -486,10 +464,13 @@ def _render_roster_panel(request, competition):
     """Render the full roster panel (both columns) for a competition."""
     assigned = services.assigned_rows(competition)
     available = services.available_participants(competition)
+    available_team_groups = _participant_team_groups(available)
     return render(request, 'participants/participant_management/roster/panel.html', {
         'competition': competition,
         'assigned_page': _paginate(assigned, 'page_assigned', request),
         'available_page': _paginate(available, 'page_available', request),
+        'available_team_groups': available_team_groups,
+        'available_count': available.count(),
         'assigned_query': request.GET.get('q_assigned', ''),
         'available_query': request.GET.get('q_available', ''),
     })
@@ -518,9 +499,12 @@ def roster_available(request, competition_id):
     competition = get_object_or_404(Competition, id=competition_id)
     query = request.GET.get('q', '')
     rows = services.available_participants(competition, query)
+    available_team_groups = _participant_team_groups(rows)
     return render(request, 'participants/participant_management/roster/available_list.html', {
         'competition': competition,
         'available_page': _paginate(rows, 'page', request),
+        'available_team_groups': available_team_groups,
+        'available_count': rows.count(),
         'available_query': query,
     })
 

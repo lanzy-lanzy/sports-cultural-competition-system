@@ -1,39 +1,61 @@
-﻿<div id="available-list-{{ competition.id }}" class="app-scrollbar flex-1 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
-    {% for participant in available_page %}
-    <label class="flex cursor-pointer items-start gap-3 rounded-md border border-slate-200 bg-white p-3 transition-all duration-200 hover:border-cyan-400 hover:shadow-sm">
-        <span class="flex h-5 items-center">
-            <input type="checkbox" name="participants" value="{{ participant.id }}"
-                   class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
-        </span>
-        <span class="flex min-w-0 items-center">
-            {% if participant.profile_image %}
-            <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="mr-2 h-8 w-8 shrink-0 rounded-full object-cover">
-            {% else %}
-            <span class="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-sm font-bold text-white">{{ participant.name|make_list|first|upper }}</span>
-            {% endif %}
-            <span class="min-w-0">
-                <span class="block truncate font-medium text-slate-900">{{ participant.name }}</span>
-                <span class="block truncate text-xs text-slate-500">{{ participant.participant_id }}</span>
-            </span>
-        </span>
-    </label>
+﻿<div id="available-list-{{ competition.id }}" class="app-scrollbar flex-1 max-h-[28rem] space-y-2.5 overflow-y-auto pr-1">
+    {% for group in available_team_groups %}
+    <details class="group/team overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+             data-roster-team-group="{{ group.key }}"
+             {% if available_query %}open{% endif %}>
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-paper/70">
+            <div class="flex min-w-0 items-center gap-3">
+                {% if group.team and group.team.logo %}
+                <img src="{{ group.team.logo.url }}" alt="{{ group.name }}" class="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-cover">
+                {% else %}
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-sm font-bold">
+                    {{ group.name|make_list|first|upper }}
+                </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-ink">{{ group.name }}</p>
+                    <p class="text-xs text-slate-500">{{ group.count }} available participant{{ group.count|pluralize }}</p>
+                </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+                <span data-team-selected-badge class="hidden rounded-full bg-moss px-2 py-0.5 text-[11px] font-semibold text-pine-deep">0 selected</span>
+                <svg class="h-4 w-4 text-slate-400 transition-transform duration-150 group-open/team:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+            </div>
+        </summary>
+
+        <div class="border-t border-slate-100 bg-paper/40 px-3 py-3">
+            <div class="mb-2.5 flex items-center justify-between gap-2 px-1">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Select one or multiple</span>
+                <button type="button" onclick="rosterToggleTeam(this)"
+                        class="cursor-pointer rounded-md border border-pine/25 bg-white px-2.5 py-1 text-[11px] font-semibold text-pine transition hover:bg-moss">
+                    Select all in team
+                </button>
+            </div>
+            <div class="space-y-1.5">
+                {% for participant in group.participants %}
+                <label class="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200/90 bg-white px-3 py-2.5 transition-all hover:border-pine/40 hover:shadow-sm">
+                    <input type="checkbox" name="participants" value="{{ participant.id }}"
+                           onchange="rosterUpdateCounts('{{ competition.id }}')"
+                           class="h-4 w-4 shrink-0 rounded border-slate-300 text-pine focus:ring-pine">
+                    {% if participant.profile_image %}
+                    <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-8 w-8 shrink-0 rounded-full object-cover">
+                    {% else %}
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pine text-xs font-bold text-white">{{ participant.name|make_list|first|upper }}</span>
+                    {% endif %}
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-medium text-ink">{{ participant.name }}</span>
+                        <span class="block truncate text-xs text-slate-500">{{ participant.participant_id }}</span>
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
     {% empty %}
     <div class="rounded-md border border-dashed border-slate-300 bg-slate-50/60 py-10 text-center">
         <p class="text-sm text-slate-500">No available participants{% if available_query %} match your search{% endif %}.</p>
     </div>
     {% endfor %}
-
-    {% if available_page.has_other_pages %}
-    <div class="flex flex-wrap items-center justify-center gap-1 pt-2">
-        {% for num in available_page.paginator.page_range %}
-            {% if available_page.number == num %}
-            <span class="rounded-md bg-campus px-2.5 py-1 text-xs font-semibold text-white">{{ num }}</span>
-            {% else %}
-            <a href="#" hx-get="{% url 'roster_available' competition.id %}?q={{ available_query|urlencode }}&page={{ num }}"
-               hx-target="#available-list-{{ competition.id }}" hx-swap="outerHTML"
-               class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-cyan-300 hover:text-cyan-700 ui-button ui-button--secondary ui-button--small">{{ num }}</a>
-            {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}
 </div>

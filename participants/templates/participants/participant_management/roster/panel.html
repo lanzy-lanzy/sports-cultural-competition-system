@@ -32,9 +32,9 @@
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                     <h3 class="font-display text-base font-semibold text-slate-900">Available participants</h3>
-                    <p class="text-xs text-slate-500">Not yet in this competition</p>
+                    <p class="text-xs text-slate-500">Grouped by team &mdash; click a team to select one or more participants</p>
                 </div>
-                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ available_page.paginator.count }}</span>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ available_count|default:available_page.paginator.count }}</span>
             </div>
 
             <div class="flex flex-1 flex-col gap-4 px-5 py-4">
@@ -89,12 +89,38 @@
 
     <script>
         (function () {
-            function selectAll(competitionId) {
-                var box = document.querySelectorAll('#available-list-' + competitionId + ' input[type=checkbox]');
-                var allChecked = Array.prototype.every.call(box, function (c) { return c.checked; });
-                box.forEach(function (c) { c.checked = !allChecked; });
+            function updateCounts(competitionId) {
+                var root = document.getElementById('available-list-' + competitionId);
+                if (!root) return;
+                root.querySelectorAll('[data-roster-team-group]').forEach(function (group) {
+                    var checked = group.querySelectorAll('input[type=checkbox]:checked').length;
+                    var badge = group.querySelector('[data-team-selected-badge]');
+                    if (badge) {
+                        badge.textContent = checked + ' selected';
+                        badge.classList.toggle('hidden', checked === 0);
+                    }
+                });
             }
+            function selectAll(competitionId) {
+                var root = document.getElementById('available-list-' + competitionId);
+                if (!root) return;
+                var boxes = root.querySelectorAll('input[type=checkbox]');
+                var allChecked = boxes.length > 0 && Array.prototype.every.call(boxes, function (c) { return c.checked; });
+                boxes.forEach(function (c) { c.checked = !allChecked; });
+                updateCounts(competitionId);
+            }
+            function toggleTeam(btn) {
+                var group = btn.closest('[data-roster-team-group]');
+                if (!group) return;
+                var boxes = group.querySelectorAll('input[type=checkbox]');
+                var allChecked = boxes.length > 0 && Array.prototype.every.call(boxes, function (c) { return c.checked; });
+                boxes.forEach(function (c) { c.checked = !allChecked; });
+                var list = btn.closest('[id^="available-list-"]');
+                if (list) updateCounts(list.id.replace('available-list-', ''));
+            }
+            window.rosterUpdateCounts = updateCounts;
             window.rosterToggleAll = selectAll;
+            window.rosterToggleTeam = toggleTeam;
         })();
     </script>
 </div>

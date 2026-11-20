@@ -284,6 +284,42 @@ class ParticipantBulkDeleteTest(TestCase):
         self.assertContains(mgmt_resp, 'Beta Tigers')
         self.assertNotContains(mgmt_resp, 'Alice One')
 
+    def test_assign_participants_groups_by_team_and_assigns_multiple(self):
+        other_comp = Competition.objects.create(
+            name='Duo Dance', description='Requires 2+ participants', status='ACTIVE',
+            start_date='2026-01-01 00:00:00', end_date='2026-01-02 00:00:00',
+            created_by=self.admin,
+        )
+        team_alpha = Team.objects.create(
+            name='Alpha Eagles', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        TeamMembership.objects.create(team=team_alpha, participant=self.p1)
+        TeamMembership.objects.create(team=team_alpha, participant=self.p2)
+
+        self.client.force_login(self.admin)
+        get_resp = self.client.get(reverse('assign_participants', args=[other_comp.id]))
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertContains(get_resp, 'Alpha Eagles')
+        self.assertContains(get_resp, 'Select all in team')
+        group_names = [g['name'] for g in get_resp.context['team_groups']]
+        self.assertIn('Alpha Eagles', group_names)
+
+        # Assign 2 participants from Alpha Eagles in one submission.
+        post_resp = self.client.post(reverse('assign_participants', args=[other_comp.id]), {
+            'participants': [self.p1.id, self.p2.id],
+        })
+        self.assertRedirects(post_resp, reverse('manage_participants', args=[other_comp.id]))
+        self.assertEqual(
+            ParticipantCompetition.objects.filter(competition=other_comp, participant_id__in=[self.p1.id, self.p2.id]).count(),
+            2,
+        )
+
+        # Roster panel also groups remaining available participants by team.
+        panel_resp = self.client.get(reverse('roster_panel', args=[other_comp.id]))
+        self.assertEqual(panel_resp.status_code, 200)
+        self.assertEqual([g['name'] for g in panel_resp.context['available_team_groups']], ['Independent / No Team'])
+
     def test_bulk_delete_removes_selected_participants_and_audits(self):
         self.client.force_login(self.admin)
         resp = self.client.post(reverse('bulk_delete_participants'), {
