@@ -980,6 +980,45 @@ class OverallMedalTallyTest(TestCase):
         body = response.content.decode('utf-8-sig')
         self.assertIn('OVERALL', body)
 
+    def test_overall_page_displays_partial_tally_from_match_wins_and_losses(self):
+        from sports.models import Match, MatchEntry, SportType, SportsEvent
+        from teams.models import Team
+
+        sport_type = SportType.objects.create(name='Partial Basketball', team_based=True)
+        event = SportsEvent.objects.create(
+            competition=self.sport_comp,
+            sport_type=sport_type,
+            name='Basketball Open',
+            team_based=True,
+            status=SportsEvent.Status.ONGOING,
+        )
+        team_a = Team.objects.create(
+            name='Pine Eagles', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        team_b = Team.objects.create(
+            name='Cedar Hawks', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        match = Match.objects.create(event=event, name='Game 1', status=Match.Status.COMPLETED)
+        MatchEntry.objects.create(match=match, team=team_a, side=1, score=Decimal('82'), is_winner=True)
+        MatchEntry.objects.create(match=match, team=team_b, side=2, score=Decimal('74'), is_winner=False)
+
+        tally = compute_overall_medal_tally()
+        self.assertEqual(tally['rows'], [])
+        self.assertEqual(len(tally['partial_rows']), 2)
+        self.assertEqual(tally['partial_rows'][0]['name'], 'Pine Eagles')
+        self.assertEqual((tally['partial_rows'][0]['wins'], tally['partial_rows'][0]['losses']), (1, 0))
+        self.assertEqual(tally['partial_rows'][1]['name'], 'Cedar Hawks')
+        self.assertEqual((tally['partial_rows'][1]['wins'], tally['partial_rows'][1]['losses']), (0, 1))
+
+        response = self.client.get(reverse('overall_medal_tally'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Partial Tally')
+        self.assertContains(response, 'Pine Eagles')
+        self.assertContains(response, 'Cedar Hawks')
+        self.assertNotContains(response, 'No medals to tally yet')
+
 
 class CriterionWeightScoringTest(BaseScoringTest):
     def test_weighted_criteria_use_percentage_sum(self):
