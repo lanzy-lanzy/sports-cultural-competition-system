@@ -1185,3 +1185,65 @@ class ManualMatchManagementTest(TestCase):
         viewer = User.objects.create_user('board-viewer', password='pass')
         self.client.force_login(viewer)
         self.assertEqual(self.client.get(reverse('create_board_match')).status_code, 403)
+
+    def test_create_board_match_auto_enrolls_teams_directly(self):
+        team_a = Team.objects.create(name='Alpha Squad', category='SPORTS', status='APPROVED', created_by=self.admin)
+        team_b = Team.objects.create(name='Beta Squad', category='SPORTS', status='APPROVED', created_by=self.admin)
+        self.assertFalse(self.event.entries.filter(team__in=[team_a, team_b]).exists())
+
+        resp = self.client.post(reverse('create_board_match'), {
+            'event': f'event:{self.event.pk}',
+            'opponent_1': f'team:{team_a.pk}',
+            'opponent_2': f'team:{team_b.pk}',
+            'name': 'Game 1',
+            'round_number': 1,
+            'status': 'SCHEDULED',
+        })
+        self.assertRedirects(resp, reverse('match_board'))
+        match = self.event.matches.get()
+        self.assertEqual(set(match.entries.values_list('team_id', flat=True)), {team_a.pk, team_b.pk})
+        self.assertEqual(
+            self.event.entries.filter(team__in=[team_a, team_b], status='CONFIRMED').count(),
+            2,
+        )
+
+    def test_create_board_match_for_sports_competition_without_event(self):
+        comp = Competition.objects.create(
+            name='INTRAMURAL VOLLEYBALL',
+            description='Volleyball',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-03-01T08:00:00Z',
+            end_date='2026-03-05T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        team_a = Team.objects.create(name='Spikers A', category='SPORTS', status='APPROVED', created_by=self.admin)
+        team_b = Team.objects.create(name='Spikers B', category='SPORTS', status='APPROVED', created_by=self.admin)
+
+        resp = self.client.post(reverse('create_board_match'), {
+            'event': f'comp:{comp.pk}',
+            'opponent_1': f'team:{team_a.pk}',
+            'opponent_2': f'team:{team_b.pk}',
+            'name': 'Opening Match',
+            'round_number': 1,
+            'status': 'SCHEDULED',
+        })
+        self.assertRedirects(resp, reverse('match_board'))
+        created_event = comp.sport_events.get()
+        match = created_event.matches.get()
+        self.assertEqual(match.name, 'Opening Match')
+        self.assertEqual(set(match.entries.values_list('team_id', flat=True)), {team_a.pk, team_b.pk})
+
+    def test_create_board_match_rejects_same_team_versus_itself(self):
+        team_a = Team.objects.create(name='Solo Team', category='SPORTS', status='APPROVED', created_by=self.admin)
+        resp = self.client.post(reverse('create_board_match'), {
+            'event': f'event:{self.event.pk}',
+            'opponent_1': f'team:{team_a.pk}',
+            'opponent_2': f'team:{team_a.pk}',
+            'round_number': 1,
+            'status': 'SCHEDULED',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('opponent_2', resp.context['form'].errors)
+        self.assertFalse(self.event.matches.exists())

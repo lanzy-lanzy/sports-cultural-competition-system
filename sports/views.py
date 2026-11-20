@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
 from accounts.access import management_required
-from .forms import EventEntryForm, ManualMatchForm, SportsEventForm, SportTypeForm, VenueForm
+from .forms import BoardManualMatchForm, EventEntryForm, ManualMatchForm, SportsEventForm, SportTypeForm, VenueForm
 from .models import EventEntry, Match, SportsEvent, SportType, Venue
 from .services import (
     compute_elimination_standings,
@@ -491,10 +491,49 @@ def create_match(request, event_id):
     })
 
 
+def _ensure_default_sport_event(competition):
+    """Return an open SportsEvent for a Sports competition, creating one if none exists yet."""
+    existing = (
+        competition.sport_events
+        .filter(confirmed_at__isnull=True)
+        .exclude(status__in=[SportsEvent.Status.COMPLETED, SportsEvent.Status.CANCELLED])
+        .first()
+    )
+    if existing:
+        return existing
+
+    sport_type = SportType.objects.filter(is_active=True, name__iexact=competition.name.strip()).first()
+    if sport_type is None:
+        sport_type, _ = SportType.objects.get_or_create(
+            name=competition.name.strip()[:100] or 'General Sport',
+            defaults={'team_based': True, 'is_active': True},
+        )
+
+    format_map = {
+        Competition.TournamentFormat.SINGLE_ELIMINATION: SportsEvent.Format.SINGLE_ELIMINATION,
+        Competition.TournamentFormat.DOUBLE_ELIMINATION: SportsEvent.Format.DOUBLE_ELIMINATION,
+        Competition.TournamentFormat.ROUND_ROBIN: SportsEvent.Format.ROUND_ROBIN,
+        Competition.TournamentFormat.GROUP_KNOCKOUT: SportsEvent.Format.GROUP_STAGE,
+        Competition.TournamentFormat.BEST_OF: SportsEvent.Format.BEST_OF,
+        Competition.TournamentFormat.LEAGUE: SportsEvent.Format.LEAGUE,
+    }
+    event_format = format_map.get(competition.tournament_format, SportsEvent.Format.SINGLE_ELIMINATION)
+
+    return SportsEvent.objects.create(
+        competition=competition,
+        sport_type=sport_type,
+        name=competition.name,
+        team_based=sport_type.team_based,
+        format=event_format,
+        status=SportsEvent.Status.SCHEDULED,
+    )
+
+
 @management_required
 @transaction.atomic
 def create_board_match(request):
-    """Create a manual match directly from the Match Board by selecting an open event."""
+    """Single-page Match Board workflow: pick an event or sports competition,
+    choose Team 1 vs Team 2 directly, and schedule the match with zero redirects."""
     open_events = list(
         SportsEvent.objects
         .filter(confirmed_at__isnull=True)
@@ -502,53 +541,91 @@ def create_board_match(request):
         .select_related('competition', 'sport_type', 'venue')
         .order_by('competition__name', 'name')
     )
+    event_comp_ids = {ev.competition_id for ev in open_events}
+    sports_comps_without_events = list(
+        Competition.objects
+        .filter(status='ACTIVE')
+        .exclude(kind=Competition.Kind.CULTURAL)
+        .exclude(id__in=event_comp_ids)
+        .order_by('-id')
+    )
 
-    raw_event_id = (
+    target_options = [
+        {
+            'value': f'event:{ev.id}',
+            'label': f'{ev.name} — {ev.competition.name} ({ev.sport_type.name})',
+            'event': ev,
+            'competition': ev.competition,
+        }
+        for ev in open_events
+    ] + [
+        {
+            'value': f'comp:{comp.id}',
+            'label': f'{comp.name} (Sports competition)',
+            'event': None,
+            'competition': comp,
+        }
+        for comp in sports_comps_without_events
+    ]
+
+    raw_target = (
         request.POST.get('event') if request.method == 'POST' else request.GET.get('event')
     ) or ''
     raw_competition_id = request.GET.get('competition', '')
 
-    selected_event = None
-    if raw_event_id.isdigit():
-        selected_event = next((ev for ev in open_events if ev.id == int(raw_event_id)), None)
-    if selected_event is None and request.method != 'POST' and open_events:
-        if raw_competition_id.isdigit():
-            selected_event = next(
-                (ev for ev in open_events if ev.competition_id == int(raw_competition_id)),
+    selected_option = None
+    if raw_target:
+        if raw_target.isdigit():
+            selected_option = next(
+                (opt for opt in target_options if opt['event'] and opt['event'].id == int(raw_target)),
                 None,
             )
-        if selected_event is None:
-            selected_event = open_events[0]
+        else:
+            selected_option = next((opt for opt in target_options if opt['value'] == raw_target), None)
+
+    if selected_option is None and request.method != 'POST' and target_options:
+        if raw_competition_id.isdigit():
+            selected_option = next(
+                (opt for opt in target_options if opt['competition'].id == int(raw_competition_id)),
+                None,
+            )
+        if selected_option is None:
+            selected_option = target_options[0]
+
+    selected_event = selected_option['event'] if selected_option else None
+    selected_competition = selected_option['competition'] if selected_option else None
 
     form = None
-    match = None
-    confirmed_entries_count = 0
-    if selected_event is not None:
-        selected_event = SportsEvent.objects.select_for_update().select_related(
-            'competition', 'sport_type', 'venue',
-        ).get(pk=selected_event.pk)
-        match = Match(event=selected_event, venue=selected_event.venue)
-        form = ManualMatchForm(request.POST if request.method == 'POST' else None, instance=match)
-        confirmed_entries_count = form.fields['opponent_1'].queryset.count()
+    if selected_option is not None:
+        if selected_event is not None:
+            selected_event = SportsEvent.objects.select_for_update().select_related(
+                'competition', 'sport_type', 'venue',
+            ).get(pk=selected_event.pk)
+        form = BoardManualMatchForm(
+            request.POST if request.method == 'POST' else None,
+            event=selected_event,
+            team_based=selected_event.team_based if selected_event else True,
+        )
         if request.method == 'POST' and form.is_valid():
-            match = form.save()
+            target_event = selected_event or _ensure_default_sport_event(selected_competition)
+            match = form.save(event=target_event)
             record_action_from_request(
                 request,
                 'MATCH_CREATED',
                 target=match,
                 details=f'Manual match created from match board: {match.contestants_display()}',
             )
-            messages.success(request, 'Manual match and opponents created.')
+            messages.success(request, f'Match created: {match.contestants_display()}.')
             return redirect('match_board')
     elif request.method == 'POST':
-        messages.error(request, 'Select an open sport event to create a match.')
+        messages.error(request, 'Select a sport event or competition to create a match.')
 
     return render(request, 'sports/board_match_form.html', {
-        'events': open_events,
+        'target_options': target_options,
+        'selected_option': selected_option,
         'selected_event': selected_event,
+        'selected_competition': selected_competition,
         'form': form,
-        'match': match,
-        'confirmed_entries_count': confirmed_entries_count,
     })
 
 

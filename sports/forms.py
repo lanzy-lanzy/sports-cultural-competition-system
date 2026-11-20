@@ -301,3 +301,205 @@ class ManualMatchForm(MatchForm):
                         participant_id=opponent.participant_id,
                     )
             return match
+
+
+class BoardManualMatchForm(forms.Form):
+    """Single-page Match Board form: pick any two teams (or participants) to play
+    versus each other and schedule the match in one step, auto-enrolling entries
+    if they are not yet on the event roster."""
+
+    opponent_1 = forms.ChoiceField(label='Team 1', choices=())
+    opponent_2 = forms.ChoiceField(label='Team 2', choices=())
+    name = forms.CharField(
+        max_length=150,
+        required=False,
+        label='Match name',
+        widget=forms.TextInput(attrs={'placeholder': 'e.g. Game 1, Semifinal, Exhibition'}),
+    )
+    round_number = forms.IntegerField(min_value=1, initial=1, label='Round')
+    venue = forms.ModelChoiceField(
+        queryset=Venue.objects.none(),
+        required=False,
+        empty_label='No venue assigned',
+    )
+    scheduled_start = forms.DateTimeField(
+        required=False,
+        label='Start time',
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'],
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+    )
+    scheduled_end = forms.DateTimeField(
+        required=False,
+        label='End time',
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'],
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+    )
+    status = forms.ChoiceField(
+        choices=[(k, v) for k, v in Match.Status.choices if k != Match.Status.COMPLETED],
+        initial=Match.Status.SCHEDULED,
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2, 'placeholder': 'Optional court notes, referee details, or reminders'}),
+    )
+
+    def __init__(self, *args, event=None, team_based=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.event = event
+        self.team_based = event.team_based if event is not None else team_based
+        self.fields['venue'].queryset = Venue.objects.filter(is_active=True).order_by('name')
+        if event is not None and event.venue_id and not self.is_bound:
+            self.initial['venue'] = event.venue_id
+
+        self._contestant_map = {}
+        self._entry_id_map = {}
+
+        if self.team_based:
+            self.fields['opponent_1'].label = 'Team 1'
+            self.fields['opponent_2'].label = 'Team 2'
+            entered_team_ids = set()
+            if event is not None:
+                for entry in event.entries.filter(
+                    status=EventEntry.Status.CONFIRMED, team__isnull=False,
+                ).select_related('team'):
+                    entered_team_ids.add(entry.team_id)
+                    self._entry_id_map[str(entry.pk)] = ('team', entry.team)
+
+            teams = list(Team.objects.exclude(status=Team.Status.SUSPENDED).order_by('name'))
+            entered_choices = []
+            other_choices = []
+            for team in teams:
+                key = f'team:{team.pk}'
+                self._contestant_map[key] = ('team', team)
+                if team.pk in entered_team_ids:
+                    entered_choices.append((key, f'{team.name} (In event)'))
+                else:
+                    other_choices.append((key, team.name))
+
+            choices = [('', 'Select a team...')]
+            if entered_choices and other_choices:
+                choices.append(('Already in this event', entered_choices))
+                choices.append(('All other teams', other_choices))
+            else:
+                choices.extend(entered_choices or other_choices)
+            self.available_contestants_count = len(teams)
+        else:
+            self.fields['opponent_1'].label = 'Participant 1'
+            self.fields['opponent_2'].label = 'Participant 2'
+            entered_participant_ids = set()
+            if event is not None:
+                for entry in event.entries.filter(
+                    status=EventEntry.Status.CONFIRMED, participant__isnull=False,
+                ).select_related('participant'):
+                    entered_participant_ids.add(entry.participant_id)
+                    self._entry_id_map[str(entry.pk)] = ('participant', entry.participant)
+
+            participants = list(Participant.objects.filter(status='ACTIVE').order_by('name'))
+            entered_choices = []
+            other_choices = []
+            for person in participants:
+                key = f'participant:{person.pk}'
+                self._contestant_map[key] = ('participant', person)
+                if person.pk in entered_participant_ids:
+                    entered_choices.append((key, f'{person.name} (In event)'))
+                else:
+                    other_choices.append((key, person.name))
+
+            choices = [('', 'Select a participant...')]
+            if entered_choices and other_choices:
+                choices.append(('Already in this event', entered_choices))
+                choices.append(('All other participants', other_choices))
+            else:
+                choices.extend(entered_choices or other_choices)
+            self.available_contestants_count = len(participants)
+
+        # Also accept legacy plain EventEntry PKs in POST submissions.
+        valid_choice_list = list(choices)
+        if self.is_bound and self._entry_id_map:
+            for entry_pk, (_, obj) in self._entry_id_map.items():
+                valid_choice_list.append((entry_pk, obj.name))
+
+        for field_name in ('opponent_1', 'opponent_2'):
+            self.fields[field_name].choices = valid_choice_list if self.is_bound else choices
+
+        _style_fields(self)
+
+    def _resolve_opponent(self, raw_value):
+        if raw_value in self._contestant_map:
+            return self._contestant_map[raw_value]
+        if raw_value in self._entry_id_map:
+            return self._entry_id_map[raw_value]
+        return None
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.event is not None and (
+            self.event.confirmed_at or self.event.status in (SportsEvent.Status.COMPLETED, SportsEvent.Status.CANCELLED)
+        ):
+            raise forms.ValidationError('This event is closed. Reopen it before adding matches.')
+
+        start = cleaned.get('scheduled_start')
+        end = cleaned.get('scheduled_end')
+        if bool(start) != bool(end):
+            raise forms.ValidationError('Provide both start and end times, or leave both blank.')
+        if start and end and end <= start:
+            self.add_error('scheduled_end', 'End time must be after the start time.')
+
+        venue = cleaned.get('venue')
+        if venue and start and end:
+            from .services import find_venue_conflicts
+            conflicts = find_venue_conflicts(venue, start, end)
+            if conflicts:
+                labels = ', '.join(f'{c.event.name} - {c.label}' for c in conflicts[:3])
+                self.add_error('venue', f'This venue is already scheduled during that time: {labels}.')
+
+        opp1 = self._resolve_opponent(cleaned.get('opponent_1'))
+        opp2 = self._resolve_opponent(cleaned.get('opponent_2'))
+        if not opp1:
+            self.add_error('opponent_1', 'Select the first contestant.')
+        if not opp2:
+            self.add_error('opponent_2', 'Select the second contestant.')
+        if opp1 and opp2 and opp1[0] == opp2[0] and opp1[1].pk == opp2[1].pk:
+            self.add_error('opponent_2', 'A contestant cannot play against itself.')
+
+        cleaned['resolved_opponent_1'] = opp1
+        cleaned['resolved_opponent_2'] = opp2
+        return cleaned
+
+    def save(self, event):
+        from django.db import transaction
+
+        with transaction.atomic():
+            match = Match.objects.create(
+                event=event,
+                name=(self.cleaned_data.get('name') or '').strip(),
+                round_number=self.cleaned_data.get('round_number') or 1,
+                venue=self.cleaned_data.get('venue'),
+                scheduled_start=self.cleaned_data.get('scheduled_start'),
+                scheduled_end=self.cleaned_data.get('scheduled_end'),
+                status=self.cleaned_data.get('status') or Match.Status.SCHEDULED,
+                notes=self.cleaned_data.get('notes') or '',
+            )
+            for side, key in ((1, 'resolved_opponent_1'), (2, 'resolved_opponent_2')):
+                kind, obj = self.cleaned_data[key]
+                if kind == 'team':
+                    entry, created = EventEntry.objects.get_or_create(
+                        event=event,
+                        team=obj,
+                        defaults={'status': EventEntry.Status.CONFIRMED},
+                    )
+                    if not created and entry.status != EventEntry.Status.CONFIRMED:
+                        entry.status = EventEntry.Status.CONFIRMED
+                        entry.save(update_fields=['status'])
+                    MatchEntry.objects.create(match=match, side=side, team=obj)
+                else:
+                    entry, created = EventEntry.objects.get_or_create(
+                        event=event,
+                        participant=obj,
+                        defaults={'status': EventEntry.Status.CONFIRMED},
+                    )
+                    if not created and entry.status != EventEntry.Status.CONFIRMED:
+                        entry.status = EventEntry.Status.CONFIRMED
+                        entry.save(update_fields=['status'])
+                    MatchEntry.objects.create(match=match, side=side, participant=obj)
+            return match
