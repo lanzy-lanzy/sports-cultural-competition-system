@@ -39,11 +39,46 @@
 
 {% if page_obj %}
 
+<!-- ===== Bulk actions bar ===== -->
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
+    <div class="flex items-center gap-4">
+        <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700 select-none">
+            <input type="checkbox" id="select-all-participants"
+                   class="h-4 w-4 cursor-pointer rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+            <span>Select all on page</span>
+        </label>
+        <span id="selected-participants-count" aria-live="polite"
+              class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+            0 selected
+        </span>
+    </div>
+    <div class="flex items-center gap-2">
+        <button type="button" id="clear-selection-btn" onclick="clearParticipantSelection()"
+                class="hidden cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary ui-button--small">
+            Clear
+        </button>
+        <button type="button" id="bulk-delete-btn" onclick="openBulkDeleteParticipants()" disabled
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--danger ui-button--small">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+            </svg>
+            Delete Selected
+        </button>
+    </div>
+</div>
+
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     {% for participant in page_obj %}
-    <div class="group relative rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
-        <div class="flex items-center gap-4">
+    <div data-participant-card="{{ participant.id }}" class="group relative rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
+        <label class="absolute top-4 right-4 z-[2] inline-flex cursor-pointer items-center rounded p-1 hover:bg-slate-100/80" title="Select {{ participant.name }}">
+            <input type="checkbox"
+                   value="{{ participant.id }}"
+                   data-participant-id="{{ participant.id }}"
+                   aria-label="Select {{ participant.name }}"
+                   class="participant-select-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+        </label>
+        <div class="flex items-center gap-4 pr-7">
             {% if participant.profile_image %}
             <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-14 w-14 rounded-full border-2 border-cyan-100 object-cover">
             {% else %}
@@ -103,6 +138,10 @@
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50/80">
                 <tr>
+                    <th scope="col" class="w-10 py-3.5 pl-6 pr-2 text-left">
+                        <input type="checkbox" id="select-all-participants-table" aria-label="Select all participants on page"
+                               class="h-4 w-4 cursor-pointer rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                    </th>
                     <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Participant</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Gender</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Age</th>
@@ -112,7 +151,14 @@
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
                 {% for participant in page_obj %}
-                <tr class="transition-colors duration-150 hover:bg-cyan-50/40">
+                <tr data-participant-row="{{ participant.id }}" class="transition-colors duration-150 hover:bg-cyan-50/40">
+                    <td class="w-10 py-4 pl-6 pr-2">
+                        <input type="checkbox"
+                               value="{{ participant.id }}"
+                               data-participant-id="{{ participant.id }}"
+                               aria-label="Select {{ participant.name }}"
+                               class="participant-select-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                    </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             {% if participant.profile_image %}
@@ -378,6 +424,28 @@
     </div>
 </div>
 
+<!-- ===== Bulk Delete Participants Modal ===== -->
+<div id="bulk-delete-participants-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('bulk-delete-participants-modal')"></div>
+    <div class="relative w-full max-w-md rounded-md bg-white p-6 shadow-lg">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-slate-900">Delete Selected Participants</h3>
+        <p id="bulk-delete-participants-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="bulk-delete-participants-form" action="{% url 'bulk_delete_participants' %}">
+            {% csrf_token %}
+            <div id="bulk-delete-participants-inputs"></div>
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeModal('bulk-delete-participants-modal')" class="cursor-pointer rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:brightness-105 ui-button ui-button--danger">Delete Selected</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ===== Delete Participant Modal ===== -->
 <div id="delete-participant-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('delete-participant-modal')"></div>
@@ -573,8 +641,124 @@
         openModal('delete-participant-modal');
     }
 
+    const selectedParticipantIds = new Set();
+
+    function getAllPageParticipantIds() {
+        const ids = new Set();
+        document.querySelectorAll('.participant-select-checkbox').forEach(function (cb) {
+            ids.add(cb.dataset.participantId);
+        });
+        return ids;
+    }
+
+    function syncParticipantSelectionUI() {
+        const allIds = getAllPageParticipantIds();
+        const total = allIds.size;
+        const count = selectedParticipantIds.size;
+
+        document.querySelectorAll('.participant-select-checkbox').forEach(function (cb) {
+            const isSelected = selectedParticipantIds.has(cb.dataset.participantId);
+            cb.checked = isSelected;
+        });
+
+        document.querySelectorAll('[data-participant-card]').forEach(function (card) {
+            const isSelected = selectedParticipantIds.has(card.dataset.participantCard);
+            card.classList.toggle('ring-2', isSelected);
+            card.classList.toggle('ring-cyan-500/50', isSelected);
+            card.classList.toggle('border-cyan-400', isSelected);
+        });
+
+        document.querySelectorAll('[data-participant-row]').forEach(function (row) {
+            const isSelected = selectedParticipantIds.has(row.dataset.participantRow);
+            row.classList.toggle('bg-cyan-50/50', isSelected);
+        });
+
+        const selectAllBoxes = [
+            document.getElementById('select-all-participants'),
+            document.getElementById('select-all-participants-table'),
+        ];
+        selectAllBoxes.forEach(function (box) {
+            if (!box) return;
+            box.checked = total > 0 && count === total;
+            box.indeterminate = count > 0 && count < total;
+        });
+
+        const countBadge = document.getElementById('selected-participants-count');
+        if (countBadge) {
+            countBadge.textContent = count + ' selected';
+            countBadge.classList.toggle('bg-cyan-100', count > 0);
+            countBadge.classList.toggle('text-cyan-800', count > 0);
+            countBadge.classList.toggle('bg-slate-100', count === 0);
+            countBadge.classList.toggle('text-slate-600', count === 0);
+        }
+
+        const deleteBtn = document.getElementById('bulk-delete-btn');
+        if (deleteBtn) {
+            deleteBtn.disabled = count === 0;
+        }
+
+        const clearBtn = document.getElementById('clear-selection-btn');
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', count === 0);
+        }
+    }
+
+    function clearParticipantSelection() {
+        selectedParticipantIds.clear();
+        syncParticipantSelectionUI();
+    }
+
+    function openBulkDeleteParticipants() {
+        const count = selectedParticipantIds.size;
+        if (count === 0) return;
+
+        const container = document.getElementById('bulk-delete-participants-inputs');
+        container.innerHTML = '';
+        selectedParticipantIds.forEach(function (id) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'participant_ids';
+            input.value = id;
+            container.appendChild(input);
+        });
+
+        document.getElementById('bulk-delete-participants-message').textContent =
+            'Are you sure you want to delete ' + count + ' selected participant' + (count === 1 ? '' : 's') +
+            '? This action cannot be undone and will remove all their scores, results, and competition records.';
+        openModal('bulk-delete-participants-modal');
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         setView(localStorage.getItem(VIEW_KEY) || 'grid');
+
+        document.querySelectorAll('.participant-select-checkbox').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                const id = cb.dataset.participantId;
+                if (cb.checked) {
+                    selectedParticipantIds.add(id);
+                } else {
+                    selectedParticipantIds.delete(id);
+                }
+                syncParticipantSelectionUI();
+            });
+        });
+
+        ['select-all-participants', 'select-all-participants-table'].forEach(function (boxId) {
+            const box = document.getElementById(boxId);
+            if (!box) return;
+            box.addEventListener('change', function () {
+                if (box.checked) {
+                    getAllPageParticipantIds().forEach(function (id) {
+                        selectedParticipantIds.add(id);
+                    });
+                } else {
+                    selectedParticipantIds.clear();
+                }
+                syncParticipantSelectionUI();
+            });
+        });
+
+        syncParticipantSelectionUI();
     });
 </script>
 {% endblock %}

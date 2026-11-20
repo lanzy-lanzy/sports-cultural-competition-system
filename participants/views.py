@@ -86,6 +86,43 @@ def delete_participant(request, participant_id):
 
 
 @management_required
+@require_POST
+def bulk_delete_participants(request):
+    participant_ids = services._clean_ids(request.POST.getlist('participant_ids'))
+    if not participant_ids:
+        messages.warning(request, 'Select at least one participant to delete.')
+        return redirect('participant_list')
+
+    try:
+        with transaction.atomic():
+            participants = list(Participant.objects.filter(id__in=participant_ids))
+            if not participants:
+                messages.warning(request, 'No matching participants were found to delete.')
+                return redirect('participant_list')
+
+            deleted_ids = [participant.id for participant in participants]
+            deleted_names = [participant.name for participant in participants]
+
+            Score.objects.filter(participant_id__in=deleted_ids).delete()
+            CompetitionResult.objects.filter(participant_id__in=deleted_ids).delete()
+            ParticipantCompetition.objects.filter(participant_id__in=deleted_ids).delete()
+            Participant.objects.filter(id__in=deleted_ids).delete()
+
+        from audit.models import record_action_from_request
+        preview = ', '.join(deleted_names[:10]) + (' ...' if len(deleted_names) > 10 else '')
+        record_action_from_request(
+            request,
+            'PARTICIPANT_BULK_DELETED',
+            details=f'Bulk deleted {len(deleted_ids)} participant(s): {preview}',
+        )
+        messages.success(request, f'Successfully deleted {len(deleted_ids)} participant(s).')
+    except Exception as e:
+        messages.error(request, f'Error deleting participants: {str(e)}')
+
+    return redirect('participant_list')
+
+
+@management_required
 def edit_participant(request, participant_id):
     participant = get_object_or_404(Participant, id=participant_id)
     form = ParticipantForm(request.POST or None, request.FILES or None, instance=participant)

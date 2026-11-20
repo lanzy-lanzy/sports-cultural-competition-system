@@ -493,6 +493,67 @@ def create_match(request, event_id):
 
 @management_required
 @transaction.atomic
+def create_board_match(request):
+    """Create a manual match directly from the Match Board by selecting an open event."""
+    open_events = list(
+        SportsEvent.objects
+        .filter(confirmed_at__isnull=True)
+        .exclude(status__in=[SportsEvent.Status.COMPLETED, SportsEvent.Status.CANCELLED])
+        .select_related('competition', 'sport_type', 'venue')
+        .order_by('competition__name', 'name')
+    )
+
+    raw_event_id = (
+        request.POST.get('event') if request.method == 'POST' else request.GET.get('event')
+    ) or ''
+    raw_competition_id = request.GET.get('competition', '')
+
+    selected_event = None
+    if raw_event_id.isdigit():
+        selected_event = next((ev for ev in open_events if ev.id == int(raw_event_id)), None)
+    if selected_event is None and request.method != 'POST' and open_events:
+        if raw_competition_id.isdigit():
+            selected_event = next(
+                (ev for ev in open_events if ev.competition_id == int(raw_competition_id)),
+                None,
+            )
+        if selected_event is None:
+            selected_event = open_events[0]
+
+    form = None
+    match = None
+    confirmed_entries_count = 0
+    if selected_event is not None:
+        selected_event = SportsEvent.objects.select_for_update().select_related(
+            'competition', 'sport_type', 'venue',
+        ).get(pk=selected_event.pk)
+        match = Match(event=selected_event, venue=selected_event.venue)
+        form = ManualMatchForm(request.POST if request.method == 'POST' else None, instance=match)
+        confirmed_entries_count = form.fields['opponent_1'].queryset.count()
+        if request.method == 'POST' and form.is_valid():
+            match = form.save()
+            record_action_from_request(
+                request,
+                'MATCH_CREATED',
+                target=match,
+                details=f'Manual match created from match board: {match.contestants_display()}',
+            )
+            messages.success(request, 'Manual match and opponents created.')
+            return redirect('match_board')
+    elif request.method == 'POST':
+        messages.error(request, 'Select an open sport event to create a match.')
+
+    return render(request, 'sports/board_match_form.html', {
+        'events': open_events,
+        'selected_event': selected_event,
+        'form': form,
+        'match': match,
+        'confirmed_entries_count': confirmed_entries_count,
+    })
+
+
+@management_required
+@transaction.atomic
 def edit_match(request, match_id):
     match = get_object_or_404(Match.objects.select_related('event__competition'), id=match_id)
     # Serialize manual edits to matches belonging to the same event.

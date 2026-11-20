@@ -7,6 +7,7 @@ urlpatterns = [
     path('sports/events/<int:event_id>/workflow/', views.tournament_action, name='tournament_action'),
     path('sports/hub/', views.sports_hub, name='sports_hub'),
     path('sports/matches/board/', views.match_board, name='match_board'),
+    path('sports/matches/board/create/', views.create_board_match, name='create_board_match'),
     path('sports/', views.sport_type_list, name='sport_type_list'),
     path('sports/create/', views.sport_type_create, name='sport_type_create'),
     path('sports/<int:sport_type_id>/edit/', views.sport_type_edit, name='sport_type_edit'),

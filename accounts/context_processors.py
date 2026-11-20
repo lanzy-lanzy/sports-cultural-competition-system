@@ -13,9 +13,9 @@ NAV_GROUPS = {
     ],
     'participants': [
         'participant_list', 'participant_detail', 'delete_participant',
-        'create_participant', 'participant_management', 'manage_participants',
-        'assign_participants', 'remove_participant_from_competition',
-        'my_participant_profile',
+        'bulk_delete_participants', 'create_participant', 'participant_management',
+        'manage_participants', 'assign_participants',
+        'remove_participant_from_competition', 'my_participant_profile',
     ],
     'teams': [
         'team_list', 'create_team', 'team_detail', 'edit_team',
@@ -38,7 +38,7 @@ NAV_GROUPS = {
         'match_schedule', 'edit_match', 'record_match_result',
         'event_standings', 'event_bracket',
     ],
-    'match_board': ['match_board'],
+    'match_board': ['match_board', 'create_board_match'],
     'sms': ['sms_dashboard', 'sms_notify_match', 'sms_notify_round', 'sms_bulk_notify'],
     'cultural': ['socio_cultural_management'],
     'results': [

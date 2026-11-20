@@ -1156,3 +1156,32 @@ class ManualMatchManagementTest(TestCase):
         self.client.logout()
         self.assertEqual(self.client.get(self.url).status_code, 302)
         self.assertFalse(self.event.matches.exists())
+
+    def test_match_board_has_create_match_button(self):
+        response = self.client.get(reverse('match_board'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('create_board_match'))
+        self.assertContains(response, 'Create Match')
+
+    def test_create_board_match_creates_match_and_redirects_to_board(self):
+        board_create_url = reverse('create_board_match')
+        get_resp = self.client.get(board_create_url, {'event': self.event.pk})
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertEqual(get_resp.context['selected_event'], self.event)
+
+        post_data = self.data(event=self.event.pk)
+        post_resp = self.client.post(board_create_url, post_data)
+        self.assertRedirects(post_resp, reverse('match_board'))
+        match = self.event.matches.get()
+        self.assertEqual(match.name, 'Manual final')
+        self.assertEqual(
+            set(match.entries.values_list('team_id', flat=True)),
+            {self.entries[0].team_id, self.entries[1].team_id},
+        )
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='MATCH_CREATED').exists())
+
+    def test_create_board_match_requires_management_role(self):
+        viewer = User.objects.create_user('board-viewer', password='pass')
+        self.client.force_login(viewer)
+        self.assertEqual(self.client.get(reverse('create_board_match')).status_code, 403)

@@ -5,6 +5,7 @@ urlpatterns = [
     path('participants/', views.participant_list, name='participant_list'),
     path('participants/<int:participant_id>/', views.participant_detail, name='participant_detail'),
     path('participants/<int:participant_id>/delete/', views.delete_participant, name='delete_participant'),
+    path('participants/bulk-delete/', views.bulk_delete_participants, name='bulk_delete_participants'),
     path('participants/<int:participant_id>/edit/', views.edit_participant, name='edit_participant'),
     path('participants/create/', views.create_participant, name='create_participant'),
     path('participant/my-profile/', views.my_participant_profile, name='my_participant_profile'),

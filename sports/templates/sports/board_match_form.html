@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Match Manually - Match Board{% endblock %}
+{% block header_title %}Match Board{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+    <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Match Board &middot; Manual Scheduling</p>
+            <h1 class="mt-1 font-display text-2xl font-bold text-ink">Create match manually</h1>
+            <p class="mt-1 text-sm text-slate-500">Pick an open event, choose two confirmed opponents, and optionally set a time and venue.</p>
+        </div>
+        <a href="{% url 'match_board' %}" class="text-sm font-semibold text-slate-500 hover:text-campus">&larr; Match board</a>
+    </div>
+
+    {% if events %}
+    <!-- Event selector -->
+    <form method="GET" id="event-selector-form" class="mb-5 rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+        <label for="board-match-event" class="mb-1.5 block text-sm font-semibold text-slate-700">Sport event</label>
+        <div class="flex flex-col gap-3 sm:flex-row">
+            <select id="board-match-event" name="event" onchange="this.form.submit()"
+                    class="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-800 outline-none transition focus:border-campus focus:bg-white focus:ring-4 focus:ring-teal-100">
+                {% for ev in events %}
+                <option value="{{ ev.id }}" {% if selected_event and selected_event.id == ev.id %}selected{% endif %}>
+                    {{ ev.name }} &mdash; {{ ev.competition.name }} ({{ ev.sport_type.name }})
+                </option>
+                {% endfor %}
+            </select>
+            <noscript>
+                <button type="submit" class="rounded-md bg-ink px-5 py-2.5 text-sm font-bold text-white ui-button ui-button--secondary">Load event</button>
+            </noscript>
+        </div>
+        {% if selected_event %}
+        <p class="mt-2 text-xs text-slate-500">
+            Format: <span class="font-semibold text-slate-700">{{ selected_event.get_format_display }}</span>
+            &middot; Confirmed entries: <span class="font-semibold text-slate-700">{{ confirmed_entries_count }}</span>
+            &middot; <a href="{% url 'sport_event_detail' selected_event.id %}" class="font-semibold text-campus hover:underline">Manage entries</a>
+        </p>
+        {% endif %}
+    </form>
+
+    {% if selected_event and form %}
+    {% if confirmed_entries_count < 2 %}
+    <div role="alert" class="mb-5 rounded-md border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+        <p class="font-semibold">This event needs at least 2 confirmed entries before a match can be created.</p>
+        <p class="mt-1 text-xs text-amber-700">
+            Add or confirm contestants on the <a href="{% url 'sport_event_detail' selected_event.id %}" class="font-semibold underline">event entries page</a>, or select another event above.
+        </p>
+    </div>
+    {% endif %}
+
+    <form method="POST" class="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+        {% csrf_token %}
+        <input type="hidden" name="event" value="{{ selected_event.id }}">
+        {% if form.non_field_errors %}
+        <div role="alert" class="mb-5 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {% for field in form %}
+            <div class="{% if field.name == 'notes' %}sm:col-span-2{% endif %}">
+                <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="mt-1 text-xs text-rose-600">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3">
+            <a href="{% url 'match_board' %}" class="rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-400 ui-button ui-button--secondary">Cancel</a>
+            <button type="submit" {% if confirmed_entries_count < 2 %}disabled{% endif %}
+                    class="rounded-md bg-campus px-6 py-2.5 text-sm font-bold text-white shadow disabled:cursor-not-allowed disabled:opacity-50 ui-button ui-button--primary">
+                Create match
+            </button>
+        </div>
+    </form>
+    {% endif %}
+
+    {% else %}
+    <div class="rounded-md border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+        <p class="font-display text-lg font-bold text-ink">No open sport events available</p>
+        <p class="mt-2 text-sm text-slate-500">Create a sport event under a competition first before scheduling manual matches.</p>
+        <a href="{% url 'sports_hub' %}" class="mt-4 inline-block rounded-md bg-campus px-5 py-2.5 text-sm font-bold text-white shadow ui-button ui-button--primary">Go to Sports Hub</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

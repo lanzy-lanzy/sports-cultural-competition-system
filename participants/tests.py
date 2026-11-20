@@ -221,3 +221,60 @@ class ParticipantSelfTeamSelectionTest(TestCase):
             self.client.post(reverse('select_my_team'), {'team_id': self.approved_team.id}).status_code,
             403,
         )
+
+
+class ParticipantBulkDeleteTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('bulk-admin', 'ba@example.com', 'pass')
+        self.competition = Competition.objects.create(
+            name='Bulk Comp', description='d', status='ACTIVE',
+            start_date='2026-01-01 00:00:00', end_date='2026-01-02 00:00:00',
+            created_by=self.admin,
+        )
+        self.p1 = Participant.objects.create(name='Alice One', email='a1@example.com', phone='1', age=20, status='ACTIVE')
+        self.p2 = Participant.objects.create(name='Bob Two', email='b2@example.com', phone='2', age=21, status='ACTIVE')
+        self.p3 = Participant.objects.create(name='Cara Three', email='c3@example.com', phone='3', age=22, status='ACTIVE')
+        ParticipantCompetition.objects.create(participant=self.p1, competition=self.competition, number=1)
+        ParticipantCompetition.objects.create(participant=self.p2, competition=self.competition, number=2)
+        ParticipantCompetition.objects.create(participant=self.p3, competition=self.competition, number=3)
+
+    def test_participant_list_renders_bulk_delete_controls(self):
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('participant_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reverse('bulk_delete_participants'))
+        self.assertContains(resp, 'id="select-all-participants"')
+        self.assertContains(resp, 'id="bulk-delete-btn"')
+
+    def test_bulk_delete_removes_selected_participants_and_audits(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_delete_participants'), {
+            'participant_ids': [self.p1.id, self.p2.id],
+        })
+        self.assertRedirects(resp, reverse('participant_list'))
+        self.assertFalse(Participant.objects.filter(id__in=[self.p1.id, self.p2.id]).exists())
+        self.assertTrue(Participant.objects.filter(id=self.p3.id).exists())
+        self.assertFalse(ParticipantCompetition.objects.filter(participant_id__in=[self.p1.id, self.p2.id]).exists())
+        self.assertTrue(ParticipantCompetition.objects.filter(participant=self.p3).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='PARTICIPANT_BULK_DELETED').exists())
+
+    def test_bulk_delete_empty_selection_leaves_participants_intact(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_delete_participants'), {})
+        self.assertRedirects(resp, reverse('participant_list'))
+        self.assertEqual(Participant.objects.count(), 3)
+
+    def test_bulk_delete_requires_post_and_management_role(self):
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('bulk_delete_participants')).status_code, 405)
+
+        athlete = User.objects.create_user('bulk-athlete', 'athlete@example.com', 'pass')
+        athlete.account_profile.role = UserProfile.Role.PARTICIPANT
+        athlete.account_profile.save(update_fields=['role', 'updated_at'])
+        self.client.force_login(athlete)
+        resp = self.client.post(reverse('bulk_delete_participants'), {
+            'participant_ids': [self.p1.id],
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(Participant.objects.count(), 3)
