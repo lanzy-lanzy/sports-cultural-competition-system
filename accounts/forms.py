@@ -90,7 +90,6 @@ class ProfileForm(forms.Form):
     middle_name = forms.CharField(max_length=100, required=False)
     last_name = forms.CharField(max_length=100)
     username = forms.CharField(max_length=150)
-    email = forms.EmailField()
     phone = forms.CharField(max_length=30, required=False)
     profile_image = forms.ImageField(required=False)
 
@@ -103,13 +102,12 @@ class ProfileForm(forms.Form):
             'middle_name': profile.middle_name,
             'last_name': user.last_name,
             'username': user.username,
-            'email': user.email,
             'phone': profile.phone,
         })
         super().__init__(*args, **kwargs)
         self.fields['middle_name'].label = 'Middle name (optional)'
-        # Grouped as name pair, optional middle name, then contact details.
-        self.order_fields(('first_name', 'last_name', 'middle_name', 'email', 'username', 'phone'))
+        # Grouped as name pair, optional middle name, then account & contact details.
+        self.order_fields(('first_name', 'last_name', 'middle_name', 'username', 'phone'))
         for field in self.fields.values():
             if isinstance(field.widget, forms.FileInput):
                 field.widget.attrs['class'] = FILE_INPUT_CLASS
@@ -122,18 +120,11 @@ class ProfileForm(forms.Form):
             raise forms.ValidationError('This username is already in use.')
         return username
 
-    def clean_email(self):
-        email = self.cleaned_data['email'].strip().lower()
-        if User.objects.exclude(pk=self.user.pk).filter(email__iexact=email).exists():
-            raise forms.ValidationError('This email address is already in use.')
-        return email
-
     @transaction.atomic
     def save(self):
         self.user.first_name = self.cleaned_data['first_name'].strip()
         self.user.last_name = self.cleaned_data['last_name'].strip()
         self.user.username = self.cleaned_data['username']
-        self.user.email = self.cleaned_data['email']
         self.user.save()
 
         self.profile.middle_name = self.cleaned_data['middle_name'].strip()

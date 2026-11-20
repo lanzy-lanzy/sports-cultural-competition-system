@@ -4,47 +4,107 @@
 {% block header_title %}User Access{% endblock %}
 
 {% block content %}
-<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+<div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
         <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Module 1</p>
         <h1 class="mt-1 font-display text-3xl font-bold tracking-tight text-ink">User access control</h1>
-        <p class="mt-2 text-sm text-slate-500">Assign roles and activate or suspend accounts. Your own access is protected.</p>
+        <p class="mt-2 text-sm text-slate-500">Assign roles, activate or suspend accounts, or remove unused accounts. Your own access is protected.</p>
     </div>
     <a href="{% url 'register' %}" class="inline-flex items-center justify-center rounded-md bg-campus px-4 py-3 text-sm font-bold text-white shadow ui-button ui-button--primary">Register account</a>
 </div>
+
+{% if users %}
+<!-- ===== Bulk Actions Bar ===== -->
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <div class="flex items-center gap-3.5">
+        <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-ink select-none">
+            <input type="checkbox" id="select-all-users"
+                   class="h-4 w-4 cursor-pointer rounded border-slate-300 text-campus focus:ring-campus">
+            <span>Select all on page</span>
+        </label>
+        <span id="selected-users-count" aria-live="polite"
+              class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-slate-600">
+            0 selected
+        </span>
+    </div>
+    <div class="flex items-center gap-2">
+        <button type="button" id="clear-user-selection-btn" onclick="clearUserSelection()"
+                class="hidden cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary ui-button--small">
+            Clear
+        </button>
+        <button type="button" id="bulk-delete-users-btn" onclick="openBulkDeleteUsers()" disabled
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--danger ui-button--small">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+            </svg>
+            <span>Delete Selected</span>
+        </button>
+    </div>
+</div>
+{% endif %}
 
 <div class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50/80">
                 <tr class="text-left text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                    <th class="px-5 py-4">User</th><th class="px-5 py-4">Access role</th><th class="px-5 py-4">Status</th><th class="px-5 py-4 text-right">Action</th>
+                    <th class="w-10 py-4 pl-5 pr-2">
+                        <input type="checkbox" id="select-all-users-table" aria-label="Select all users on page"
+                               class="h-4 w-4 cursor-pointer rounded border-slate-300 text-campus focus:ring-campus">
+                    </th>
+                    <th class="px-5 py-4">User</th>
+                    <th class="px-5 py-4">Access role</th>
+                    <th class="px-5 py-4">Status</th>
+                    <th class="px-5 py-4 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 {% for item in users %}
-                <tr class="align-middle hover:bg-slate-50/60">
+                <tr data-user-row="{{ item.id }}" class="align-middle transition-colors hover:bg-slate-50/60">
+                    <td class="w-10 py-4 pl-5 pr-2">
+                        {% if item == user or item.is_superuser and not user.is_superuser %}
+                        <input type="checkbox" disabled title="Protected account"
+                               class="h-4 w-4 cursor-not-allowed rounded border-slate-200 bg-slate-100 opacity-50">
+                        {% else %}
+                        <input type="checkbox" value="{{ item.id }}" data-user-id="{{ item.id }}"
+                               aria-label="Select {{ item.username }}"
+                               class="user-select-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-campus focus:ring-campus">
+                        {% endif %}
+                    </td>
                     <td class="px-5 py-4">
                         <p class="font-bold text-ink">{{ item.get_full_name|default:item.username }}</p>
-                        <p class="mt-0.5 text-xs text-slate-500">{{ item.username }}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">
+                            {{ item.username }}
+                            {% if item == user %}<span class="ml-1 rounded bg-moss px-1.5 py-0.5 text-[10px] font-semibold text-pine-deep">You</span>{% endif %}
+                        </p>
                     </td>
                     <td class="px-5 py-4" colspan="3">
-                        <form method="post" action="{% url 'update_user_access' item.id %}?page={{ page_obj.number }}" class="grid min-w-[560px] grid-cols-[minmax(220px,1fr)_auto_auto] items-center gap-4">
-                            {% csrf_token %}
-                            <select name="role" class="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-campus focus:ring-4 focus:ring-teal-100" {% if item == user %}disabled{% endif %}>
-                                {% for role_value, role_label in role_choices %}
-                                <option value="{{ role_value }}" {% if item.account_profile.role == role_value %}selected{% endif %}>{{ role_label }}</option>
-                                {% endfor %}
-                            </select>
-                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-                                <input type="checkbox" name="is_active" class="h-5 w-5 rounded border-slate-300 text-campus focus:ring-campus" {% if item.is_active %}checked{% endif %} {% if item == user %}disabled{% endif %}> Active
-                            </label>
-                            <button type="submit" class="rounded-md bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-campus disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--primary" {% if item == user %}disabled{% endif %}>Save access</button>
-                        </form>
+                        <div class="flex min-w-[640px] items-center gap-3">
+                            <form method="post" action="{% url 'update_user_access' item.id %}?page={{ page_obj.number }}" class="grid flex-1 grid-cols-[minmax(200px,1fr)_auto_auto] items-center gap-4">
+                                {% csrf_token %}
+                                <select name="role" class="h-11 rounded-md border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-campus focus:ring-4 focus:ring-teal-100" {% if item == user %}disabled{% endif %}>
+                                    {% for role_value, role_label in role_choices %}
+                                    <option value="{{ role_value }}" {% if item.account_profile.role == role_value %}selected{% endif %}>{{ role_label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
+                                    <input type="checkbox" name="is_active" class="h-5 w-5 rounded border-slate-300 text-campus focus:ring-campus" {% if item.is_active %}checked{% endif %} {% if item == user %}disabled{% endif %}> Active
+                                </label>
+                                <button type="submit" class="rounded-md bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-campus disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--primary ui-button--small" {% if item == user %}disabled{% endif %}>Save access</button>
+                            </form>
+                            <button type="button"
+                                    data-url="{% url 'delete_user' item.id %}"
+                                    data-name="{{ item.get_full_name|default:item.username }} ({{ item.username }})"
+                                    onclick="openDeleteUser(this)"
+                                    {% if item == user or item.is_superuser and not user.is_superuser %}disabled{% endif %}
+                                    class="shrink-0 cursor-pointer rounded-md border border-rose-200 bg-white px-3.5 py-2 text-xs font-semibold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--danger ui-button--small">
+                                Delete
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" class="px-6 py-12 text-center text-sm text-slate-500">No user accounts found.</td></tr>
+                <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500">No user accounts found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -58,4 +118,182 @@
     {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 ui-button ui-button--secondary">Next</a>{% endif %}
 </nav>
 {% endif %}
+
+<!-- ===== Delete Single User Modal ===== -->
+<div id="delete-user-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm" onclick="closeUserModal('delete-user-modal')"></div>
+    <div class="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-ink">Delete User Account</h3>
+        <p id="delete-user-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="delete-user-form">
+            {% csrf_token %}
+            <input type="hidden" name="page" value="{{ page_obj.number }}">
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeUserModal('delete-user-modal')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 ui-button ui-button--danger">Delete Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Bulk Delete Users Modal ===== -->
+<div id="bulk-delete-users-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm" onclick="closeUserModal('bulk-delete-users-modal')"></div>
+    <div class="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-ink">Delete Selected Accounts</h3>
+        <p id="bulk-delete-users-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="bulk-delete-users-form" action="{% url 'bulk_delete_users' %}">
+            {% csrf_token %}
+            <input type="hidden" name="page" value="{{ page_obj.number }}">
+            <div id="bulk-delete-users-inputs"></div>
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeUserModal('bulk-delete-users-modal')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 ui-button ui-button--danger">Delete Selected</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openUserModal(id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeUserModal(id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function openDeleteUser(btn) {
+    document.getElementById('delete-user-form').action = btn.dataset.url;
+    document.getElementById('delete-user-message').textContent =
+        'Are you sure you want to permanently delete "' + btn.dataset.name + '"? This action cannot be undone.';
+    openUserModal('delete-user-modal');
+}
+
+var selectedUserIds = new Set();
+
+function getSelectableUserIds() {
+    var ids = new Set();
+    document.querySelectorAll('.user-select-checkbox').forEach(function (cb) {
+        ids.add(cb.dataset.userId);
+    });
+    return ids;
+}
+
+function syncUserSelectionUI() {
+    var allIds = getSelectableUserIds();
+    var total = allIds.size;
+    var count = selectedUserIds.size;
+
+    document.querySelectorAll('.user-select-checkbox').forEach(function (cb) {
+        cb.checked = selectedUserIds.has(cb.dataset.userId);
+    });
+
+    document.querySelectorAll('[data-user-row]').forEach(function (row) {
+        row.classList.toggle('bg-moss/40', selectedUserIds.has(row.dataset.userRow));
+    });
+
+    ['select-all-users', 'select-all-users-table'].forEach(function (boxId) {
+        var box = document.getElementById(boxId);
+        if (!box) return;
+        box.checked = total > 0 && count === total;
+        box.indeterminate = count > 0 && count < total;
+        box.disabled = total === 0;
+    });
+
+    var countBadge = document.getElementById('selected-users-count');
+    if (countBadge) {
+        countBadge.textContent = count + ' selected';
+        countBadge.classList.toggle('bg-moss', count > 0);
+        countBadge.classList.toggle('text-pine-deep', count > 0);
+        countBadge.classList.toggle('bg-slate-100', count === 0);
+        countBadge.classList.toggle('text-slate-600', count === 0);
+    }
+
+    var deleteBtn = document.getElementById('bulk-delete-users-btn');
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+
+    var clearBtn = document.getElementById('clear-user-selection-btn');
+    if (clearBtn) clearBtn.classList.toggle('hidden', count === 0);
+}
+
+function clearUserSelection() {
+    selectedUserIds.clear();
+    syncUserSelectionUI();
+}
+
+function openBulkDeleteUsers() {
+    var count = selectedUserIds.size;
+    if (count === 0) return;
+
+    var container = document.getElementById('bulk-delete-users-inputs');
+    container.innerHTML = '';
+    selectedUserIds.forEach(function (id) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids';
+        input.value = id;
+        container.appendChild(input);
+    });
+
+    document.getElementById('bulk-delete-users-message').textContent =
+        'Are you sure you want to permanently delete ' + count + ' selected user account' + (count === 1 ? '' : 's') +
+        '? Accounts that own competitions, teams, or announcements will be skipped safely.';
+    openUserModal('bulk-delete-users-modal');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.user-select-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            if (cb.checked) {
+                selectedUserIds.add(cb.dataset.userId);
+            } else {
+                selectedUserIds.delete(cb.dataset.userId);
+            }
+            syncUserSelectionUI();
+        });
+    });
+
+    ['select-all-users', 'select-all-users-table'].forEach(function (boxId) {
+        var box = document.getElementById(boxId);
+        if (!box) return;
+        box.addEventListener('change', function () {
+            if (box.checked) {
+                getSelectableUserIds().forEach(function (id) { selectedUserIds.add(id); });
+            } else {
+                selectedUserIds.clear();
+            }
+            syncUserSelectionUI();
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.flex').forEach(function (m) {
+                closeUserModal(m.id);
+            });
+        }
+    });
+
+    syncUserSelectionUI();
+});
+</script>
 {% endblock %}

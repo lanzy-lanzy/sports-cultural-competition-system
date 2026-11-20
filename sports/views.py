@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
@@ -627,6 +628,63 @@ def create_board_match(request):
         'selected_competition': selected_competition,
         'form': form,
     })
+
+
+def _safe_board_redirect(request):
+    next_url = (request.POST.get('next') or '').strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect('match_board')
+
+
+@management_required
+@require_POST
+@transaction.atomic
+def delete_match(request, match_id):
+    match = get_object_or_404(Match.objects.select_related('event'), id=match_id)
+    contestants = match.contestants_display()
+    summary = f'{match.event.name} - {match.label} ({contestants})'
+    match.delete()
+    record_action_from_request(
+        request,
+        'MATCH_DELETED',
+        details=f'Deleted match from match board: {summary}',
+    )
+    messages.success(request, f'Deleted match: {summary}.')
+    return _safe_board_redirect(request)
+
+
+@management_required
+@require_POST
+@transaction.atomic
+def bulk_delete_matches(request):
+    raw_ids = request.POST.getlist('match_ids')
+    match_ids = [int(mid) for mid in raw_ids if str(mid).isdigit()]
+    if not match_ids:
+        messages.warning(request, 'Select at least one match to delete.')
+        return _safe_board_redirect(request)
+
+    matches = list(Match.objects.filter(id__in=match_ids).select_related('event'))
+    if not matches:
+        messages.warning(request, 'No matching matches were found to delete.')
+        return _safe_board_redirect(request)
+
+    deleted_ids = [match.id for match in matches]
+    labels = [f'{match.event.name} - {match.label}' for match in matches]
+    Match.objects.filter(id__in=deleted_ids).delete()
+
+    preview = ', '.join(labels[:10]) + (' ...' if len(labels) > 10 else '')
+    record_action_from_request(
+        request,
+        'MATCH_BULK_DELETED',
+        details=f'Bulk deleted {len(deleted_ids)} match(es): {preview}',
+    )
+    messages.success(request, f'Successfully deleted {len(deleted_ids)} match(es).')
+    return _safe_board_redirect(request)
 
 
 @management_required

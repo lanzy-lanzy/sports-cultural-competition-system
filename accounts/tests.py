@@ -381,3 +381,85 @@ class TeamManagerDashboardTest(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertIn('team',response.context['form'].errors)
         self.assertEqual(EventRegistration.objects.filter(team=self.team,sport_event=event).count(),1)
+
+
+class UserAccessDeleteTest(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser('uac-super', 's@example.com', 'pass')
+        self.admin = User.objects.create_user('uac-admin', 'a@example.com', 'pass')
+        self.admin.account_profile.role = UserProfile.Role.ADMINISTRATOR
+        self.admin.account_profile.save(update_fields=['role', 'updated_at'])
+        self.u1 = User.objects.create_user('uac-user1', 'u1@example.com', 'pass')
+        self.u2 = User.objects.create_user('uac-user2', 'u2@example.com', 'pass')
+        self.u3 = User.objects.create_user('uac-user3', 'u3@example.com', 'pass')
+
+    def test_user_management_renders_delete_and_bulk_delete_controls(self):
+        self.client.force_login(self.superuser)
+        resp = self.client.get(reverse('user_management'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reverse('bulk_delete_users'))
+        self.assertContains(resp, reverse('delete_user', args=[self.u1.id]))
+        self.assertContains(resp, 'id="select-all-users"')
+        self.assertContains(resp, 'id="bulk-delete-users-btn"')
+
+    def test_delete_single_user_and_audit(self):
+        self.client.force_login(self.superuser)
+        resp = self.client.post(reverse('delete_user', args=[self.u1.id]))
+        self.assertRedirects(resp, reverse('user_management') + '?page=1')
+        self.assertFalse(User.objects.filter(id=self.u1.id).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='USER_DELETED').exists())
+
+    def test_cannot_delete_self_or_superuser_as_non_superuser(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('delete_user', args=[self.admin.id]))
+        self.assertTrue(User.objects.filter(id=self.admin.id).exists())
+
+        self.client.post(reverse('delete_user', args=[self.superuser.id]))
+        self.assertTrue(User.objects.filter(id=self.superuser.id).exists())
+
+    def test_protected_user_is_not_deleted_and_does_not_crash(self):
+        from competitions.models import Competition
+        Competition.objects.create(
+            name='Protected Comp',
+            description='Owned by u1',
+            start_date='2026-01-01T00:00:00Z',
+            end_date='2026-01-02T00:00:00Z',
+            status='ACTIVE',
+            created_by=self.u1,
+        )
+        self.client.force_login(self.superuser)
+        resp = self.client.post(reverse('delete_user', args=[self.u1.id]))
+        self.assertRedirects(resp, reverse('user_management') + '?page=1')
+        self.assertTrue(User.objects.filter(id=self.u1.id).exists())
+
+    def test_bulk_delete_users_deletes_eligible_and_skips_protected(self):
+        from competitions.models import Competition
+        Competition.objects.create(
+            name='Bulk Protected Comp',
+            description='Owned by u3',
+            start_date='2026-01-01T00:00:00Z',
+            end_date='2026-01-02T00:00:00Z',
+            status='ACTIVE',
+            created_by=self.u3,
+        )
+        self.client.force_login(self.superuser)
+        resp = self.client.post(reverse('bulk_delete_users'), {
+            'user_ids': [self.superuser.id, self.u1.id, self.u2.id, self.u3.id],
+        })
+        self.assertRedirects(resp, reverse('user_management') + '?page=1')
+        self.assertFalse(User.objects.filter(id__in=[self.u1.id, self.u2.id]).exists())
+        self.assertTrue(User.objects.filter(id=self.superuser.id).exists())
+        self.assertTrue(User.objects.filter(id=self.u3.id).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='USER_BULK_DELETED').exists())
+
+    def test_delete_and_bulk_delete_require_post_and_admin_role(self):
+        self.client.force_login(self.superuser)
+        self.assertEqual(self.client.get(reverse('delete_user', args=[self.u1.id])).status_code, 405)
+        self.assertEqual(self.client.get(reverse('bulk_delete_users')).status_code, 405)
+
+        self.client.force_login(self.u1)
+        self.assertEqual(self.client.post(reverse('delete_user', args=[self.u2.id])).status_code, 403)
+        self.assertEqual(self.client.post(reverse('bulk_delete_users'), {'user_ids': [self.u2.id]}).status_code, 403)
+        self.assertTrue(User.objects.filter(id=self.u2.id).exists())

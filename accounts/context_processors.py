@@ -1,7 +1,7 @@
 NAV_GROUPS = {
     'dashboard': ['dashboard'],
     'portal': ['portal_home', 'team_manager_dashboard'],
-    'users': ['user_management', 'update_user_access'],
+    'users': ['user_management', 'update_user_access', 'delete_user', 'bulk_delete_users'],
     'judge_dashboard': ['judge_dashboard'],
     'judge_profile': ['judge_profile'],
     'judge_history': ['judge_history'],
@@ -38,7 +38,7 @@ NAV_GROUPS = {
         'match_schedule', 'edit_match', 'record_match_result',
         'event_standings', 'event_bracket',
     ],
-    'match_board': ['match_board', 'create_board_match'],
+    'match_board': ['match_board', 'create_board_match', 'delete_match', 'bulk_delete_matches'],
     'sms': ['sms_dashboard', 'sms_notify_match', 'sms_notify_round', 'sms_bulk_notify'],
     'cultural': ['socio_cultural_management'],
     'results': [

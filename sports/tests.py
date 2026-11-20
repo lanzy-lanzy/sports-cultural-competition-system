@@ -1247,3 +1247,44 @@ class ManualMatchManagementTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn('opponent_2', resp.context['form'].errors)
         self.assertFalse(self.event.matches.exists())
+
+    def test_delete_single_match_from_board_and_audit(self):
+        match = self.create_match()
+        board_resp = self.client.get(reverse('match_board'))
+        self.assertContains(board_resp, reverse('delete_match', args=[match.pk]))
+        self.assertContains(board_resp, reverse('bulk_delete_matches'))
+
+        resp = self.client.post(reverse('delete_match', args=[match.pk]))
+        self.assertRedirects(resp, reverse('match_board'))
+        self.assertFalse(Match.objects.filter(pk=match.pk).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='MATCH_DELETED').exists())
+
+    def test_bulk_delete_matches_from_board_and_audit(self):
+        m1 = Match.objects.create(event=self.event, name='Game 1', round_number=1)
+        m2 = Match.objects.create(event=self.event, name='Game 2', round_number=1)
+        m3 = Match.objects.create(event=self.event, name='Game 3', round_number=1)
+
+        resp = self.client.post(reverse('bulk_delete_matches'), {
+            'match_ids': [m1.pk, m2.pk],
+        })
+        self.assertRedirects(resp, reverse('match_board'))
+        self.assertFalse(Match.objects.filter(pk__in=[m1.pk, m2.pk]).exists())
+        self.assertTrue(Match.objects.filter(pk=m3.pk).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='MATCH_BULK_DELETED').exists())
+
+    def test_delete_and_bulk_delete_match_permissions_and_method(self):
+        match = self.create_match()
+        self.assertEqual(self.client.get(reverse('delete_match', args=[match.pk])).status_code, 405)
+        self.assertEqual(self.client.get(reverse('bulk_delete_matches')).status_code, 405)
+
+        empty_resp = self.client.post(reverse('bulk_delete_matches'), {})
+        self.assertRedirects(empty_resp, reverse('match_board'))
+        self.assertTrue(Match.objects.filter(pk=match.pk).exists())
+
+        viewer = User.objects.create_user('delete-viewer', password='pass')
+        self.client.force_login(viewer)
+        self.assertEqual(self.client.post(reverse('delete_match', args=[match.pk])).status_code, 403)
+        self.assertEqual(self.client.post(reverse('bulk_delete_matches'), {'match_ids': [match.pk]}).status_code, 403)
+        self.assertTrue(Match.objects.filter(pk=match.pk).exists())

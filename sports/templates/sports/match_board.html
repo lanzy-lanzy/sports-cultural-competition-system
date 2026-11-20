@@ -139,6 +139,34 @@
     </section>
 
     {% if days or unscheduled %}
+    <!-- ===== Bulk Actions Bar ===== -->
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-soft">
+        <div class="flex items-center gap-3.5">
+            <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-ink select-none">
+                <input type="checkbox" id="select-all-matches"
+                       class="h-4 w-4 cursor-pointer rounded border-slate-300 text-pine focus:ring-pine">
+                <span>Select all shown</span>
+            </label>
+            <span id="selected-matches-count" aria-live="polite"
+                  class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-slate-600">
+                0 selected
+            </span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" id="clear-match-selection-btn" onclick="clearMatchSelection()"
+                    class="hidden cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary ui-button--small">
+                Clear
+            </button>
+            <button type="button" id="bulk-delete-matches-btn" onclick="openBulkDeleteMatches()" disabled
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40 ui-button ui-button--danger ui-button--small">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                </svg>
+                <span>Delete Selected</span>
+            </button>
+        </div>
+    </div>
+
     <!-- ===== Day Jump Navigation ===== -->
     {% if day_keys|length > 1 %}
     <nav aria-label="Jump to match day" class="flex items-center gap-2 overflow-x-auto pb-1">
@@ -186,12 +214,17 @@
             <!-- Mobile / Tablet Card List (< lg) -->
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
                 {% for match in group.matches %}
-                <article class="flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/90 border-l-4 bg-white p-4 shadow-soft {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-slate-300{% endif %}">
+                <article data-match-card="{{ match.id }}" class="flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200/90 border-l-4 bg-white p-4 shadow-soft transition-all {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-slate-300{% endif %}">
                     <div>
                         <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-ink">
-                                <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span>{{ match.scheduled_start|date:'H:i' }}{% if match.scheduled_end %} &ndash; {{ match.scheduled_end|date:'H:i' }}{% endif %}</span>
+                            <div class="flex items-center gap-2.5">
+                                <input type="checkbox" value="{{ match.id }}" data-match-id="{{ match.id }}"
+                                       aria-label="Select {{ match.event.name }} {{ match.label }}"
+                                       class="match-select-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-pine focus:ring-pine">
+                                <div class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-ink">
+                                    <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>{{ match.scheduled_start|date:'H:i' }}{% if match.scheduled_end %} &ndash; {{ match.scheduled_end|date:'H:i' }}{% endif %}</span>
+                                </div>
                             </div>
                             <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold {% if match.status == 'COMPLETED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif match.status == 'ONGOING' %}bg-moss text-pine-deep ring-1 ring-inset ring-pine/20{% elif match.status == 'CANCELLED' %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% elif match.status == 'POSTPONED' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-slate-100 text-slate-600{% endif %}">
                                 {% if match.status == 'ONGOING' %}<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-pine"></span>{% endif %}
@@ -234,10 +267,17 @@
                         </div>
                     </div>
 
-                    <div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+                    <div class="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-4">
                         <a href="{% url 'event_bracket' match.event_id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-pine/40 hover:text-pine">Bracket</a>
                         <a href="{% url 'match_schedule' match.event_id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-pine/40 hover:text-pine">Schedule</a>
                         <a href="{% url 'edit_match' match.id %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-paper px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-pine hover:bg-pine hover:text-white">Edit</a>
+                        <button type="button"
+                                data-url="{% url 'delete_match' match.id %}"
+                                data-label="{{ match.event.name }} &middot; {{ match.label }} ({{ match.contestants_display }})"
+                                onclick="openDeleteMatch(this)"
+                                class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50">
+                            Delete
+                        </button>
                     </div>
                 </article>
                 {% endfor %}
@@ -249,17 +289,26 @@
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="border-b border-slate-200/90 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                <th class="w-10 py-3.5 pl-5 pr-2">
+                                    <input type="checkbox" aria-label="Select all matches in this section"
+                                           class="table-select-all h-4 w-4 cursor-pointer rounded border-slate-300 text-pine focus:ring-pine">
+                                </th>
                                 <th class="w-28 px-5 py-3.5">Time</th>
                                 <th class="px-5 py-3.5">Event &amp; Match</th>
                                 <th class="px-5 py-3.5">Matchup</th>
                                 <th class="px-5 py-3.5">Venue</th>
                                 <th class="w-32 px-5 py-3.5">Status</th>
-                                <th class="w-56 px-5 py-3.5 text-right">Actions</th>
+                                <th class="w-64 px-5 py-3.5 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             {% for match in group.matches %}
-                            <tr class="border-l-4 align-middle transition-colors {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-transparent{% endif %} hover:bg-paper/70">
+                            <tr data-match-row="{{ match.id }}" class="border-l-4 align-middle transition-colors {% if match.status == 'ONGOING' %}border-l-pine bg-moss/25{% elif match.status == 'COMPLETED' %}border-l-emerald-500{% elif match.status == 'POSTPONED' %}border-l-amber-400{% elif match.status == 'CANCELLED' %}border-l-rose-400{% else %}border-l-transparent{% endif %} hover:bg-paper/70">
+                                <td class="w-10 py-4 pl-5 pr-2">
+                                    <input type="checkbox" value="{{ match.id }}" data-match-id="{{ match.id }}"
+                                           aria-label="Select {{ match.event.name }} {{ match.label }}"
+                                           class="match-select-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-pine focus:ring-pine">
+                                </td>
                                 <td class="whitespace-nowrap px-5 py-4 tabular-nums">
                                     <span class="font-semibold text-ink">{{ match.scheduled_start|date:'H:i' }}</span>
                                     {% if match.scheduled_end %}
@@ -304,6 +353,13 @@
                                         <a href="{% url 'event_bracket' match.event_id %}" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine">Bracket</a>
                                         <a href="{% url 'match_schedule' match.event_id %}" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine">Schedule</a>
                                         <a href="{% url 'edit_match' match.id %}" class="rounded-lg border border-slate-200 bg-paper px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-pine hover:bg-pine hover:text-white">Edit</a>
+                                        <button type="button"
+                                                data-url="{% url 'delete_match' match.id %}"
+                                                data-label="{{ match.event.name }} · {{ match.label }} ({{ match.contestants_display }})"
+                                                onclick="openDeleteMatch(this)"
+                                                class="cursor-pointer rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50">
+                                            Delete
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -339,21 +395,33 @@
 
             <div class="divide-y divide-slate-200/80 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white shadow-soft">
                 {% for match in group.matches %}
-                <div class="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-paper/70 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-ink hover:text-pine">{{ match.event.name }}</a>
-                            <span class="text-xs text-slate-300">&middot;</span>
-                            <span class="text-xs font-medium text-slate-500">{{ match.label }}</span>
+                <div data-match-row="{{ match.id }}" class="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-paper/70 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <input type="checkbox" value="{{ match.id }}" data-match-id="{{ match.id }}"
+                               aria-label="Select {{ match.event.name }} {{ match.label }}"
+                               class="match-select-checkbox mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-pine focus:ring-pine">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <a href="{% url 'sport_event_detail' match.event_id %}" class="font-semibold text-ink hover:text-pine">{{ match.event.name }}</a>
+                                <span class="text-xs text-slate-300">&middot;</span>
+                                <span class="text-xs font-medium text-slate-500">{{ match.label }}</span>
+                            </div>
+                            <p class="mt-1 text-sm font-medium text-slate-700">{{ match.contestants_display }}</p>
+                            <p class="mt-0.5 text-[11px] text-slate-400">{{ match.event.competition.name }} &middot; {{ match.event.sport_type.name }}</p>
                         </div>
-                        <p class="mt-1 text-sm font-medium text-slate-700">{{ match.contestants_display }}</p>
-                        <p class="mt-0.5 text-[11px] text-slate-400">{{ match.event.competition.name }} &middot; {{ match.event.sport_type.name }}</p>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
                         <a href="{% url 'edit_match' match.id %}"
-                           class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-pine sm:w-auto ui-button ui-button--primary ui-button--small">
+                           class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-pine sm:flex-none ui-button ui-button--primary ui-button--small">
                             Set Time &amp; Venue
                         </a>
+                        <button type="button"
+                                data-url="{% url 'delete_match' match.id %}"
+                                data-label="{{ match.event.name }} · {{ match.label }} ({{ match.contestants_display }})"
+                                onclick="openDeleteMatch(this)"
+                                class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-rose-200 bg-white px-3.5 py-2 text-xs font-semibold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 ui-button ui-button--danger ui-button--small">
+                            Delete
+                        </button>
                     </div>
                 </div>
                 {% endfor %}
@@ -390,7 +458,161 @@
     {% endif %}
 </div>
 
+<!-- ===== Delete Single Match Modal ===== -->
+<div id="delete-match-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm" onclick="closeBoardModal('delete-match-modal')"></div>
+    <div class="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-ink">Delete Match</h3>
+        <p id="delete-match-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="delete-match-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeBoardModal('delete-match-modal')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 ui-button ui-button--danger">Delete Match</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Bulk Delete Matches Modal ===== -->
+<div id="bulk-delete-matches-modal" tabindex="-1" aria-hidden="true" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm" onclick="closeBoardModal('bulk-delete-matches-modal')"></div>
+    <div class="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+        </div>
+        <h3 class="text-center font-display text-lg font-semibold text-ink">Delete Selected Matches</h3>
+        <p id="bulk-delete-matches-message" class="mt-2 text-center text-sm text-slate-500"></p>
+        <form method="POST" id="bulk-delete-matches-form" action="{% url 'bulk_delete_matches' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div id="bulk-delete-matches-inputs"></div>
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="closeBoardModal('bulk-delete-matches-modal')" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-ink ui-button ui-button--secondary">Cancel</button>
+                <button type="submit" class="cursor-pointer rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 ui-button ui-button--danger">Delete Selected</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function openBoardModal(id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeBoardModal(id) {
+    var modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function openDeleteMatch(btn) {
+    document.getElementById('delete-match-form').action = btn.dataset.url;
+    document.getElementById('delete-match-message').textContent =
+        'Are you sure you want to delete "' + btn.dataset.label + '"? This action cannot be undone and will remove its recorded scores.';
+    openBoardModal('delete-match-modal');
+}
+
+var selectedMatchIds = new Set();
+
+function getAllBoardMatchIds() {
+    var ids = new Set();
+    document.querySelectorAll('.match-select-checkbox').forEach(function (cb) {
+        ids.add(cb.dataset.matchId);
+    });
+    return ids;
+}
+
+function syncMatchSelectionUI() {
+    var allIds = getAllBoardMatchIds();
+    var total = allIds.size;
+    var count = selectedMatchIds.size;
+
+    document.querySelectorAll('.match-select-checkbox').forEach(function (cb) {
+        cb.checked = selectedMatchIds.has(cb.dataset.matchId);
+    });
+
+    document.querySelectorAll('[data-match-card]').forEach(function (card) {
+        var selected = selectedMatchIds.has(card.dataset.matchCard);
+        card.classList.toggle('ring-2', selected);
+        card.classList.toggle('ring-pine/40', selected);
+    });
+
+    document.querySelectorAll('[data-match-row]').forEach(function (row) {
+        var selected = selectedMatchIds.has(row.dataset.matchRow);
+        row.classList.toggle('bg-moss/40', selected);
+    });
+
+    var selectAllGlobal = document.getElementById('select-all-matches');
+    if (selectAllGlobal) {
+        selectAllGlobal.checked = total > 0 && count === total;
+        selectAllGlobal.indeterminate = count > 0 && count < total;
+    }
+
+    document.querySelectorAll('.table-select-all').forEach(function (tableBox) {
+        var table = tableBox.closest('table');
+        if (!table) return;
+        var boxes = Array.from(table.querySelectorAll('tbody .match-select-checkbox'));
+        var checkedCount = boxes.filter(function (b) { return selectedMatchIds.has(b.dataset.matchId); }).length;
+        tableBox.checked = boxes.length > 0 && checkedCount === boxes.length;
+        tableBox.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+    });
+
+    var countBadge = document.getElementById('selected-matches-count');
+    if (countBadge) {
+        countBadge.textContent = count + ' selected';
+        countBadge.classList.toggle('bg-moss', count > 0);
+        countBadge.classList.toggle('text-pine-deep', count > 0);
+        countBadge.classList.toggle('bg-slate-100', count === 0);
+        countBadge.classList.toggle('text-slate-600', count === 0);
+    }
+
+    var deleteBtn = document.getElementById('bulk-delete-matches-btn');
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+
+    var clearBtn = document.getElementById('clear-match-selection-btn');
+    if (clearBtn) clearBtn.classList.toggle('hidden', count === 0);
+}
+
+function clearMatchSelection() {
+    selectedMatchIds.clear();
+    syncMatchSelectionUI();
+}
+
+function openBulkDeleteMatches() {
+    var count = selectedMatchIds.size;
+    if (count === 0) return;
+
+    var container = document.getElementById('bulk-delete-matches-inputs');
+    container.innerHTML = '';
+    selectedMatchIds.forEach(function (id) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'match_ids';
+        input.value = id;
+        container.appendChild(input);
+    });
+
+    document.getElementById('bulk-delete-matches-message').textContent =
+        'Are you sure you want to permanently delete ' + count + ' selected match' + (count === 1 ? '' : 'es') +
+        '? This action cannot be undone and will remove their recorded scores.';
+    openBoardModal('bulk-delete-matches-modal');
+}
+
 (function () {
     var form = document.getElementById('board-filters');
     if (form) {
@@ -407,6 +629,54 @@
             toggleBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
         });
     }
+
+    document.querySelectorAll('.match-select-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            if (cb.checked) {
+                selectedMatchIds.add(cb.dataset.matchId);
+            } else {
+                selectedMatchIds.delete(cb.dataset.matchId);
+            }
+            syncMatchSelectionUI();
+        });
+    });
+
+    var selectAllGlobal = document.getElementById('select-all-matches');
+    if (selectAllGlobal) {
+        selectAllGlobal.addEventListener('change', function () {
+            if (selectAllGlobal.checked) {
+                getAllBoardMatchIds().forEach(function (id) { selectedMatchIds.add(id); });
+            } else {
+                selectedMatchIds.clear();
+            }
+            syncMatchSelectionUI();
+        });
+    }
+
+    document.querySelectorAll('.table-select-all').forEach(function (tableBox) {
+        tableBox.addEventListener('change', function () {
+            var table = tableBox.closest('table');
+            if (!table) return;
+            table.querySelectorAll('tbody .match-select-checkbox').forEach(function (cb) {
+                if (tableBox.checked) {
+                    selectedMatchIds.add(cb.dataset.matchId);
+                } else {
+                    selectedMatchIds.delete(cb.dataset.matchId);
+                }
+            });
+            syncMatchSelectionUI();
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.flex').forEach(function (m) {
+                closeBoardModal(m.id);
+            });
+        }
+    });
+
+    syncMatchSelectionUI();
 }());
 </script>
 {% endblock %}

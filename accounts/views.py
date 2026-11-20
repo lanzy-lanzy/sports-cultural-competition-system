@@ -3,7 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db import transaction
+from django.db.models import Count, ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -245,14 +246,12 @@ def settings_view(request):
 
     preference, _ = NotificationPreference.objects.get_or_create(user=request.user)
     if request.method == 'POST':
-        preference.email_enabled = request.POST.get('email_enabled') == 'on'
         preference.sms_enabled = request.POST.get('sms_enabled') == 'on'
-        preference.save(update_fields=['email_enabled', 'sms_enabled', 'updated_at'])
+        preference.save(update_fields=['sms_enabled', 'updated_at'])
         messages.success(request, 'Settings saved successfully.')
         return redirect('settings')
 
     return render(request, 'accounts/settings.html', {
-        'email_enabled': preference.email_enabled,
         'sms_enabled': preference.sms_enabled,
         'account_phone': request.user.account_profile.phone if hasattr(request.user, 'account_profile') else '',
     })
@@ -351,3 +350,101 @@ def update_user_access(request, user_id):
     else:
         messages.error(request, 'The selected access settings are invalid.')
     return redirect(f'{reverse("user_management")}?page={request.GET.get("page", 1)}')
+
+
+@administrator_required
+@require_POST
+def delete_user(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
+    page = request.POST.get('page') or request.GET.get('page') or 1
+    list_url = f'{reverse("user_management")}?page={page}'
+
+    if target_user == request.user:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect(list_url)
+    if target_user.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'Only a superuser can delete another superuser.')
+        return redirect(list_url)
+
+    username = target_user.username
+    try:
+        with transaction.atomic():
+            target_user.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f'Cannot delete "{username}" because this account owns competitions, teams, or announcements. Deactivate the account instead.',
+        )
+        return redirect(list_url)
+
+    from audit.models import record_action_from_request
+    record_action_from_request(
+        request,
+        'USER_DELETED',
+        details=f'Deleted user account: {username}',
+    )
+    messages.success(request, f'Successfully deleted user account: {username}.')
+    return redirect(list_url)
+
+
+@administrator_required
+@require_POST
+def bulk_delete_users(request):
+    raw_ids = request.POST.getlist('user_ids')
+    user_ids = [int(uid) for uid in raw_ids if str(uid).isdigit()]
+    page = request.POST.get('page') or request.GET.get('page') or 1
+    list_url = f'{reverse("user_management")}?page={page}'
+
+    if not user_ids:
+        messages.warning(request, 'Select at least one user account to delete.')
+        return redirect(list_url)
+
+    targets = list(User.objects.filter(id__in=user_ids).order_by('username'))
+    if not targets:
+        messages.warning(request, 'No matching user accounts were found to delete.')
+        return redirect(list_url)
+
+    deleted_usernames = []
+    skipped_self = False
+    skipped_superusers = []
+    blocked_protected = []
+
+    for target_user in targets:
+        if target_user == request.user:
+            skipped_self = True
+            continue
+        if target_user.is_superuser and not request.user.is_superuser:
+            skipped_superusers.append(target_user.username)
+            continue
+        username = target_user.username
+        try:
+            with transaction.atomic():
+                target_user.delete()
+            deleted_usernames.append(username)
+        except ProtectedError:
+            blocked_protected.append(username)
+
+    if deleted_usernames:
+        from audit.models import record_action_from_request
+        preview = ', '.join(deleted_usernames[:10]) + (' ...' if len(deleted_usernames) > 10 else '')
+        record_action_from_request(
+            request,
+            'USER_BULK_DELETED',
+            details=f'Bulk deleted {len(deleted_usernames)} user account(s): {preview}',
+        )
+        messages.success(request, f'Successfully deleted {len(deleted_usernames)} user account(s).')
+
+    if skipped_self:
+        messages.warning(request, 'Your own account was skipped and cannot be deleted.')
+    if skipped_superusers:
+        messages.warning(
+            request,
+            f'Skipped superuser account(s): {", ".join(skipped_superusers)}.',
+        )
+    if blocked_protected:
+        messages.error(
+            request,
+            f'Could not delete {", ".join(blocked_protected)} because they own competitions, teams, or announcements. Deactivate them instead.',
+        )
+
+    return redirect(list_url)
