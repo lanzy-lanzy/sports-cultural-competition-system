@@ -64,23 +64,27 @@ def assigned_rows(competition, query=''):
     """ParticipantCompetition rows for a competition, ordered by bib number."""
     rows = ParticipantCompetition.objects.filter(
         competition=competition
-    ).select_related('participant')
+    ).select_related('participant', 'participant__team_membership__team')
     if query:
         rows = rows.filter(
             models.Q(participant__name__icontains=query)
             | models.Q(participant__participant_id__icontains=query)
             | models.Q(participant__identification_number__icontains=query)
+            | models.Q(participant__team_membership__team__name__icontains=query)
+            | models.Q(participant__team_name__icontains=query)
         )
     return rows.order_by('number')
 
 
 def available_participants(competition, query=''):
     """Participants not yet assigned to the competition, ordered by name."""
-    qs = Participant.objects.exclude(competitions=competition)
+    qs = Participant.objects.exclude(competitions=competition).select_related('team_membership__team')
     if query:
         qs = qs.filter(
             models.Q(name__icontains=query)
             | models.Q(participant_id__icontains=query)
             | models.Q(identification_number__icontains=query)
+            | models.Q(team_membership__team__name__icontains=query)
+            | models.Q(team_name__icontains=query)
         )
     return qs.order_by('name')

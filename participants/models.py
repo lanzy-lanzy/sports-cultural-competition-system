@@ -68,6 +68,13 @@ class Participant(models.Model):
             raise ValidationError({'age': 'Enter a valid participant age.'})
 
     @property
+    def display_team_name(self):
+        membership = getattr(self, 'team_membership', None)
+        if membership and membership.team_id:
+            return membership.team.name
+        return (self.team_name or '').strip()
+
+    @property
     def age_classification(self):
         if self.age is None:
             return 'Unclassified'

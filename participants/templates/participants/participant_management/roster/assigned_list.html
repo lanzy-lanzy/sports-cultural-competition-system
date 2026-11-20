@@ -8,7 +8,14 @@
         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-campus text-sm font-bold text-white">{{ row.participant.name|make_list|first|upper }}</span>
         {% endif %}
         <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-slate-900">{{ row.participant.name }}</p>
+            <div class="flex flex-wrap items-center gap-1.5">
+                <p class="truncate text-sm font-medium text-slate-900">{{ row.participant.name }}</p>
+                {% if row.participant.display_team_name %}
+                <span class="inline-flex shrink-0 items-center rounded-full bg-moss px-2 py-0.5 text-[10px] font-semibold text-pine-deep">{{ row.participant.display_team_name }}</span>
+                {% else %}
+                <span class="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Independent</span>
+                {% endif %}
+            </div>
             <p class="truncate text-xs text-slate-500">{{ row.participant.participant_id }}</p>
         </div>
         <button type="button"

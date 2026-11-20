@@ -315,10 +315,12 @@ class ParticipantBulkDeleteTest(TestCase):
             2,
         )
 
-        # Roster panel also groups remaining available participants by team.
+        # Roster panel also groups remaining available participants by team
+        # and labels the assigned participants with their team name.
         panel_resp = self.client.get(reverse('roster_panel', args=[other_comp.id]))
         self.assertEqual(panel_resp.status_code, 200)
         self.assertEqual([g['name'] for g in panel_resp.context['available_team_groups']], ['Independent / No Team'])
+        self.assertContains(panel_resp, 'Alpha Eagles')
 
     def test_bulk_delete_removes_selected_participants_and_audits(self):
         self.client.force_login(self.admin)
