@@ -1,11 +1,37 @@
-/* Draws the medal tally bar graphs with the vendored Chart.js library.
- * Each canvas[data-medal-chart] points at a json_script payload through
- * data-series-id; gold/silver/bronze stack on a shared y-axis scale so the
- * team and individual graphs stay comparable side by side. */
+/* Interactive horizontal medal tally graphs built with Chart.js.
+ * Supports switching between stacked Gold/Silver/Bronze medals and Total Points,
+ * toggling individual medal series, live re-sorting, rich hover tooltips, and
+ * click-to-inspect delegation details. */
 (function () {
     'use strict';
 
-    var COLORS = { gold: '#facc15', silver: '#94a3b8', bronze: '#fb923c' };
+    var COLORS = {
+        gold: '#eab308',
+        goldHover: '#ca8a04',
+        silver: '#94a3b8',
+        silverHover: '#64748b',
+        bronze: '#f97316',
+        bronzeHover: '#ea580c',
+        pine: '#116B3B',
+        pineHover: '#0C5330'
+    };
+
+    function sortRows(rows, sortKey) {
+        var copy = rows.slice();
+        copy.sort(function (a, b) {
+            if (sortKey === 'total') {
+                return (b.total - a.total) || (b.gold - a.gold) || (a.rank - b.rank);
+            }
+            if (sortKey === 'gold') {
+                return (b.gold - a.gold) || (b.silver - a.silver) || (b.bronze - a.bronze) || (a.rank - b.rank);
+            }
+            if (sortKey === 'points') {
+                return (Number(b.points) - Number(a.points)) || (a.rank - b.rank);
+            }
+            return (a.rank - b.rank) || a.name.localeCompare(b.name);
+        });
+        return copy;
+    }
 
     function buildChart(canvas) {
         var dataEl = document.getElementById(canvas.getAttribute('data-series-id'));
@@ -16,76 +42,253 @@
             if (existing) existing.destroy();
         }
 
-        var rows;
+        var originalRows;
         try {
-            rows = JSON.parse(dataEl.textContent);
+            originalRows = JSON.parse(dataEl.textContent);
         } catch (error) {
             return;
         }
-        if (!rows || !rows.length) return;
+        if (!originalRows || !originalRows.length) return;
 
-        var chartMax = parseInt(canvas.getAttribute('data-chart-max'), 10) || 0;
+        var wrapper = canvas.closest('[data-medal-chart-wrapper]');
+        var stage = wrapper ? wrapper.querySelector('[data-chart-stage]') : canvas.parentElement;
+        if (stage) {
+            var dynamicHeight = Math.max(220, Math.min(620, originalRows.length * 46 + 68));
+            stage.style.height = dynamicHeight + 'px';
+        }
 
-        new Chart(canvas.getContext('2d'), {
+        var state = {
+            metric: 'medals',
+            sort: 'rank',
+            visibleSeries: [true, true, true],
+            rows: originalRows.slice()
+        };
+
+        function makeDatasets() {
+            if (state.metric === 'points') {
+                return [
+                    {
+                        label: 'Points',
+                        data: state.rows.map(function (row) { return Number(row.points) || 0; }),
+                        backgroundColor: COLORS.pine,
+                        hoverBackgroundColor: COLORS.pineHover,
+                        borderRadius: 6,
+                        barThickness: 22,
+                        maxBarThickness: 28
+                    }
+                ];
+            }
+            return [
+                {
+                    label: 'Gold',
+                    data: state.rows.map(function (row) { return row.gold; }),
+                    backgroundColor: COLORS.gold,
+                    hoverBackgroundColor: COLORS.goldHover,
+                    stack: 'medals',
+                    borderRadius: 4,
+                    barThickness: 22,
+                    maxBarThickness: 28,
+                    hidden: !state.visibleSeries[0]
+                },
+                {
+                    label: 'Silver',
+                    data: state.rows.map(function (row) { return row.silver; }),
+                    backgroundColor: COLORS.silver,
+                    hoverBackgroundColor: COLORS.silverHover,
+                    stack: 'medals',
+                    borderRadius: 4,
+                    barThickness: 22,
+                    maxBarThickness: 28,
+                    hidden: !state.visibleSeries[1]
+                },
+                {
+                    label: 'Bronze',
+                    data: state.rows.map(function (row) { return row.bronze; }),
+                    backgroundColor: COLORS.bronze,
+                    hoverBackgroundColor: COLORS.bronzeHover,
+                    stack: 'medals',
+                    borderRadius: 4,
+                    barThickness: 22,
+                    maxBarThickness: 28,
+                    hidden: !state.visibleSeries[2]
+                }
+            ];
+        }
+
+        var selectionBox = wrapper ? wrapper.querySelector('[data-chart-selection]') : null;
+        var selectionBody = wrapper ? wrapper.querySelector('[data-chart-selection-body]') : null;
+        var selectionClear = wrapper ? wrapper.querySelector('[data-chart-selection-clear]') : null;
+
+        function showSelection(row) {
+            if (!selectionBox || !selectionBody || !row) return;
+            selectionBody.innerHTML =
+                '<span class="font-display text-sm font-bold text-ink">#' + row.rank + ' ' + row.name + '</span>' +
+                (row.provisional ? '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">PROV</span>' : '') +
+                '<span class="text-slate-300">&middot;</span>' +
+                '<span><strong class="text-amber-700">' + row.gold + '</strong> Gold</span>' +
+                '<span><strong class="text-slate-600">' + row.silver + '</strong> Silver</span>' +
+                '<span><strong class="text-orange-700">' + row.bronze + '</strong> Bronze</span>' +
+                '<span class="text-slate-300">&middot;</span>' +
+                '<span class="font-bold text-pine-deep">' + row.total + ' medals (' + row.points + ' pts)</span>';
+            selectionBox.classList.remove('hidden');
+            selectionBox.classList.add('flex');
+        }
+
+        if (selectionClear && selectionBox) {
+            selectionClear.addEventListener('click', function () {
+                selectionBox.classList.add('hidden');
+                selectionBox.classList.remove('flex');
+            });
+        }
+
+        var chart = new Chart(canvas.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: rows.map(function (row) { return row.name; }),
-                datasets: [
-                    { label: 'Gold', data: rows.map(function (row) { return row.gold; }), backgroundColor: COLORS.gold, stack: 'medals', borderRadius: 2 },
-                    { label: 'Silver', data: rows.map(function (row) { return row.silver; }), backgroundColor: COLORS.silver, stack: 'medals', borderRadius: 2 },
-                    { label: 'Bronze', data: rows.map(function (row) { return row.bronze; }), backgroundColor: COLORS.bronze, stack: 'medals', borderRadius: 2 }
-                ]
+                labels: state.rows.map(function (row) { return row.name; }),
+                datasets: makeDatasets()
             },
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: { duration: 300 },
+                animation: { duration: 320 },
+                interaction: {
+                    mode: 'index',
+                    axis: 'y',
+                    intersect: false
+                },
+                onHover: function (event, elements) {
+                    if (event && event.native && event.native.target) {
+                        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                    }
+                },
+                onClick: function (_event, elements) {
+                    if (!elements || !elements.length) return;
+                    var idx = elements[0].index;
+                    showSelection(state.rows[idx]);
+                },
                 scales: {
                     x: {
                         stacked: true,
-                        grid: { display: false },
+                        beginAtZero: true,
+                        border: { display: false },
+                        grid: { color: '#e2e8f0', tickLength: 4 },
                         ticks: {
+                            precision: 0,
                             color: '#475569',
-                            font: { size: 10 },
-                            autoSkip: false,
-                            maxRotation: 60,
-                            minRotation: 45,
-                            callback: function (value) {
-                                var label = this.getLabelForValue(value);
-                                return label.length > 14 ? label.slice(0, 13) + '...' : label;
-                            }
+                            font: { size: 11, weight: '500' }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Medals',
+                            color: '#64748b',
+                            font: { size: 11, weight: '600' }
                         }
                     },
                     y: {
                         stacked: true,
-                        beginAtZero: true,
-                        suggestedMax: chartMax || undefined,
-                        max: chartMax || undefined,
-                        grid: { color: '#e2e8f0' },
-                        ticks: { precision: 0, color: '#475569', font: { size: 10 } },
-                        title: { display: true, text: 'Medals', color: '#64748b', font: { size: 11 } }
+                        border: { display: false },
+                        grid: { display: false },
+                        ticks: {
+                            color: '#15251B',
+                            font: { size: 12, weight: '600' },
+                            autoSkip: false,
+                            callback: function (value) {
+                                var label = this.getLabelForValue(value);
+                                return label.length > 26 ? label.slice(0, 25) + '\u2026' : label;
+                            }
+                        }
                     }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: '#15251B',
+                        titleColor: '#ffffff',
+                        bodyColor: '#e2e8f0',
+                        footerColor: '#8FE3B4',
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: true,
                         callbacks: {
                             title: function (items) {
-                                var row = rows[items[0].dataIndex];
-                                return row.rank + '. ' + row.name + (row.provisional ? ' (provisional)' : '');
+                                var row = state.rows[items[0].dataIndex];
+                                return '#' + row.rank + ' ' + row.name + (row.provisional ? ' (Provisional)' : '');
                             },
                             label: function (item) {
                                 return ' ' + item.dataset.label + ': ' + item.formattedValue;
                             },
                             footer: function (items) {
-                                var row = rows[items[0].dataIndex];
-                                return 'Total: ' + row.total + ' medals / ' + row.points + ' pts';
+                                var row = state.rows[items[0].dataIndex];
+                                return 'Total: ' + row.total + ' medal' + (row.total === 1 ? '' : 's') + '  \u00b7  ' + row.points + ' pts';
                             }
                         }
                     }
                 }
             }
         });
+
+        function refreshChart() {
+            state.rows = sortRows(originalRows, state.sort);
+            chart.data.labels = state.rows.map(function (row) { return row.name; });
+            chart.data.datasets = makeDatasets();
+            var isMedals = state.metric === 'medals';
+            chart.options.scales.x.stacked = isMedals;
+            chart.options.scales.y.stacked = isMedals;
+            chart.options.scales.x.title.text = isMedals ? 'Medals' : 'Points';
+            chart.update();
+        }
+
+        if (wrapper) {
+            var metricButtons = wrapper.querySelectorAll('[data-chart-metric]');
+            var medalToggleGroup = wrapper.querySelector('[data-medal-toggles]');
+
+            metricButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var nextMetric = btn.getAttribute('data-chart-metric');
+                    if (nextMetric === state.metric) return;
+                    state.metric = nextMetric;
+
+                    metricButtons.forEach(function (b) {
+                        var active = b.getAttribute('data-chart-metric') === state.metric;
+                        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        b.classList.toggle('bg-pine', active);
+                        b.classList.toggle('text-white', active);
+                        b.classList.toggle('text-slate-600', !active);
+                    });
+
+                    if (medalToggleGroup) {
+                        medalToggleGroup.classList.toggle('hidden', state.metric !== 'medals');
+                    }
+                    refreshChart();
+                });
+            });
+
+            wrapper.querySelectorAll('[data-toggle-series]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var idx = parseInt(btn.getAttribute('data-toggle-series'), 10);
+                    state.visibleSeries[idx] = !state.visibleSeries[idx];
+                    // Keep at least one series visible so the chart is never blank.
+                    if (!state.visibleSeries[0] && !state.visibleSeries[1] && !state.visibleSeries[2]) {
+                        state.visibleSeries[idx] = true;
+                        return;
+                    }
+                    var active = state.visibleSeries[idx];
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    btn.classList.toggle('opacity-40', !active);
+                    btn.classList.toggle('line-through', !active);
+                    refreshChart();
+                });
+            });
+
+            var sortSelect = wrapper.querySelector('[data-chart-sort]');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function () {
+                    state.sort = sortSelect.value;
+                    refreshChart();
+                });
+            }
+        }
     }
 
     function init() {
