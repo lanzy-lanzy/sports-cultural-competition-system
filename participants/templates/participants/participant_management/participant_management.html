@@ -25,6 +25,44 @@
     </div>
 </div>
 
+<div class="mb-6 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 px-6 py-5 sm:px-8">
+        <div>
+            <h2 class="font-display text-lg font-semibold text-ink">Associated Teams</h2>
+            <p class="mt-0.5 text-sm text-slate-500">Click a team to view its associated participants.</p>
+        </div>
+        <span class="rounded-full bg-moss px-3 py-1 text-xs font-semibold tabular-nums text-pine-deep">
+            {{ team_groups|length }} team{{ team_groups|length|pluralize }} &middot; {{ total_participants }} participant{{ total_participants|pluralize }}
+        </span>
+    </div>
+
+    {% if team_groups %}
+    <div class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3 sm:px-8">
+        {% for group in team_groups %}
+        <a href="{% url 'participant_list' %}?team={{ group.key|urlencode }}"
+           class="group flex items-center justify-between gap-3 rounded-lg border border-slate-200/90 bg-paper/50 p-4 transition-all hover:border-pine/40 hover:bg-white hover:shadow-sm">
+            <div class="flex min-w-0 items-center gap-3">
+                {% if group.team and group.team.logo %}
+                <img src="{{ group.team.logo.url }}" alt="{{ group.name }}" class="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover">
+                {% else %}
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg {% if group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-base font-bold">
+                    {{ group.name|make_list|first|upper }}
+                </span>
+                {% endif %}
+                <div class="min-w-0">
+                    <p class="truncate font-semibold text-ink group-hover:text-pine">{{ group.name }}</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ group.count }} participant{{ group.count|pluralize }}</p>
+                </div>
+            </div>
+            <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-pine" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-6 py-10 text-center text-sm text-slate-500">No participants registered yet.</div>
+    {% endif %}
+</div>
+
 <div class="overflow-hidden rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
     <div class="border-b border-slate-200/80 px-8 py-6">
         <h2 class="font-display text-lg font-semibold text-slate-900">Competitions</h2>

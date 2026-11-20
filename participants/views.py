@@ -16,11 +16,84 @@ from accounts.access import management_required, role_required
 from accounts.models import UserProfile
 
 
+def _participant_team_groups():
+    """Return teams/groups that have at least one associated participant.
+
+    Each entry is a dict with keys: ``key``, ``name``, ``team`` (Team or None),
+    ``participant_ids`` (list[int]), and ``count`` (int).
+    """
+    participants = (
+        Participant.objects
+        .select_related('team_membership__team')
+        .order_by('-registration_date')
+    )
+    teams_by_lower_name = {
+        team.name.strip().lower(): team
+        for team in Team.objects.all()
+    }
+    groups = {}
+    for participant in participants:
+        membership = getattr(participant, 'team_membership', None)
+        team = membership.team if membership else None
+        if team is None and participant.team_name:
+            team = teams_by_lower_name.get(participant.team_name.strip().lower())
+
+        if team is not None:
+            key = str(team.id)
+            name = team.name
+        elif participant.team_name and participant.team_name.strip():
+            label = participant.team_name.strip()
+            key = f'label:{label}'
+            name = label
+        else:
+            key = 'unassigned'
+            name = 'Independent / No Team'
+
+        bucket = groups.setdefault(key, {
+            'key': key,
+            'name': name,
+            'team': team,
+            'participant_ids': [],
+        })
+        bucket['participant_ids'].append(participant.id)
+
+    result = []
+    for bucket in groups.values():
+        bucket['count'] = len(bucket['participant_ids'])
+        result.append(bucket)
+
+    result.sort(key=lambda g: (g['key'] == 'unassigned', g['name'].lower()))
+    return result
+
+
 @management_required
 def participant_list(request):
-    participants = Participant.objects.all().order_by('-registration_date')
-    page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
-    return render(request, 'participants/participant_list.html', {'page_obj': page_obj})
+    team_groups = _participant_team_groups()
+    selected_team_key = (request.GET.get('team') or '').strip()
+    show_all = request.GET.get('view') == 'all'
+
+    selected_group = None
+    page_obj = None
+
+    if selected_team_key:
+        selected_group = next((g for g in team_groups if g['key'] == selected_team_key), None)
+        if selected_group is not None:
+            participants = Participant.objects.filter(
+                id__in=selected_group['participant_ids'],
+            ).order_by('-registration_date')
+            page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
+    elif show_all:
+        participants = Participant.objects.all().order_by('-registration_date')
+        page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
+
+    return render(request, 'participants/participant_list.html', {
+        'team_groups': team_groups,
+        'selected_group': selected_group,
+        'selected_team_key': selected_team_key,
+        'show_all': show_all,
+        'page_obj': page_obj,
+        'total_participants': sum(g['count'] for g in team_groups),
+    })
 
 
 @management_required
@@ -312,8 +385,11 @@ def participant_management(request):
     for competition in competitions:
         competition.participant_count = competition.participants.count()
 
+    team_groups = _participant_team_groups()
     context = {
         'competitions': competitions,
+        'team_groups': team_groups,
+        'total_participants': sum(g['count'] for g in team_groups),
     }
     return render(request, 'participants/participant_management/participant_management.html', context)
 

@@ -6,10 +6,27 @@
 {% block content %}
 <div class="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
     <div>
-        <h1 class="font-display text-2xl font-semibold text-slate-900">Participants</h1>
-        <p class="mt-1 text-sm text-slate-500">View and manage competition participants.</p>
+        {% if selected_group %}
+        <a href="{% url 'participant_list' %}" class="mb-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-pine hover:underline">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            Back to all teams
+        </a>
+        <h1 class="font-display text-2xl font-semibold text-ink">{{ selected_group.name }}</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ selected_group.count }} associated participant{{ selected_group.count|pluralize }}.</p>
+        {% elif show_all %}
+        <a href="{% url 'participant_list' %}" class="mb-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-pine hover:underline">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            Group by team
+        </a>
+        <h1 class="font-display text-2xl font-semibold text-ink">All Participants</h1>
+        <p class="mt-1 text-sm text-slate-500">{{ total_participants }} participant{{ total_participants|pluralize }} across {{ team_groups|length }} team{{ team_groups|length|pluralize }}.</p>
+        {% else %}
+        <h1 class="font-display text-2xl font-semibold text-ink">Participants by Team</h1>
+        <p class="mt-1 text-sm text-slate-500">Select a team below to view and manage its associated participants.</p>
+        {% endif %}
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
+        {% if selected_group or show_all %}
         <!-- View toggle -->
         <div class="flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="View mode">
             <button type="button" id="view-grid-btn" onclick="setView('grid')"
@@ -27,6 +44,7 @@
                 <span class="hidden sm:inline">Table</span>
             </button>
         </div>
+        {% endif %}
 
         <a href="{% url 'create_participant' %}" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-campus px-4 py-2.5 text-sm font-semibold text-white shadow transition-all duration-200 hover:brightness-105 hover:shadow-xl hover:shadow-cyan-500/40 ui-button ui-button--primary">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
@@ -37,7 +55,60 @@
     </div>
 </div>
 
-{% if page_obj %}
+{% if not selected_group and not show_all %}
+    {% if team_groups %}
+    <!-- ===== Associated Teams Directory (Click a team to view its participants) ===== -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {% for group in team_groups %}
+        <a href="{% url 'participant_list' %}?team={{ group.key|urlencode }}"
+           class="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-6 shadow-soft transition-all duration-150 hover:-translate-y-0.5 hover:border-pine/40 hover:shadow-md">
+            <div class="flex items-start gap-4">
+                {% if group.team and group.team.logo %}
+                <img src="{{ group.team.logo.url }}" alt="{{ group.name }}" class="h-14 w-14 shrink-0 rounded-xl border border-slate-200 object-cover">
+                {% else %}
+                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl {% if group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-xl font-bold">
+                    {{ group.name|make_list|first|upper }}
+                </div>
+                {% endif %}
+                <div class="min-w-0 flex-1">
+                    <h2 class="truncate font-display text-lg font-semibold text-ink transition-colors group-hover:text-pine">{{ group.name }}</h2>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {% if group.team %}
+                        <span class="rounded-full bg-paper px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80">{{ group.team.get_category_display }}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold {% if group.team.status == 'APPROVED' %}bg-emerald-50 text-emerald-700{% elif group.team.status == 'PENDING' %}bg-amber-50 text-amber-800{% else %}bg-rose-50 text-rose-700{% endif %}">{{ group.team.get_status_display }}</span>
+                        {% elif group.key == 'unassigned' %}
+                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">No team assigned</span>
+                        {% else %}
+                        <span class="rounded-full bg-paper px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80">Delegation</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
+                <span class="font-semibold tabular-nums text-ink">{{ group.count }} participant{{ group.count|pluralize }}</span>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-pine transition-transform group-hover:translate-x-0.5">
+                    View participants
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-20 text-center shadow-soft">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-moss text-pine">
+            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+        </div>
+        <h3 class="font-display text-xl font-semibold text-ink">No Participants</h3>
+        <p class="mt-2 text-sm text-slate-500">Get started by adding a new participant.</p>
+        <a href="{% url 'create_participant' %}" class="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-md bg-campus px-5 py-2.5 text-sm font-semibold text-white shadow transition-all hover:brightness-105 ui-button ui-button--primary">
+            Add Participant
+        </a>
+    </div>
+    {% endif %}
+{% elif page_obj %}
 
 <!-- ===== Bulk actions bar ===== -->
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
@@ -600,6 +671,7 @@
         const table = document.getElementById('table-view');
         const gridBtn = document.getElementById('view-grid-btn');
         const tableBtn = document.getElementById('view-table-btn');
+        if (!grid || !table || !gridBtn || !tableBtn) return;
 
         const isGrid = view === 'grid';
         grid.classList.toggle('hidden', !isGrid);

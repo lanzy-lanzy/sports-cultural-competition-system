@@ -240,11 +240,49 @@ class ParticipantBulkDeleteTest(TestCase):
 
     def test_participant_list_renders_bulk_delete_controls(self):
         self.client.force_login(self.admin)
-        resp = self.client.get(reverse('participant_list'))
+        resp = self.client.get(reverse('participant_list'), {'team': 'unassigned'})
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse('bulk_delete_participants'))
         self.assertContains(resp, 'id="select-all-participants"')
         self.assertContains(resp, 'id="bulk-delete-btn"')
+
+    def test_participant_list_displays_associated_teams_first_then_participants_on_click(self):
+        team_alpha = Team.objects.create(
+            name='Alpha Eagles', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        team_beta = Team.objects.create(
+            name='Beta Tigers', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin,
+        )
+        TeamMembership.objects.create(team=team_alpha, participant=self.p1)
+        TeamMembership.objects.create(team=team_beta, participant=self.p2)
+
+        self.client.force_login(self.admin)
+        # Default view: only teams are shown, participant names are hidden until a team is clicked.
+        resp = self.client.get(reverse('participant_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Alpha Eagles')
+        self.assertContains(resp, 'Beta Tigers')
+        self.assertContains(resp, 'Independent / No Team')
+        self.assertNotContains(resp, 'Alice One')
+        self.assertNotContains(resp, 'Bob Two')
+        self.assertNotContains(resp, 'Cara Three')
+
+        # Clicking Alpha Eagles shows only Alice One.
+        team_resp = self.client.get(reverse('participant_list'), {'team': str(team_alpha.id)})
+        self.assertEqual(team_resp.status_code, 200)
+        self.assertContains(team_resp, 'Alpha Eagles')
+        self.assertContains(team_resp, 'Alice One')
+        self.assertNotContains(team_resp, 'Bob Two')
+        self.assertNotContains(team_resp, 'Cara Three')
+
+        # Participant Management hub also displays the associated teams.
+        mgmt_resp = self.client.get(reverse('participant_management'))
+        self.assertEqual(mgmt_resp.status_code, 200)
+        self.assertContains(mgmt_resp, 'Alpha Eagles')
+        self.assertContains(mgmt_resp, 'Beta Tigers')
+        self.assertNotContains(mgmt_resp, 'Alice One')
 
     def test_bulk_delete_removes_selected_participants_and_audits(self):
         self.client.force_login(self.admin)
