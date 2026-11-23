@@ -62,7 +62,7 @@ class SportsEventForm(forms.ModelForm):
         model = SportsEvent
         fields = (
             'sport_type', 'name', 'category', 'gender', 'team_based', 'format',
-            'cycles', 'playoff_count', 'grand_final_reset', 'best_of', 'group_count', 'qualifiers_per_group', 'win_points', 'draw_points', 'loss_points', 'bronze_policy', 'tiebreakers', 'rules', 'max_teams', 'venue', 'start_date', 'end_date', 'status',
+            'cycles', 'playoff_count', 'grand_final_reset', 'best_of', 'group_count', 'qualifiers_per_group', 'win_points', 'draw_points', 'loss_points', 'bronze_policy', 'tiebreakers', 'rules', 'max_teams', 'players_per_event', 'tournament_manager', 'venue', 'start_date', 'end_date', 'status',
         )
         widgets = {
             'rules': forms.Textarea(attrs={'rows': 4}),
@@ -85,6 +85,16 @@ class SportsEventForm(forms.ModelForm):
         self.fields['sport_type'].queryset = SportType.objects.filter(is_active=True)
         self.fields['venue'].queryset = Venue.objects.filter(is_active=True)
         self.fields['venue'].required = False
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        from accounts.models import UserProfile
+        User = get_user_model()
+        tm_q = Q(is_active=True, account_profile__role=UserProfile.Role.TOURNAMENT_MANAGER)
+        if self.instance.tournament_manager_id:
+            tm_q |= Q(pk=self.instance.tournament_manager_id)
+        self.fields['tournament_manager'].queryset = User.objects.filter(tm_q).distinct().order_by('first_name', 'last_name', 'username')
+        self.fields['tournament_manager'].required = False
+        self.fields['tournament_manager'].label_from_instance = lambda u: f'{u.get_full_name() or u.username} ({u.username})'
         # The view names the event after the sport type and division when the
         # name is left blank, so keep the form permissive about it.
         self.fields['name'].required = False

@@ -131,3 +131,38 @@ if (typeof rosterPanel?.showModal === 'function') {
         section.prepend(error);
     }
 }
+
+document.querySelectorAll('[data-workspace-tabs]').forEach(tabList => {
+    const tabs = Array.from(tabList.querySelectorAll('[data-tab-target]'));
+    const panels = tabs.map(tab => document.getElementById(tab.dataset.tabTarget)).filter(Boolean);
+
+    function activate(targetId, updateHash = false) {
+        tabs.forEach(tab => {
+            const active = tab.dataset.tabTarget === targetId;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            tab.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach(panel => {
+            panel.hidden = panel.id !== targetId;
+        });
+        if (updateHash && history.replaceState) {
+            history.replaceState(null, '', `#${targetId}`);
+        }
+    }
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activate(tab.dataset.tabTarget, true));
+        tab.addEventListener('keydown', event => {
+            if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+            event.preventDefault();
+            const next = tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+            next.focus();
+            activate(next.dataset.tabTarget, true);
+        });
+    });
+
+    const hashId = location.hash.replace(/^#/, '');
+    const initial = tabs.some(tab => tab.dataset.tabTarget === hashId) ? hashId : tabs[0]?.dataset.tabTarget;
+    if (initial) activate(initial, false);
+});

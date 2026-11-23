@@ -1,11 +1,462 @@
 import math
+from datetime import timedelta
 from decimal import Decimal
 from collections import OrderedDict
 
 from django.db import transaction
 from django.db.models import Max
+from django.utils import timezone
 
-from .models import Match, MatchEntry, SportsEvent
+from .models import Match, MatchEntry, SportsEvent, Venue
+
+
+STATIC_SPORT_VENUE_DEFAULTS = (
+    ('basketball 3x3', 'JHCSC Basketball Court', 45),
+    ('basketball', 'JHCSC Basketball Court', 90),
+    ('volleyball', 'JHCSC Campus (Volleyball Court)', 90),
+    ('badminton', 'Caridad Covered Court', 20),
+    ('sepak takraw', 'JHCSC Campus Takraw Court', 90),
+    ('table tennis', 'JHCSC Room - Table Tennis', 30),
+    ('chess', 'JHCSC Library', 15),
+    ('athletics', 'JHCSC Campus Oval', 180),
+    ('baseball', 'JHCSC Campus Baseball Diamond', 120),
+    ('softball', 'JHCSC Campus Softball Diamond', 120),
+    ('frisbee', 'JHCSC Campus Grounds', 60),
+    ('esports', 'SCS ComLab1', 60),
+    ('mlbb', 'SCS ComLab1', 60),
+    ('codm', 'SCS ComLab1', 60),
+    ('lawn tennis', 'Dumingag Sports Complex Lawn Tennis Court', 45),
+    ('pickleball', 'Mango Drive Pickledrive', 45),
+    ('dance sports', 'JHCSC Function Hall', 60),
+    ('powerdance', 'JHCSC Campus Grounds', 60),
+)
+
+
+# Official PALARO 2026 static sports catalog (from JHCSC Sports Development Office).
+PALARO_STATIC_EVENTS = (
+    {
+        'slug': 'basketball_5x5',
+        'name': 'Basketball 5x5',
+        'sport_type': 'Basketball',
+        'team_based': True,
+        'players_per_event': 15,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Basketball Court',
+        'duration_mins': 90,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'basketball_3x3',
+        'name': 'Basketball 3x3',
+        'sport_type': 'Basketball',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Basketball Court',
+        'duration_mins': 45,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'volleyball',
+        'name': 'Volleyball',
+        'sport_type': 'Volleyball',
+        'team_based': True,
+        'players_per_event': 12,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus (Volleyball Court)',
+        'duration_mins': 90,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'sepak_takraw',
+        'name': 'Sepak Takraw',
+        'sport_type': 'Sepak Takraw',
+        'team_based': True,
+        'players_per_event': 12,
+        'default_division': 'male',
+        'venue_name': 'JHCSC Campus Takraw Court',
+        'duration_mins': 90,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'esports_mlbb',
+        'name': 'ESPORTS MLBB',
+        'sport_type': 'Esports',
+        'team_based': True,
+        'players_per_event': 6,
+        'default_division': 'BOTH',
+        'venue_name': 'SCS ComLab1',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'esports_codm',
+        'name': 'ESPORTS CODM',
+        'sport_type': 'Esports',
+        'team_based': True,
+        'players_per_event': 6,
+        'default_division': 'BOTH',
+        'venue_name': 'SCS ComLab1',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'badminton',
+        'name': 'Badminton',
+        'sport_type': 'Badminton',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'Caridad Covered Court',
+        'duration_mins': 20,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'table_tennis',
+        'name': 'Table Tennis',
+        'sport_type': 'Table Tennis',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Room - Table Tennis',
+        'duration_mins': 30,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'pickleball_doubles',
+        'name': 'Pickleball (Doubles)',
+        'sport_type': 'Pickleball',
+        'team_based': True,
+        'players_per_event': 2,
+        'default_division': 'BOTH',
+        'venue_name': 'Mango Drive Pickledrive',
+        'duration_mins': 45,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'lawn_tennis',
+        'name': 'Lawn Tennis',
+        'sport_type': 'Lawn Tennis',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'Dumingag Sports Complex Lawn Tennis Court',
+        'duration_mins': 45,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'chess',
+        'name': 'Chess',
+        'sport_type': 'Chess',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Library',
+        'duration_mins': 15,
+        'default_format': 'ROUND_ROBIN',
+        'gold_points': 6, 'silver_points': 5, 'bronze_points': 4,
+    },
+    {
+        'slug': 'baseball',
+        'name': 'Baseball',
+        'sport_type': 'Baseball',
+        'team_based': True,
+        'players_per_event': 18,
+        'default_division': 'male',
+        'venue_name': 'JHCSC Campus Baseball Diamond',
+        'duration_mins': 120,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'softball',
+        'name': 'Softball',
+        'sport_type': 'Softball',
+        'team_based': True,
+        'players_per_event': 18,
+        'default_division': 'female',
+        'venue_name': 'JHCSC Campus Softball Diamond',
+        'duration_mins': 120,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'frisbee',
+        'name': 'Frisbee',
+        'sport_type': 'Frisbee',
+        'team_based': True,
+        'players_per_event': 15,
+        'default_division': 'open',
+        'venue_name': 'JHCSC Campus Grounds',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'athletics_100m',
+        'name': 'Athletics (100m)',
+        'sport_type': 'Athletics',
+        'team_based': False,
+        'players_per_event': 1,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 6, 'silver_points': 5, 'bronze_points': 4,
+    },
+    {
+        'slug': 'athletics_200m',
+        'name': 'Athletics (200m)',
+        'sport_type': 'Athletics',
+        'team_based': False,
+        'players_per_event': 1,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 6, 'silver_points': 5, 'bronze_points': 4,
+    },
+    {
+        'slug': 'athletics_400m',
+        'name': 'Athletics (400m)',
+        'sport_type': 'Athletics',
+        'team_based': False,
+        'players_per_event': 1,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 6, 'silver_points': 5, 'bronze_points': 4,
+    },
+    {
+        'slug': 'athletics_800m',
+        'name': 'Athletics (800m)',
+        'sport_type': 'Athletics',
+        'team_based': False,
+        'players_per_event': 1,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 6, 'silver_points': 5, 'bronze_points': 4,
+    },
+    {
+        'slug': 'athletics_4x100m',
+        'name': 'Athletics (4x100m)',
+        'sport_type': 'Athletics',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'athletics_4x400m',
+        'name': 'Athletics (4x400m)',
+        'sport_type': 'Athletics',
+        'team_based': True,
+        'players_per_event': 4,
+        'default_division': 'BOTH',
+        'venue_name': 'JHCSC Campus Oval',
+        'duration_mins': 180,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 10, 'silver_points': 7, 'bronze_points': 5,
+    },
+    {
+        'slug': 'dance_sports_latin',
+        'name': 'Dance Sports (Latin)',
+        'sport_type': 'Dance Sports',
+        'team_based': True,
+        'players_per_event': 2,
+        'default_division': 'open',
+        'venue_name': 'JHCSC Function Hall',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'dance_sports_modern',
+        'name': 'Dance Sports (Modern Standard)',
+        'sport_type': 'Dance Sports',
+        'team_based': True,
+        'players_per_event': 2,
+        'default_division': 'open',
+        'venue_name': 'JHCSC Function Hall',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'dance_sports_third',
+        'name': 'Dance Sports (Third Kind)',
+        'sport_type': 'Dance Sports',
+        'team_based': True,
+        'players_per_event': 2,
+        'default_division': 'open',
+        'venue_name': 'JHCSC Function Hall',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 8, 'silver_points': 6, 'bronze_points': 4,
+    },
+    {
+        'slug': 'powerdance',
+        'name': 'Powerdance',
+        'sport_type': 'Mass Power Dance',
+        'team_based': True,
+        'players_per_event': 50,
+        'default_division': 'open',
+        'venue_name': 'JHCSC Campus Grounds',
+        'duration_mins': 60,
+        'default_format': 'SINGLE_ELIMINATION',
+        'gold_points': 15, 'silver_points': 12, 'bronze_points': 10,
+    },
+)
+
+PALARO_STATIC_EVENTS_BY_SLUG = {item['slug']: item for item in PALARO_STATIC_EVENTS}
+
+# Official PALARO 2026 Tournament Manager username mapping by static event slug & gender.
+PALARO_TOURNAMENT_MANAGERS = {
+    'basketball_5x5': {'default': 'ambalong'},
+    'basketball_3x3': {'default': 'ambalong'},
+    'volleyball': {'male': 'matos', 'female': 'bustamante', 'default': 'matos'},
+    'sepak_takraw': {'default': 'canencia'},
+    'esports_mlbb': {'default': 'barluado'},
+    'esports_codm': {'default': 'barluado'},
+    'badminton': {'default': 'maryjuliet'},
+    'table_tennis': {'male': 'candia', 'female': 'elardo', 'default': 'candia'},
+    'pickleball_doubles': {'default': 'chatto'},
+    'lawn_tennis': {'default': 'batucan'},
+    'chess': {'default': 'bascon'},
+    'baseball': {'default': 'mori'},
+    'softball': {'default': 'mori'},
+    'frisbee': {'default': 'lauron'},
+    'athletics_100m': {'default': 'bacalso'},
+    'athletics_200m': {'default': 'bacalso'},
+    'athletics_400m': {'default': 'bacalso'},
+    'athletics_800m': {'default': 'bacalso'},
+    'athletics_4x100m': {'default': 'bacalso'},
+    'athletics_4x400m': {'default': 'bacalso'},
+    'dance_sports_latin': {'default': 'cabigas'},
+    'dance_sports_modern': {'default': 'cabigas'},
+    'dance_sports_third': {'default': 'cabigas'},
+    'powerdance': {'default': 'cabigas'},
+}
+
+
+def get_static_event_spec(slug):
+    return PALARO_STATIC_EVENTS_BY_SLUG.get((slug or '').strip())
+
+
+def resolve_default_tournament_manager(slug, gender='open'):
+    """Return the designated active Tournament Manager User for a PALARO 2026 static event."""
+    from django.contrib.auth import get_user_model
+    from accounts.models import UserProfile
+
+    mapping = PALARO_TOURNAMENT_MANAGERS.get((slug or '').strip())
+    if not mapping:
+        return None
+    username = mapping.get(gender) or mapping.get('default')
+    if not username:
+        return None
+    User = get_user_model()
+    return User.objects.filter(
+        username=username,
+        is_active=True,
+        account_profile__role=UserProfile.Role.TOURNAMENT_MANAGER,
+    ).first()
+
+
+def get_event_static_schedule_defaults(event):
+    """Return ``(venue, duration_minutes, start_dt)`` for auto-scheduling an event."""
+    search_text = f'{event.name} {event.sport_type.name if event.sport_type_id else ""}'.lower()
+    matched_venue_name = None
+    duration_minutes = 60
+    for keyword, venue_name, mins in STATIC_SPORT_VENUE_DEFAULTS:
+        if keyword in search_text:
+            matched_venue_name = venue_name
+            duration_minutes = mins
+            break
+
+    venue = event.venue
+    if venue is None and matched_venue_name:
+        venue, _ = Venue.objects.get_or_create(
+            name=matched_venue_name,
+            defaults={'is_active': True},
+        )
+
+    now_local = timezone.localtime(timezone.now())
+    if event.start_date:
+        start_dt = timezone.localtime(event.start_date).replace(second=0, microsecond=0)
+    else:
+        base_date = now_local.date()
+        if now_local.hour >= 17:
+            base_date = base_date + timedelta(days=1)
+        start_dt = now_local.replace(
+            year=base_date.year,
+            month=base_date.month,
+            day=base_date.day,
+            hour=8,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+
+    return venue, duration_minutes, start_dt
+
+
+def _next_available_venue_slot(venue, candidate_start, duration_minutes, break_minutes=15):
+    """Find the earliest conflict-free ``(start, end)`` slot at ``venue``."""
+    duration = timedelta(minutes=duration_minutes)
+    gap = timedelta(minutes=break_minutes)
+    current = timezone.localtime(candidate_start).replace(second=0, microsecond=0)
+
+    def normalize_daytime(dt):
+        # Roll evening slots (>= 18:00) cleanly to 08:00 the next day.
+        if dt.hour >= 18:
+            next_day = dt.date() + timedelta(days=1)
+            return dt.replace(year=next_day.year, month=next_day.month, day=next_day.day, hour=8, minute=0, second=0, microsecond=0)
+        return dt
+
+    current = normalize_daytime(current)
+    if venue is None:
+        return current, current + duration
+
+    existing_slots = list(
+        Match.objects.filter(
+            venue=venue,
+            scheduled_start__isnull=False,
+            scheduled_end__isnull=False,
+        )
+        .exclude(status=Match.Status.CANCELLED)
+        .order_by('scheduled_start')
+        .values_list('scheduled_start', 'scheduled_end')
+    )
+
+    while True:
+        current = normalize_daytime(current)
+        end = current + duration
+        bumped = False
+        for ex_start, ex_end in existing_slots:
+            ex_start_local = timezone.localtime(ex_start)
+            ex_end_local = timezone.localtime(ex_end)
+            if current < ex_end_local and end > ex_start_local:
+                current = ex_end_local + gap
+                bumped = True
+                break
+        if not bumped:
+            return current, end
 
 
 def _seed_order(size):
@@ -374,6 +825,109 @@ def generate_bracket(event):
         raise ValueError(f'Bracket generation is not supported for {event.get_format_display()}.')
     event.status = 'READY'
     event.save(update_fields=['status'])
+
+
+@transaction.atomic
+def automatch_with_slots(
+    event,
+    ordered_entry_ids,
+    *,
+    venue=None,
+    start_time=None,
+    duration_minutes=None,
+    break_minutes=15,
+):
+    """Assign Admin-selected slot order (Team 1..Team N), generate tournament matches,
+    and automatically schedule them at the event's static venue without conflicts.
+
+    For single-elimination / knockout formats, slots are mapped directly to first-round
+    pairings so Team 1 plays Team 2, Team 3 plays Team 4, etc. For all other formats,
+    seeds are assigned 1..N in the exact slot order provided.
+    """
+    event = SportsEvent.objects.select_for_update().get(pk=event.pk)
+    if event.status in ('COMPLETED', 'CANCELLED'):
+        raise ValueError('Reopen this event before generating fixtures.')
+    if event.matches.exists():
+        raise ValueError('Matches have already been generated. Clear existing matches first.')
+
+    confirmed = list(event.entries.filter(status='CONFIRMED').order_by('seed', 'id'))
+    if len(confirmed) < 2:
+        raise ValueError('At least two confirmed registered entries are required for auto-match.')
+
+    confirmed_by_id = {entry.id: entry for entry in confirmed}
+    try:
+        parsed_ids = [int(entry_id) for entry_id in ordered_entry_ids]
+    except (TypeError, ValueError):
+        raise ValueError('Invalid team slot selection.')
+
+    if len(parsed_ids) != len(confirmed) or set(parsed_ids) != set(confirmed_by_id):
+        raise ValueError(
+            f'Assign every registered team to a unique slot from Team 1 to Team {len(confirmed)} before generating matches.'
+        )
+
+    default_venue, default_duration, default_start = get_event_static_schedule_defaults(event)
+    resolved_venue = venue if venue is not None else default_venue
+    resolved_duration = int(duration_minutes) if duration_minutes else default_duration
+    resolved_break = max(0, int(break_minutes)) if break_minutes is not None else 15
+    if resolved_duration < 10 or resolved_duration > 480:
+        raise ValueError('Match duration must be between 10 and 480 minutes.')
+    if resolved_break > 240:
+        raise ValueError('Break between matches must be 240 minutes or less.')
+
+    cursor = start_time if start_time is not None else default_start
+    if timezone.is_naive(cursor):
+        cursor = timezone.make_aware(cursor, timezone.get_current_timezone())
+
+    n = len(parsed_ids)
+    if event.format in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT):
+        size = 2 ** math.ceil(math.log2(n))
+        active_seeds = [s for s in _seed_order(size) if s <= n]
+        slot_seed_pairs = list(zip(parsed_ids, active_seeds))
+    else:
+        slot_seed_pairs = [(entry_id, idx) for idx, entry_id in enumerate(parsed_ids, start=1)]
+
+    entries_to_update = []
+    for entry_id, seed_val in slot_seed_pairs:
+        entry = confirmed_by_id[entry_id]
+        entry.seed = seed_val
+        entries_to_update.append(entry)
+
+    from .models import EventEntry
+    EventEntry.objects.bulk_update(entries_to_update, ['seed'])
+
+    if resolved_venue is not None and event.venue_id is None:
+        event.venue = resolved_venue
+        event.save(update_fields=['venue'])
+
+    generate_bracket(event)
+
+    generated = list(
+        event.matches.select_related('venue')
+        .prefetch_related('entries__team', 'entries__participant')
+        .order_by('round_number', 'id')
+    )
+    gap = timedelta(minutes=resolved_break)
+    for match in generated:
+        if match.status == Match.Status.COMPLETED:
+            # Bye match already resolved; still tag venue for consistency.
+            if resolved_venue is not None and match.venue_id is None:
+                match.venue = resolved_venue
+                match.save(update_fields=['venue', 'updated_at'])
+            continue
+        slot_start, slot_end = _next_available_venue_slot(
+            resolved_venue,
+            cursor,
+            resolved_duration,
+            resolved_break,
+        )
+        match.venue = resolved_venue
+        match.scheduled_start = slot_start
+        match.scheduled_end = slot_end
+        match.status = Match.Status.SCHEDULED
+        match.save(update_fields=['venue', 'scheduled_start', 'scheduled_end', 'status', 'updated_at'])
+        cursor = slot_end + gap
+
+    return generated
 
 
 def maybe_auto_generate_bracket(event):

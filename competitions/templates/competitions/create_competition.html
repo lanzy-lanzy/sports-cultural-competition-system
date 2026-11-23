@@ -35,30 +35,6 @@
             </div>
 
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div>
-                    <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
-                    <input type="text" id="name" name="name" value="{{ form_data.name }}" required
-                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                </div>
-                <div>
-                    <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
-                    <select id="status" name="status" required
-                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        <option value="PENDING" {% if form_data.status == 'PENDING' %}selected{% endif %}>Pending</option>
-                        <option value="ACTIVE" {% if form_data.status == 'ACTIVE' %}selected{% endif %}>Active</option>
-                        <option value="COMPLETED" {% if form_data.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
-                    <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date }}" required
-                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                </div>
-                <div>
-                    <label for="end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
-                    <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date }}" required
-                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                </div>
                 <div class="md:col-span-2">
                     <p class="mb-2 text-sm font-medium text-slate-700">Competition Category <span class="text-rose-500">*</span></p>
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -93,7 +69,31 @@
                     </div>
                 </div>
                 {% include 'competitions/partials/cultural_subtype_field.html' %}
-{% include 'competitions/partials/tournament_format_field.html' %}
+                {% include 'competitions/partials/tournament_format_field.html' %}
+                <div class="manual-comp-name-wrap">
+                    <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
+                    <input type="text" id="name" name="name" value="{{ form_data.name }}" required
+                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div class="comp-status-wrap">
+                    <label for="status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
+                    <select id="status" name="status" required
+                            class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        <option value="ACTIVE" {% if not form_data.status or form_data.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                        <option value="PENDING" {% if form_data.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                        <option value="COMPLETED" {% if form_data.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date }}" required
+                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
+                <div>
+                    <label for="end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date }}" required
+                           class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                </div>
                 <div class="md:col-span-2">
                     <p class="mb-2 text-sm font-medium text-slate-700">Medal Points (used for the medal tally)</p>
                     <div class="grid grid-cols-3 gap-4">
@@ -268,6 +268,14 @@
         scope.querySelectorAll('.judged-rounds-wrap').forEach(function (wrap) {
             wrap.classList.toggle('hidden', kind === 'SPORTS');
             wrap.querySelectorAll('select, input, button').forEach(el => { el.disabled = kind === 'SPORTS'; });
+        });
+        scope.querySelectorAll('.manual-comp-name-wrap').forEach(function (wrap) {
+            const isSports = kind === 'SPORTS';
+            wrap.classList.toggle('hidden', isSports);
+            wrap.querySelectorAll('input').forEach(el => { el.required = !isSports; });
+        });
+        scope.querySelectorAll('.comp-status-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('md:col-span-2', kind === 'SPORTS');
         });
 
 

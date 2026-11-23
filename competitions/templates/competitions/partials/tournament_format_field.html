@@ -1,11 +1,130 @@
-<div class="sports-format-wrap hidden rounded-md border border-slate-200 bg-slate-50 p-5">
-    <label class="mb-2 block text-sm font-semibold text-slate-800">Tournament Format
-        <select name="tournament_format" required disabled class="mt-2 block w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm">
-            <option value="">Select tournament format</option>
-            {% for value, label in tournament_formats %}
-            <option value="{{ value }}" {% if form_data.tournament_format == value or competition.tournament_format == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </label>
-    <p class="mt-2 text-sm text-slate-500">Results use wins, losses, points, runs or goals, bracket advancement and ranking tie-breakers. Configure events, fixtures and match results in the sports match board.</p>
+<div class="sports-format-wrap hidden rounded-md border border-slate-200 bg-slate-50 p-5 md:col-span-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% if not competition %}
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-semibold text-slate-800">Static Sports Event / Competition <span class="text-rose-500">*</span>
+                <select name="static_event" required disabled data-static-event-select
+                        class="mt-2 block w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    <option value="">Select PALARO 2026 sport event</option>
+                    {% for item in static_sports_events %}
+                    <option value="{{ item.slug }}"
+                            data-event-name="{{ item.name }}"
+                            data-venue="{{ item.venue_name }}"
+                            data-duration="{{ item.duration_mins }}"
+                            data-players="{{ item.players_per_event }}"
+                            data-division="{{ item.default_division }}"
+                            data-format="{{ item.default_format }}"
+                            data-gold="{{ item.gold_points }}"
+                            data-silver="{{ item.silver_points }}"
+                            data-bronze="{{ item.bronze_points }}"
+                            {% if form_data.static_event == item.slug %}selected{% endif %}>
+                        {{ item.name }} ({{ item.players_per_event }} player{{ item.players_per_event|pluralize }}/team &middot; {{ item.venue_name }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        {% endif %}
+
+        <div>
+            <label class="block text-sm font-semibold text-slate-800">Tournament Format <span class="text-rose-500">*</span>
+                <select name="tournament_format" required disabled data-tournament-format-select
+                        class="mt-2 block w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    <option value="">Select tournament format</option>
+                    {% for value, label in tournament_formats %}
+                    <option value="{{ value }}" {% if form_data.tournament_format == value or competition.tournament_format == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        {% if not competition %}
+        <div>
+            <label class="block text-sm font-semibold text-slate-800">Required Players per Team / Event <span class="text-rose-500">*</span>
+                <input type="number" name="players_per_event" min="1" max="100" required disabled data-required-players-input
+                       value="{{ form_data.players_per_event }}" placeholder="e.g. 15"
+                       class="mt-2 block w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+            </label>
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="block text-sm font-semibold text-slate-800">Division Setup
+                <select name="sport_division" disabled data-sport-division-select
+                        class="mt-2 block w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                    <option value="BOTH" {% if not form_data.sport_division or form_data.sport_division == 'BOTH' %}selected{% endif %}>Men &amp; Women (creates both events automatically)</option>
+                    <option value="male" {% if form_data.sport_division == 'male' %}selected{% endif %}>Men Only</option>
+                    <option value="female" {% if form_data.sport_division == 'female' %}selected{% endif %}>Women Only</option>
+                    <option value="open" {% if form_data.sport_division == 'open' %}selected{% endif %}>Mixed / Open Division</option>
+                </select>
+            </label>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if not competition %}
+    <div data-static-sport-meta class="mt-3 hidden rounded-md border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-semibold text-emerald-900"></div>
+    {% endif %}
+    <p class="mt-2.5 text-xs text-slate-500">Selecting a static PALARO 2026 event automatically sets the competition name, static venue, required players per team, and point system.</p>
 </div>
+<script>
+(() => {
+    document.querySelectorAll('[data-static-event-select]').forEach(select => {
+        if (select.dataset.bound) return;
+        select.dataset.bound = '1';
+        const wrap = select.closest('.sports-format-wrap');
+        const metaBox = wrap?.querySelector('[data-static-sport-meta]');
+        const form = select.closest('form');
+        const nameInput = form?.querySelector('input[name="name"]');
+        const formatSelect = wrap?.querySelector('[data-tournament-format-select]');
+        const playersInput = wrap?.querySelector('[data-required-players-input]');
+        const divisionSelect = wrap?.querySelector('[data-sport-division-select]');
+        const goldInput = form?.querySelector('input[name="gold_points"]');
+        const silverInput = form?.querySelector('input[name="silver_points"]');
+        const bronzeInput = form?.querySelector('input[name="bronze_points"]');
+
+        function syncStaticEvent(fromUserChange = false) {
+            const opt = select.options[select.selectedIndex];
+            const eventName = opt?.dataset.eventName || '';
+            const venue = opt?.dataset.venue || '';
+            const duration = opt?.dataset.duration || '';
+            const players = opt?.dataset.players || '';
+            const division = opt?.dataset.division || '';
+            const fmt = opt?.dataset.format || '';
+            const gold = opt?.dataset.gold || '';
+            const silver = opt?.dataset.silver || '';
+            const bronze = opt?.dataset.bronze || '';
+
+            if (metaBox) {
+                if (eventName) {
+                    metaBox.textContent = `Static Venue: ${venue} · Duration: ${duration} min · Required Players: ${players} per team · Points: ${gold} / ${silver} / ${bronze}`;
+                    metaBox.classList.remove('hidden');
+                } else {
+                    metaBox.classList.add('hidden');
+                }
+            }
+            if (!eventName) return;
+
+            if (nameInput && (fromUserChange || !nameInput.value.trim())) {
+                nameInput.value = eventName.toUpperCase();
+            }
+            if (playersInput && (fromUserChange || !playersInput.value)) {
+                playersInput.value = players;
+            }
+            if (divisionSelect && division && fromUserChange) {
+                divisionSelect.value = division;
+            }
+            if (formatSelect && fmt && (fromUserChange || !formatSelect.value)) {
+                formatSelect.value = fmt;
+            }
+            if (fromUserChange) {
+                if (goldInput && gold) goldInput.value = gold;
+                if (silverInput && silver) silverInput.value = silver;
+                if (bronzeInput && bronze) bronzeInput.value = bronze;
+            }
+        }
+
+        select.addEventListener('change', () => syncStaticEvent(true));
+        syncStaticEvent(false);
+    });
+})();
+</script>

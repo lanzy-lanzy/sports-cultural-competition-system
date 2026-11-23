@@ -19,6 +19,7 @@ NAV_GROUPS = {
     ],
     'teams': [
         'team_list', 'create_team', 'team_detail', 'edit_team',
+        'register_team_player', 'submit_team_roster',
         'add_team_member', 'remove_team_member', 'add_team_staff',
         'remove_team_staff', 'update_team_status', 'bulk_delete_teams',
         'bulk_delete_members', 'update_member_events',
@@ -27,14 +28,15 @@ NAV_GROUPS = {
         'judge_management', 'manage_judges', 'assign_judges',
         'edit_judge_assignment', 'delete_judge_assignment',
     ],
+    'tournament_manager': ['tournament_manager_dashboard'],
     'sports': [
         'sports_hub',
         'sport_type_list', 'sport_type_create', 'sport_type_edit',
         'venue_list', 'venue_create', 'venue_edit', 'venue_detail',
         'competition_sport_events', 'create_sport_event',
-        'sport_event_detail', 'edit_sport_event',
+        'sport_event_detail', 'edit_sport_event', 'assign_tournament_manager',
         'add_event_entry', 'update_entry_status', 'remove_event_entry',
-        'generate_event_bracket', 'clear_event_bracket',
+        'automatch_setup', 'generate_event_bracket', 'clear_event_bracket',
         'match_schedule', 'edit_match', 'record_match_result',
         'event_standings', 'event_bracket',
     ],
@@ -101,11 +103,25 @@ def active_nav(request):
         from .models import UserProfile
 
         role = get_user_role(request.user)
+        can_manage = role in MANAGEMENT_ROLES
+        pending_team_registrations = 0
+        pending_event_registrations = 0
+        if can_manage:
+            from registrations.models import EventRegistration
+            from teams.models import Team
+            pending_team_registrations = Team.objects.filter(status=Team.Status.PENDING).count()
+            pending_event_registrations = EventRegistration.objects.filter(
+                status__in=[EventRegistration.Status.PENDING, EventRegistration.Status.UNDER_REVIEW],
+            ).count()
+
         context.update({
             'account_role': role,
             'account_role_display': dict(UserProfile.Role.choices).get(role, 'User'),
-            'can_manage': role in MANAGEMENT_ROLES,
+            'can_manage': can_manage,
             'is_account_admin': role == UserProfile.Role.ADMINISTRATOR,
             'unread_notifications': request.user.notifications.filter(is_read=False).count(),
+            'pending_team_registrations': pending_team_registrations,
+            'pending_event_registrations': pending_event_registrations,
+            'pending_registrations_total': pending_team_registrations + pending_event_registrations,
         })
     return context

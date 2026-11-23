@@ -365,31 +365,6 @@
                 <div class="rounded-md border border-slate-200/80 bg-slate-50/50 p-5">
                     <h3 class="mb-4 font-display text-sm font-semibold text-slate-900">Competition Details</h3>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div>
-                            <label for="m-name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
-                            <input type="text" id="m-name" name="name" required
-                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        </div>
-                        <div>
-                            <label for="m-status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
-                            <select id="m-status" name="status" required
-                                    class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                                <option value="DRAFT">Draft</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="COMPLETED">Completed</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="m-start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
-                            <input type="date" id="m-start_date" name="start_date" required
-                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        </div>
-                        <div>
-                            <label for="m-end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
-                            <input type="date" id="m-end_date" name="end_date" required
-                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                        </div>
                         <div class="md:col-span-2">
                             <p class="mb-2 text-sm font-medium text-slate-700">Competition Category <span class="text-rose-500">*</span></p>
                             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -416,7 +391,32 @@
                             </div>
                         </div>
                         {% include 'competitions/partials/cultural_subtype_field.html' with prefix='m-' is_cultural=False selected_subtype='' %}
-{% include 'competitions/partials/tournament_format_field.html' %}
+                        {% include 'competitions/partials/tournament_format_field.html' %}
+                        <div class="manual-comp-name-wrap">
+                            <label for="m-name" class="mb-1.5 block text-sm font-medium text-slate-700">Competition Name</label>
+                            <input type="text" id="m-name" name="name" required
+                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 uppercase placeholder-slate-400 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div class="comp-status-wrap">
+                            <label for="m-status" class="mb-1.5 block text-sm font-medium text-slate-700">Status</label>
+                            <select id="m-status" name="status" required
+                                    class="w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                                <option value="ACTIVE" selected>Active</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="DRAFT">Draft</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="m-start_date" class="mb-1.5 block text-sm font-medium text-slate-700">Start Date</label>
+                            <input type="date" id="m-start_date" name="start_date" required
+                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
+                        <div>
+                            <label for="m-end_date" class="mb-1.5 block text-sm font-medium text-slate-700">End Date</label>
+                            <input type="date" id="m-end_date" name="end_date" required
+                                   class="w-full rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        </div>
                         <div class="md:col-span-2">
                             <label for="m-description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
                             <textarea id="m-description" name="description" rows="3" placeholder="Describe your competition..."
@@ -842,6 +842,14 @@
         scope.querySelectorAll('.judged-rounds-wrap').forEach(function (wrap) {
             wrap.classList.toggle('hidden', kind === 'SPORTS');
             wrap.querySelectorAll('select, input, button').forEach(el => { el.disabled = kind === 'SPORTS'; });
+        });
+        scope.querySelectorAll('.manual-comp-name-wrap').forEach(function (wrap) {
+            const isSports = kind === 'SPORTS';
+            wrap.classList.toggle('hidden', isSports);
+            wrap.querySelectorAll('input').forEach(el => { el.required = !isSports; });
+        });
+        scope.querySelectorAll('.comp-status-wrap').forEach(function (wrap) {
+            wrap.classList.toggle('md:col-span-2', kind === 'SPORTS');
         });
 
 

@@ -28,6 +28,88 @@
     </form>
 </div>
 
+{% if pending_teams %}
+<div class="mb-6 overflow-x-auto rounded-md border border-amber-200/90 bg-white/80 shadow-sm backdrop-blur-sm">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 bg-amber-50/70 px-5 py-3">
+        <div>
+            <h2 class="font-display text-sm font-semibold text-slate-900">Department Team Registrations Pending Approval</h2>
+            <p class="text-xs text-slate-500">Review and approve or reject department team submissions from Team Managers.</p>
+        </div>
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+            {{ pending_team_count }} pending
+        </span>
+    </div>
+    <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <tr>
+                <th class="px-5 py-3">Department &amp; Team</th>
+                <th class="px-5 py-3">Category &amp; Sports</th>
+                <th class="hidden px-5 py-3 lg:table-cell">Submitted by</th>
+                <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in pending_teams %}
+            <tr class="border-slate-100 transition-colors hover:bg-slate-50/60 {% if not forloop.first %}border-t{% endif %}">
+                <td class="px-5 py-3">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-500 font-display text-xs font-bold text-white">
+                            {{ team.department|default:team.name|slice:":3"|upper }}
+                        </span>
+                        <div>
+                            <p class="font-semibold text-slate-800">
+                                <a href="{% url 'team_detail' team.id %}" class="hover:text-cyan-700">{{ team.name }}</a>
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                {% if team.department %}
+                                <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">{{ team.get_department_display }}</span>
+                                {% endif %}
+                                <span class="ml-1 text-slate-400">{{ team.created_at|date:"M d, Y H:i" }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-5 py-3 text-slate-600">
+                    <p class="font-medium text-slate-700">{{ team.get_category_display }}</p>
+                    <p class="text-xs text-slate-400">
+                        {% for sport in team.sports_categories.all %}{{ sport.name }}{% if not forloop.last %}, {% endif %}{% empty %}&mdash;{% endfor %}
+                    </p>
+                </td>
+                <td class="hidden px-5 py-3 text-slate-600 lg:table-cell">
+                    {% if team.created_by %}{{ team.created_by.get_full_name|default:team.created_by.username }}{% else %}&mdash;{% endif %}
+                </td>
+                <td class="px-5 py-3">
+                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200/70">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                        {{ team.get_status_display }}
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        <a href="{% url 'team_detail' team.id %}" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">View</a>
+                        <form method="post" action="{% url 'update_team_status' team.id %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="APPROVED">
+                            <input type="hidden" name="next" value="registration_review_queue">
+                            <button type="submit" class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">Approve</button>
+                        </form>
+                        <form method="post" action="{% url 'update_team_status' team.id %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="REJECTED">
+                            <input type="hidden" name="next" value="registration_review_queue">
+                            <button type="submit" class="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700">Reject</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 {% if page_obj %}
 <div class="overflow-x-auto rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
     <table class="w-full text-left text-sm">
@@ -138,7 +220,7 @@
     </table>
 </div>
 {% include 'partials/pagination.html' %}
-{% else %}
+{% elif not pending_teams %}
 <div class="rounded-md border border-dashed border-slate-300 bg-white/50 py-20 text-center">
     <h3 class="font-display text-xl font-semibold text-slate-900">No registrations</h3>
     <p class="mt-2 text-sm text-slate-500">Self-service registrations appear here for review.</p>

@@ -82,6 +82,7 @@ class EventRegistrationForm(forms.Form):
         if is_team_manager:
             self.fields['team'].queryset = Team.objects.filter(
                 staff_assignments__user=user,
+                status=Team.Status.APPROVED,
             ).distinct().order_by('name')
         if not is_team_manager or not self.fields['team'].queryset.exists():
             self.fields.pop('team')
@@ -93,7 +94,7 @@ class EventRegistrationForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
         if self.user and get_user_role(self.user) == UserProfile.Role.TEAM_MANAGER and 'team' not in self.fields:
-            raise forms.ValidationError('Create a team or ask an organizer to assign you as team staff before registering.')
+            raise forms.ValidationError('Only approved department teams can participate. Submit your team registration and wait for Admin approval first.')
         target_type = cleaned.get('target_type')
 
         if target_type == 'competition':

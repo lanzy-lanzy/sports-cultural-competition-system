@@ -1,7 +1,13 @@
 <nav aria-label="Sports event navigation" class="mb-6 space-y-3">
+    {% if can_manage %}
     <a href="{% url 'sports_hub' %}" class="inline-flex text-sm font-semibold text-campus">&larr; All sports events</a>
+    {% else %}
+    <a href="{% url 'tournament_manager_dashboard' %}" class="inline-flex text-sm font-semibold text-campus">&larr; My assigned tournaments</a>
+    {% endif %}
     <div class="flex flex-wrap gap-1 rounded-md border border-slate-200 bg-white p-1 text-sm font-semibold">
+        {% if can_manage %}
         <a {% if section == 'bracket' %}id="bracket-event-link"{% endif %} href="{% url 'sport_event_detail' event.id %}" {% if section == 'setup' %}aria-current="page"{% endif %} class="rounded-md px-4 py-2.5 {% if section == 'setup' %}bg-campus text-white{% else %}text-slate-600 hover:bg-slate-50{% endif %}">Teams &amp; setup</a>
+        {% endif %}
         <a {% if section == 'bracket' %}id="bracket-schedule-link"{% endif %} href="{% url 'match_schedule' event.id %}" {% if section == 'matches' %}aria-current="page"{% endif %} class="rounded-md px-4 py-2.5 {% if section == 'matches' %}bg-campus text-white{% else %}text-slate-600 hover:bg-slate-50{% endif %}">Matches</a>
         {% if section == 'bracket' %}<span aria-current="page" class="rounded-md bg-campus px-4 py-2.5 text-white">Bracket</span>{% else %}<a href="{% url 'event_bracket' event.id %}" class="rounded-md px-4 py-2.5 text-slate-600 hover:bg-slate-50">Bracket</a>{% endif %}
         <a {% if section == 'bracket' %}id="bracket-standings-link"{% endif %} href="{% url 'event_standings' event.id %}" {% if section == 'standings' %}aria-current="page"{% endif %} class="rounded-md px-4 py-2.5 {% if section == 'standings' %}bg-campus text-white{% else %}text-slate-600 hover:bg-slate-50{% endif %}">Standings</a>

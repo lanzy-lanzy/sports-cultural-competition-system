@@ -8,6 +8,7 @@ class UserProfile(models.Model):
         EVENT_ORGANIZER = 'EVENT_ORGANIZER', 'Event Organizer'
         SPORTS_COORDINATOR = 'SPORTS_COORDINATOR', 'Sports Coordinator'
         CULTURAL_COORDINATOR = 'CULTURAL_COORDINATOR', 'Cultural Event Coordinator'
+        TOURNAMENT_MANAGER = 'TOURNAMENT_MANAGER', 'Tournament Manager'
         TEAM_MANAGER = 'TEAM_MANAGER', 'Team Manager / Coach'
         PARTICIPANT = 'PARTICIPANT', 'Participant'
         JUDGE = 'JUDGE', 'Judge'

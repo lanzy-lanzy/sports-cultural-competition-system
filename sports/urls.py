@@ -5,9 +5,11 @@ from . import views
 
 urlpatterns = [
     path('sports/events/<int:event_id>/workflow/', views.tournament_action, name='tournament_action'),
+    path('sports/my-tournaments/', views.tournament_manager_dashboard, name='tournament_manager_dashboard'),
     path('sports/hub/', views.sports_hub, name='sports_hub'),
     path('sports/matches/board/', views.match_board, name='match_board'),
     path('sports/matches/board/create/', views.create_board_match, name='create_board_match'),
+    path('sports/matches/board/automatch/', views.board_automatch_setup, name='board_automatch_setup'),
     path('sports/matches/board/bulk-delete/', views.bulk_delete_matches, name='bulk_delete_matches'),
     path('sports/', views.sport_type_list, name='sport_type_list'),
     path('sports/create/', views.sport_type_create, name='sport_type_create'),
@@ -20,9 +22,11 @@ urlpatterns = [
     path('competitions/<int:competition_id>/sports/create/', views.create_sport_event, name='create_sport_event'),
     path('sports/events/<int:event_id>/', views.sport_event_detail, name='sport_event_detail'),
     path('sports/events/<int:event_id>/edit/', views.edit_sport_event, name='edit_sport_event'),
+    path('sports/events/<int:event_id>/tournament-manager/', views.assign_tournament_manager, name='assign_tournament_manager'),
     path('sports/events/<int:event_id>/entries/add/', views.add_event_entry, name='add_event_entry'),
     path('sports/events/<int:event_id>/entries/<int:entry_id>/status/', views.update_entry_status, name='update_entry_status'),
     path('sports/events/<int:event_id>/entries/<int:entry_id>/remove/', views.remove_event_entry, name='remove_event_entry'),
+    path('sports/events/<int:event_id>/automatch/', views.automatch_setup, name='automatch_setup'),
     path('sports/events/<int:event_id>/bracket/generate/', views.generate_event_bracket, name='generate_event_bracket'),
     path('sports/events/<int:event_id>/bracket/clear/', views.clear_event_bracket, name='clear_event_bracket'),
     path('sports/events/<int:event_id>/matches/', views.match_schedule, name='match_schedule'),

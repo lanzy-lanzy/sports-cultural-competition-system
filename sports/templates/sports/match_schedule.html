@@ -12,11 +12,11 @@
         <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-4">
-        {% if not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'create_match' event.id %}" class="rounded-md bg-ink px-4 py-2 text-sm font-bold text-white ui-button ui-button--primary">Create manual match</a>{% endif %}
+        {% if can_manage_schedule and not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'create_match' event.id %}" class="rounded-md bg-ink px-4 py-2 text-sm font-bold text-white ui-button ui-button--primary">Create manual match</a>{% endif %}
     </div>
 </div>
 
-{% if not sms_configured %}
+{% if can_manage_schedule and not sms_configured %}
 <details class="mb-5 text-xs text-slate-500"><summary class="cursor-pointer">Text notifications are off</summary><p class="mt-2">You can manage matches without text notifications. <a href="{% url 'sms_dashboard' %}" class="font-semibold text-campus">Set up notifications</a></p></details>
 {% endif %}
 
@@ -71,7 +71,9 @@
                             <button type="submit" class="rounded-md border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-pine-deep hover:bg-teal-100 ui-button ui-button--soft ui-button--small" title="Text this update to team managers and participants">SMS</button>
                         </form>
                         {% endif %}
+                        {% if can_manage_schedule %}
                         <a href="{% url 'edit_match' match.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Edit</a>
+                        {% endif %}
                         {% if match.status != 'COMPLETED' and match.entries.count == 2 %}
                         <button type="button"
                                 data-result-open

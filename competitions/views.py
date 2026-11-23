@@ -16,8 +16,36 @@ from .models import (
 from scoring.services import calculate_rankings
 from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.functions import Lower
-from sports.models import SportsEvent
+from sports.models import SportsEvent, SportType, Venue
+from sports.services import (
+    PALARO_STATIC_EVENTS,
+    STATIC_SPORT_VENUE_DEFAULTS,
+    get_static_event_spec,
+    resolve_default_tournament_manager,
+)
 from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required
+
+
+def _sport_static_meta(sport_name):
+    lower = (sport_name or '').lower()
+    for keyword, venue_name, mins in STATIC_SPORT_VENUE_DEFAULTS:
+        if keyword in lower:
+            return venue_name, mins
+    return '', 60
+
+
+def _static_sport_choices():
+    choices = []
+    for sport in SportType.objects.filter(is_active=True).order_by('name'):
+        venue_name, duration_mins = _sport_static_meta(sport.name)
+        choices.append({
+            'id': sport.id,
+            'name': sport.name,
+            'team_based': sport.team_based,
+            'venue_name': venue_name,
+            'duration_mins': duration_mins,
+        })
+    return choices
 
 
 def _competition_list_url(category='sports'):
@@ -69,9 +97,11 @@ def _validate_category_fields(post):
 
 
 def _subtype_form_context(kind, selected):
-    """Shared context for the cultural sub-type field on create/edit forms."""
+    """Shared context for the cultural sub-type and static sport fields on create/edit forms."""
     return {
         'tournament_formats': Competition.TournamentFormat.choices,
+        'sport_type_choices': _static_sport_choices(),
+        'static_sports_events': PALARO_STATIC_EVENTS,
         'subtype_groups': cultural_subtype_groups(),
         'selected_subtype': selected or '',
         'is_cultural': kind == Competition.Kind.CULTURAL,
@@ -227,6 +257,8 @@ def competition_list(request):
     page_obj = Paginator(competitions, 9).get_page(request.GET.get('page'))
     return render(request, 'competitions/competition_list.html', {
         'tournament_formats': Competition.TournamentFormat.choices,
+        'sport_type_choices': _static_sport_choices(),
+        'static_sports_events': PALARO_STATIC_EVENTS,
         'page_obj': page_obj,
         'category': category,
         'sports_count': counts['sports'] or 0,
@@ -339,9 +371,14 @@ def create_competition(request):
             })
         try:
             with transaction.atomic():
+                static_spec = get_static_event_spec(request.POST.get('static_event')) if kind == Competition.Kind.SPORTS else None
+                raw_name = (request.POST.get('name') or '').strip()
+                if not raw_name and static_spec:
+                    raw_name = static_spec['name']
+
                 competition = Competition.objects.create(
-                    name=request.POST.get('name').upper(),
-                    description=request.POST.get('description').upper(),
+                    name=raw_name.upper(),
+                    description=(request.POST.get('description') or '').upper(),
                     start_date=request.POST.get('start_date'),
                     end_date=request.POST.get('end_date'),
                     status=request.POST.get('status'),
@@ -351,6 +388,90 @@ def create_competition(request):
                     cultural_event_type=event_type,
                     **_medal_points(request.POST)
                 )
+
+                if kind == Competition.Kind.SPORTS:
+                    format_map = {
+                        Competition.TournamentFormat.SINGLE_ELIMINATION: SportsEvent.Format.SINGLE_ELIMINATION,
+                        Competition.TournamentFormat.DOUBLE_ELIMINATION: SportsEvent.Format.DOUBLE_ELIMINATION,
+                        Competition.TournamentFormat.ROUND_ROBIN: SportsEvent.Format.ROUND_ROBIN,
+                        Competition.TournamentFormat.GROUP_KNOCKOUT: SportsEvent.Format.GROUP_STAGE,
+                        Competition.TournamentFormat.BEST_OF: SportsEvent.Format.BEST_OF,
+                        Competition.TournamentFormat.LEAGUE: SportsEvent.Format.LEAGUE,
+                    }
+                    event_format = format_map.get(
+                        competition.tournament_format,
+                        SportsEvent.Format.SINGLE_ELIMINATION,
+                    )
+                    raw_players = (request.POST.get('players_per_event') or '').strip()
+                    parsed_players = int(raw_players) if raw_players.isdigit() and int(raw_players) > 0 else None
+
+                    if static_spec is not None:
+                        sport_type, _ = SportType.objects.get_or_create(
+                            name=static_spec['sport_type'],
+                            defaults={'team_based': static_spec['team_based'], 'is_active': True},
+                        )
+                        static_venue, _ = Venue.objects.get_or_create(
+                            name=static_spec['venue_name'],
+                            defaults={'is_active': True},
+                        )
+                        players_required = parsed_players or static_spec['players_per_event']
+                        division = (request.POST.get('sport_division') or static_spec['default_division']).strip()
+                        if division == 'BOTH':
+                            specs = [('Men', 'male'), ('Women', 'female')]
+                        elif division == 'male':
+                            specs = [('Men', 'male')]
+                        elif division == 'female':
+                            specs = [('Women', 'female')]
+                        else:
+                            specs = [('Mixed', 'open')]
+                        for label, gender_val in specs:
+                            SportsEvent.objects.create(
+                                competition=competition,
+                                sport_type=sport_type,
+                                name=f"{static_spec['name']} - {label}",
+                                category='OPEN',
+                                gender=gender_val,
+                                team_based=static_spec['team_based'],
+                                format=event_format,
+                                players_per_event=players_required,
+                                tournament_manager=resolve_default_tournament_manager(static_spec['slug'], gender_val),
+                                status=SportsEvent.Status.REGISTRATION,
+                                venue=static_venue,
+                            )
+                    else:
+                        raw_sport_id = (request.POST.get('sport_type') or '').strip()
+                        if raw_sport_id.isdigit():
+                            sport_type = SportType.objects.filter(id=int(raw_sport_id), is_active=True).first()
+                            if sport_type is not None:
+                                venue_name, _ = _sport_static_meta(sport_type.name)
+                                static_venue = None
+                                if venue_name:
+                                    static_venue, _ = Venue.objects.get_or_create(
+                                        name=venue_name,
+                                        defaults={'is_active': True},
+                                    )
+                                division = (request.POST.get('sport_division') or 'BOTH').strip()
+                                if division == 'BOTH':
+                                    specs = [('Men', 'male'), ('Women', 'female')]
+                                elif division == 'male':
+                                    specs = [('Men', 'male')]
+                                elif division == 'female':
+                                    specs = [('Women', 'female')]
+                                else:
+                                    specs = [('Open', 'open')]
+                                for label, gender_val in specs:
+                                    SportsEvent.objects.create(
+                                        competition=competition,
+                                        sport_type=sport_type,
+                                        name=f'{sport_type.name} - {label}',
+                                        category='OPEN',
+                                        gender=gender_val,
+                                        team_based=sport_type.team_based,
+                                        format=event_format,
+                                        players_per_event=parsed_players,
+                                        status=SportsEvent.Status.REGISTRATION,
+                                        venue=static_venue,
+                                    )
 
                 round_names = [] if kind == Competition.Kind.SPORTS else request.POST.getlist('round_names[]')
                 round_orders = request.POST.getlist('round_orders[]')

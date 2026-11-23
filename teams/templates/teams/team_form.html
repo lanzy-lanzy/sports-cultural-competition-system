@@ -1,7 +1,7 @@
 ﻿{% extends 'base.html' %}
 {% load static_version %}
 
-{% block title %}{% if team %}Edit {{ team.name }}{% else %}Create Team{% endif %} - Competrack{% endblock %}
+{% block title %}{% if team %}Edit {{ team.name }}{% else %}Submit Team Registration{% endif %} - Competrack{% endblock %}
 {% block header_title %}Teams{% endblock %}
 
 {% block extra_head %}<link rel="stylesheet" href="{% static_v 'css/teams.css' %}">{% endblock %}
@@ -9,25 +9,38 @@
 {% block content %}
 <div class="team-ui">
 <div class="mx-auto max-w-3xl">
-    <div class="mb-7"><p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Team and Delegation Management</p><h1 class="mt-1 font-display text-3xl font-bold text-ink">{% if team %}Edit {{ team.name }}{% else %}Create a team or delegation{% endif %}</h1><p class="mt-2 text-sm text-slate-500">{% if team %}Update the team identity, category, logo, and approval status.{% else %}Define the team identity, category, and logo.{% endif %}</p></div>
-    {% if auto_approved %}
-    <div class="mb-5 flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50/70 px-4 py-3">
-        <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
-        <p class="text-sm text-emerald-800">Teams you create are <span class="font-bold">approved automatically</span>, so there is no status to choose. You can suspend a team later from its page.</p>
+    <div class="mb-7">
+        <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">Department Team Registration</p>
+        <h1 class="mt-1 font-display text-3xl font-bold text-ink">{% if team %}Edit {{ team.name }}{% else %}Submit Department Team Registration{% endif %}</h1>
+        <p class="mt-2 text-sm text-slate-500">{% if team %}Update your department team identity, sports categories, and logo.{% else %}Register your department team (SAFES, SOCJE, STE, or SCS). Once approved by the Admin, you can register players, assign sports, and submit your final roster.{% endif %}</p>
+    </div>
+
+    {% if not team %}
+    <div class="mb-5 flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50/70 px-4 py-3">
+        <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-500"></span>
+        <p class="text-sm text-amber-900">Your team registration will be submitted as <span class="font-bold">Pending approval</span>. Only teams approved by the Admin can register players or participate in competitions.</p>
     </div>
     {% endif %}
+
     <form method="post" enctype="multipart/form-data" class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="px-6 pt-5 text-sm text-rose-600" role="alert">{{ form.non_field_errors }}</div>{% endif %}
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
             {% for field in form %}
                 {% if field.name != 'sports_categories' %}
-                <div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}</div>
+                <div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}">
+                    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+                    {{ field }}
+                    {% if field.name == 'department' and form.locked_departments and not team %}
+                    <p class="mt-1.5 text-xs text-slate-500">Already approved (locked): <span class="font-semibold text-slate-700">{{ form.locked_departments|join:", " }}</span></p>
+                    {% endif %}
+                    {% for error in field.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+                </div>
                 {% endif %}
             {% endfor %}
             <fieldset class="sm:col-span-2" data-team-sports aria-describedby="team-sports-help">
                 <legend class="mb-1.5 text-sm font-bold text-ink">Sports categories</legend>
-                <p id="team-sports-help" class="mb-3 text-sm text-slate-600">Select all sports this team will participate in.{% if not team %} Sports Teams must select at least one.{% endif %}</p>
+                <p id="team-sports-help" class="mb-3 text-sm text-slate-600">Select all sports this department team will participate in.{% if not team %} Sports Teams must select at least one.{% endif %}</p>
                 {% if form.sports_categories.field.queryset.exists %}
                     {{ form.sports_categories }}
                 {% else %}
@@ -36,10 +49,10 @@
                 {% for error in form.sports_categories.errors %}<p class="mt-2 text-sm text-rose-600" role="alert">{{ error }}</p>{% endfor %}
             </fieldset>
         </div>
-        {% if roster_form is not None %}
-            {% include 'teams/event_roster_fields.html' %}
-        {% endif %}
-        <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-6 py-5 sm:px-8"><a href="{% if team %}{% url 'team_detail' team.id %}{% else %}{% url 'team_list' %}{% endif %}" class="text-sm font-bold text-slate-500 hover:text-ink tw-button tw-button-secondary">Cancel</a><button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow tw-button tw-button-primary">{% if team %}Save team{% else %}Create team{% endif %}</button></div>
+        <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-6 py-5 sm:px-8">
+            <a href="{% if team %}{% url 'team_detail' team.id %}{% else %}{% url 'team_list' %}{% endif %}" class="text-sm font-bold text-slate-500 hover:text-ink tw-button tw-button-secondary">Cancel</a>
+            <button type="submit" class="rounded-md bg-campus px-6 py-3 text-sm font-bold text-white shadow tw-button tw-button-primary">{% if team %}Save team{% else %}Submit Team Registration{% endif %}</button>
+        </div>
     </form>
 </div>
 </div>

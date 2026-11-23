@@ -1288,3 +1288,210 @@ class ManualMatchManagementTest(TestCase):
         self.assertEqual(self.client.post(reverse('delete_match', args=[match.pk])).status_code, 403)
         self.assertEqual(self.client.post(reverse('bulk_delete_matches'), {'match_ids': [match.pk]}).status_code, 403)
         self.assertTrue(Match.objects.filter(pk=match.pk).exists())
+
+
+class AutoMatchSetupTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('automatch-admin', '', 'pass')
+        self.competition = Competition.objects.create(
+            name='Intramural Basketball 2026',
+            description='Basketball',
+            kind=Competition.Kind.SPORTS,
+            start_date='2026-11-23T08:00:00Z',
+            end_date='2026-11-30T17:00:00Z',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.sport = SportType.objects.create(name='Auto Basketball', team_based=True)
+        self.event = SportsEvent.objects.create(
+            competition=self.competition,
+            sport_type=self.sport,
+            name='Basketball - Men',
+            team_based=True,
+            format=SportsEvent.Format.SINGLE_ELIMINATION,
+            status=SportsEvent.Status.REGISTRATION,
+        )
+        self.teams = {}
+        self.entries = {}
+        for name, dept in [('BULLS', 'SAFES'), ('PHOENIX', 'STE'), ('DRAGON', 'SOCJE'), ('KITSUNE', 'SCS')]:
+            team = Team.objects.create(
+                name=name,
+                department=dept,
+                category=Team.Category.SPORTS,
+                status=Team.Status.APPROVED,
+                created_by=self.admin,
+            )
+            self.teams[name] = team
+            self.entries[name] = EventEntry.objects.create(
+                event=self.event,
+                team=team,
+                status=EventEntry.Status.CONFIRMED,
+            )
+        self.client.force_login(self.admin)
+
+    def test_automatch_lets_admin_assign_team_1_to_team_4_and_generates_exact_pairings(self):
+        url = reverse('automatch_setup', args=[self.event.pk])
+        get_resp = self.client.get(url)
+        self.assertEqual(get_resp.status_code, 200)
+        for num in range(1, 5):
+            self.assertContains(get_resp, f'Team {num}')
+
+        # Assign Team 1=DRAGON, Team 2=BULLS, Team 3=KITSUNE, Team 4=PHOENIX
+        post_resp = self.client.post(url, {
+            'slot_entry': [
+                self.entries['DRAGON'].pk,
+                self.entries['BULLS'].pk,
+                self.entries['KITSUNE'].pk,
+                self.entries['PHOENIX'].pk,
+            ],
+            'start_time': '2026-11-24T08:00',
+            'duration_minutes': '90',
+            'break_minutes': '15',
+        })
+        self.assertRedirects(post_resp, reverse('match_schedule', args=[self.event.pk]))
+
+        round1 = list(self.event.matches.filter(round_number=1).order_by('id'))
+        round2 = list(self.event.matches.filter(round_number=2).order_by('id'))
+        self.assertEqual(len(round1), 2)
+        self.assertEqual(len(round2), 1)
+
+        match1_teams = [me.team.name for me in round1[0].entries.select_related('team').order_by('side')]
+        match2_teams = [me.team.name for me in round1[1].entries.select_related('team').order_by('side')]
+        self.assertEqual(match1_teams, ['DRAGON', 'BULLS'])
+        self.assertEqual(match2_teams, ['KITSUNE', 'PHOENIX'])
+        self.assertEqual(round1[0].next_match_id, round2[0].pk)
+        self.assertEqual(round1[1].next_match_id, round2[0].pk)
+
+        # Static venue & non-overlapping auto-schedule verified.
+        all_matches = round1 + round2
+        for idx, m in enumerate(all_matches):
+            self.assertEqual(m.venue.name, 'JHCSC Basketball Court')
+            self.assertEqual(m.status, Match.Status.SCHEDULED)
+            self.assertIsNotNone(m.scheduled_start)
+            self.assertIsNotNone(m.scheduled_end)
+            self.assertEqual((m.scheduled_end - m.scheduled_start).total_seconds(), 90 * 60)
+            if idx > 0:
+                self.assertGreaterEqual(m.scheduled_start, all_matches[idx - 1].scheduled_end)
+
+        # Admin can still edit/reschedule any auto-scheduled match if schedule changes.
+        reschedule_resp = self.client.post(reverse('edit_match', args=[round1[0].pk]), {
+            'name': round1[0].name,
+            'round_number': round1[0].round_number,
+            'status': Match.Status.SCHEDULED,
+            'venue': round1[0].venue_id,
+            'scheduled_start': '2026-11-25T14:00',
+            'scheduled_end': '2026-11-25T15:30',
+        })
+        self.assertRedirects(reschedule_resp, reverse('match_schedule', args=[self.event.pk]))
+        round1[0].refresh_from_db()
+        self.assertEqual(round1[0].scheduled_start.astimezone().hour, 14)
+
+    def test_automatch_rejects_duplicate_team_slots(self):
+        url = reverse('automatch_setup', args=[self.event.pk])
+        resp = self.client.post(url, {
+            'slot_entry': [
+                self.entries['DRAGON'].pk,
+                self.entries['DRAGON'].pk,
+                self.entries['KITSUNE'].pk,
+                self.entries['PHOENIX'].pk,
+            ],
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(self.event.matches.exists())
+
+    def test_board_automatch_setup_generates_and_redirects_to_match_board(self):
+        board_resp = self.client.get(reverse('match_board'))
+        self.assertContains(board_resp, reverse('board_automatch_setup'))
+
+        resp = self.client.post(reverse('board_automatch_setup'), {
+            'event_id': self.event.pk,
+            'next': 'match_board',
+            'slot_entry': [
+                self.entries['BULLS'].pk,
+                self.entries['PHOENIX'].pk,
+                self.entries['DRAGON'].pk,
+                self.entries['KITSUNE'].pk,
+            ],
+        })
+        self.assertRedirects(resp, reverse('match_board'))
+        round1 = list(self.event.matches.filter(round_number=1).order_by('id'))
+        self.assertEqual([me.team.name for me in round1[0].entries.select_related('team').order_by('side')], ['BULLS', 'PHOENIX'])
+        self.assertEqual([me.team.name for me in round1[1].entries.select_related('team').order_by('side')], ['DRAGON', 'KITSUNE'])
+
+
+class TournamentManagerRBACTest(TestCase):
+    def setUp(self):
+        from accounts.models import UserProfile
+
+        self.admin = User.objects.create_superuser('tm-admin', '', 'pass')
+        self.tm_bball = User.objects.create_user('ambalong', password='pass')
+        self.tm_bball.account_profile.role = UserProfile.Role.TOURNAMENT_MANAGER
+        self.tm_bball.account_profile.save(update_fields=['role', 'updated_at'])
+
+        self.comp = Competition.objects.create(
+            name='Palaro 2026', description='Sports', kind=Competition.Kind.SPORTS,
+            start_date='2026-11-23T08:00:00Z', end_date='2026-11-30T17:00:00Z',
+            status='ACTIVE', created_by=self.admin,
+        )
+        self.bball_type = SportType.objects.create(name='TM Basketball', team_based=True)
+        self.vball_type = SportType.objects.create(name='TM Volleyball', team_based=True)
+        self.bball_event = SportsEvent.objects.create(
+            competition=self.comp, sport_type=self.bball_type, name='Basketball - Men',
+            team_based=True, format=SportsEvent.Format.SINGLE_ELIMINATION, status=SportsEvent.Status.READY,
+        )
+        self.vball_event = SportsEvent.objects.create(
+            competition=self.comp, sport_type=self.vball_type, name='Volleyball - Men',
+            team_based=True, format=SportsEvent.Format.SINGLE_ELIMINATION, status=SportsEvent.Status.READY,
+        )
+        t1 = Team.objects.create(name='TM Bulls', category='SPORTS', status='APPROVED', created_by=self.admin)
+        t2 = Team.objects.create(name='TM Phoenix', category='SPORTS', status='APPROVED', created_by=self.admin)
+        self.bball_match = Match.objects.create(event=self.bball_event, name='Game 1', round_number=1, status=Match.Status.SCHEDULED)
+        MatchEntry.objects.create(match=self.bball_match, team=t1, side=1)
+        MatchEntry.objects.create(match=self.bball_match, team=t2, side=2)
+        self.vball_match = Match.objects.create(event=self.vball_event, name='Game 1', round_number=1, status=Match.Status.SCHEDULED)
+        MatchEntry.objects.create(match=self.vball_match, team=t1, side=1)
+        MatchEntry.objects.create(match=self.vball_match, team=t2, side=2)
+
+    def test_admin_assigns_tournament_manager_and_scoring_rbac_is_enforced(self):
+        # Admin assigns ambalong to Basketball - Men only.
+        self.client.force_login(self.admin)
+        assign_resp = self.client.post(
+            reverse('assign_tournament_manager', args=[self.bball_event.pk]),
+            {'tournament_manager': self.tm_bball.pk},
+        )
+        self.assertRedirects(assign_resp, reverse('sport_event_detail', args=[self.bball_event.pk]))
+        self.bball_event.refresh_from_db()
+        self.assertEqual(self.bball_event.tournament_manager, self.tm_bball)
+
+        # Tournament Manager logs in -> sees only Basketball - Men on dashboard.
+        self.client.force_login(self.tm_bball)
+        dash = self.client.get(reverse('tournament_manager_dashboard'))
+        self.assertEqual(dash.status_code, 200)
+        self.assertContains(dash, 'Basketball - Men')
+        self.assertNotContains(dash, 'Volleyball - Men')
+
+        # Can view schedule (without Create/Edit controls) and record score for assigned event.
+        sched = self.client.get(reverse('match_schedule', args=[self.bball_event.pk]))
+        self.assertEqual(sched.status_code, 200)
+        self.assertContains(sched, 'Record result')
+        self.assertNotContains(sched, 'Create manual match')
+
+        score_resp = self.client.post(
+            reverse('record_match_result', args=[self.bball_match.pk]),
+            {'score_1': '78', 'score_2': '72'},
+        )
+        self.assertRedirects(score_resp, reverse('match_schedule', args=[self.bball_event.pk]))
+        self.bball_match.refresh_from_db()
+        self.assertEqual(self.bball_match.status, Match.Status.COMPLETED)
+
+        # Blocked (403) from viewing/scoring unassigned event (Volleyball - Men) and Admin views.
+        self.assertEqual(self.client.get(reverse('match_schedule', args=[self.vball_event.pk])).status_code, 403)
+        self.assertEqual(
+            self.client.post(reverse('record_match_result', args=[self.vball_match.pk]), {'score_1': '3', 'score_2': '1'}).status_code,
+            403,
+        )
+        self.vball_match.refresh_from_db()
+        self.assertEqual(self.vball_match.status, Match.Status.SCHEDULED)
+        self.assertEqual(self.client.get(reverse('sport_event_detail', args=[self.bball_event.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse('edit_match', args=[self.bball_match.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse('sports_hub')).status_code, 403)

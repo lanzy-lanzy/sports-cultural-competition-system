@@ -57,6 +57,7 @@ def role_required(*roles):
 management_required = role_required(*MANAGEMENT_ROLES)
 administrator_required = role_required(UserProfile.Role.ADMINISTRATOR)
 judge_required = role_required(UserProfile.Role.JUDGE)
+tournament_manager_required = role_required(UserProfile.Role.TOURNAMENT_MANAGER)
 
 
 def sync_staff_status(user, role):
@@ -72,6 +73,8 @@ def redirect_name_for_user(user):
     role = get_user_role(user)
     if role in MANAGEMENT_ROLES:
         return 'dashboard'
+    if role == UserProfile.Role.TOURNAMENT_MANAGER:
+        return 'tournament_manager_dashboard'
     if role == UserProfile.Role.JUDGE:
         return 'judge_dashboard'
     if role == UserProfile.Role.TEAM_MANAGER:

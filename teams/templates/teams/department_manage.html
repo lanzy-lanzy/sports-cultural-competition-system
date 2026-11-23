@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static_version %}
+
+{% block title %}Manage Departments - Competrack{% endblock %}
+{% block header_title %}Departments{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static_v 'css/teams.css' %}">{% endblock %}
+
+{% block content %}
+<div class="team-ui mx-auto max-w-4xl space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <a href="{% url 'team_list' %}" class="text-sm font-bold text-campus hover:underline">&larr; Back to Teams</a>
+    </div>
+
+    <header class="rounded-xl border border-slate-200 border-t-4 border-t-pine bg-white p-5 shadow-sm sm:p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-campus">Department Configuration</p>
+        <h1 class="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Manage Departments</h1>
+        <p class="mt-1.5 text-sm text-slate-500">Add or manage academic departments available for Team Manager registration. Once a department has an approved team, it is automatically locked from new team registrations.</p>
+    </header>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="font-display text-lg font-bold text-ink">Add New Department</h2>
+        <form method="post" class="mt-4 grid gap-4 sm:grid-cols-12 sm:items-end">
+            {% csrf_token %}
+            <div class="sm:col-span-4">
+                <label for="{{ form.code.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">Department Code *</label>
+                {{ form.code }}
+                {% for error in form.code.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="sm:col-span-5">
+                <label for="{{ form.name.id_for_label }}" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">Full Name (Optional)</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}<p class="mt-1 text-xs font-semibold text-rose-600">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="sm:col-span-3">
+                <button type="submit" class="tw-button tw-button-primary w-full">Add Department</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+            <h2 class="font-display text-lg font-bold text-ink">Departments ({{ rows|length }})</h2>
+        </div>
+        {% if rows %}
+        <div class="divide-y divide-slate-100">
+            {% for row in rows %}
+            <div class="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="rounded bg-moss px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-pine-deep">{{ row.department.code }}</span>
+                        {% if not row.department.is_active %}
+                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-500">Disabled</span>
+                        {% elif row.approved_team %}
+                        <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">Approved: {{ row.approved_team.name }} (Locked)</span>
+                        {% else %}
+                        <span class="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">Available</span>
+                        {% endif %}
+                    </div>
+                    {% if row.department.name %}
+                    <p class="mt-1 text-sm text-slate-600">{{ row.department.name }}</p>
+                    {% endif %}
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <form method="post" action="{% url 'toggle_department' row.department.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="tw-button tw-button-secondary !min-h-[36px] !px-3 !py-1.5 !text-xs">
+                            {% if row.department.is_active %}Disable{% else %}Enable{% endif %}
+                        </button>
+                    </form>
+                    {% if row.team_count == 0 %}
+                    <form method="post" action="{% url 'delete_department' row.department.id %}" onsubmit="return confirm('Delete department {{ row.department.code }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="tw-button tw-button-danger">Delete</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="px-6 py-10 text-center text-sm text-slate-500">No departments added yet.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}My Tournaments - Competrack{% endblock %}
+{% block header_title %}Tournament Manager{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <header class="rounded-xl border border-slate-200 border-t-4 border-t-pine bg-white p-5 shadow-sm sm:p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-campus">Designated Sports Scoring</p>
+        <h1 class="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">
+            {% if is_tournament_manager_only %}My Assigned Tournaments{% else %}Assigned Tournament Managers{% endif %}
+        </h1>
+        <p class="mt-1.5 text-sm text-slate-500">
+            {% if is_tournament_manager_only %}
+            Record and update official match scores strictly for the sports event(s) assigned to you by the Admin.
+            {% else %}
+            Overview of sports events with designated Tournament Managers.
+            {% endif %}
+        </p>
+    </header>
+
+    {% if assigned_events %}
+    <div class="grid gap-5 md:grid-cols-2">
+        {% for event in assigned_events %}
+        <article class="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="rounded bg-moss px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-pine-deep">{{ event.sport_type.name }}</span>
+                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold
+                        {% if event.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700
+                        {% elif event.status == 'ONGOING' %}bg-cyan-100 text-cyan-700
+                        {% else %}bg-amber-100 text-amber-800{% endif %}">
+                        {{ event.get_status_display }}
+                    </span>
+                </div>
+                <h2 class="mt-2 font-display text-xl font-bold text-ink">{{ event.name }}</h2>
+                <p class="mt-1 text-xs text-slate-500">
+                    {{ event.competition.name }} &middot; {{ event.get_format_display }}
+                    {% if event.venue %}&middot; {{ event.venue.name }}{% endif %}
+                </p>
+                {% if not is_tournament_manager_only and event.tournament_manager %}
+                <p class="mt-2 text-xs font-semibold text-campus">
+                    Manager: {{ event.tournament_manager.get_full_name|default:event.tournament_manager.username }} ({{ event.tournament_manager.username }})
+                </p>
+                {% endif %}
+            </div>
+
+            <dl class="grid grid-cols-3 divide-x divide-slate-100 bg-slate-50/70 px-3 py-3 text-center">
+                <div>
+                    <dt class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matches</dt>
+                    <dd class="mt-0.5 font-display text-lg font-bold text-ink">{{ event.match_total }}</dd>
+                </div>
+                <div>
+                    <dt class="text-[10px] font-bold uppercase tracking-wider text-slate-400">To Score</dt>
+                    <dd class="mt-0.5 font-display text-lg font-bold text-amber-700">{{ event.match_pending }}</dd>
+                </div>
+                <div>
+                    <dt class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Completed</dt>
+                    <dd class="mt-0.5 font-display text-lg font-bold text-emerald-700">{{ event.match_done }}</dd>
+                </div>
+            </dl>
+
+            <div class="mt-auto grid grid-cols-1 gap-2 border-t border-slate-100 p-4 sm:grid-cols-3">
+                <a href="{% url 'match_schedule' event.id %}" class="rounded-lg bg-pine px-3 py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-pine-deep">Score Matches</a>
+                <a href="{% url 'event_bracket' event.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-xs font-bold text-slate-700 transition hover:border-pine hover:text-pine">Bracket</a>
+                <a href="{% url 'event_standings' event.id %}" class="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-center text-xs font-bold text-slate-700 transition hover:border-pine hover:text-pine">Standings</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+        <h2 class="font-display text-lg font-bold text-ink">No Sports Events Assigned Yet</h2>
+        <p class="mt-1.5 text-sm text-slate-500">Ask the System Administrator to assign you as the Tournament Manager for a specific sports event.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -811,3 +811,29 @@ class SportsTournamentFormatTest(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Criterion.objects.get().name, 'TECHNIQUE')
+
+    def test_static_sport_dropdown_and_auto_event_creation_with_static_venue(self):
+        get_resp = self.client.get(reverse('create_competition'))
+        self.assertContains(get_resp, 'name="static_event"')
+        self.assertContains(get_resp, 'name="tournament_format"')
+        self.assertContains(get_resp, 'name="players_per_event"')
+        self.assertContains(get_resp, 'Basketball 5x5')
+        self.assertContains(get_resp, 'JHCSC Basketball Court')
+
+        post_resp = self.client.post(reverse('create_competition'), {
+            **self.data,
+            'name': '',
+            'static_event': 'basketball_5x5',
+            'tournament_format': Competition.TournamentFormat.SINGLE_ELIMINATION,
+            'players_per_event': '15',
+            'sport_division': 'BOTH',
+        })
+        self.assertEqual(post_resp.status_code, 302)
+        comp = Competition.objects.get(name='BASKETBALL 5X5')
+        events = list(comp.sport_events.select_related('venue', 'sport_type').order_by('name'))
+        self.assertEqual([e.name for e in events], ['Basketball 5x5 - Men', 'Basketball 5x5 - Women'])
+        for ev in events:
+            self.assertEqual(ev.sport_type.name, 'Basketball')
+            self.assertEqual(ev.format, SportsEvent.Format.SINGLE_ELIMINATION)
+            self.assertEqual(ev.venue.name, 'JHCSC Basketball Court')
+            self.assertEqual(ev.players_per_event, 15)

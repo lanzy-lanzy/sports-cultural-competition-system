@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Auto-Match Setup - {{ event.name }}{% endblock %}
+{% block header_title %}Auto-Match Setup{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        {% if from_board %}
+        <a href="{% url 'match_board' %}" class="text-sm font-semibold text-campus hover:underline">&larr; Back to Match Board</a>
+        {% else %}
+        <a href="{% url 'sport_event_detail' event.id %}" class="text-sm font-semibold text-campus hover:underline">&larr; Back to {{ event.name }}</a>
+        {% endif %}
+        <span class="rounded-full bg-moss px-3 py-1 text-xs font-bold text-pine-deep">{{ event.get_format_display }}</span>
+    </div>
+
+    <header class="rounded-xl border border-slate-200 border-t-4 border-t-pine bg-white p-5 shadow-sm sm:p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-campus">{{ event.competition.name }} &middot; {{ event.sport_type.name }}</p>
+        <h1 class="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Auto-Match Setup &mdash; {{ event.name }}</h1>
+        <p class="mt-1.5 text-sm text-slate-600">
+            Assign each registered {% if event.team_based %}team{% else %}participant{% endif %} to a slot
+            (<strong>Team 1</strong> to <strong>Team {{ confirmed_entries|length|default:4 }}</strong>) before generating matches.
+        </p>
+
+        {% if from_board and open_events %}
+        <form method="get" class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center">
+            <label for="automatch-event-select" class="text-xs font-bold uppercase tracking-wider text-slate-500">Sports Event</label>
+            <select id="automatch-event-select" name="event" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 sm:max-w-md">
+                {% for ev in open_events %}
+                <option value="{{ ev.id }}" {% if ev.id == event.id %}selected{% endif %}>{{ ev.competition.name }} — {{ ev.name }} ({{ ev.confirmed_count }} confirmed)</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </header>
+
+    {% if pending_entries_count %}
+    <div class="rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900">
+        <strong>Note:</strong> {{ pending_entries_count }} entr{{ pending_entries_count|pluralize:"y,ies" }} on this event {{ pending_entries_count|pluralize:"is,are" }} still pending confirmation. Only <strong>Confirmed</strong> registered teams are included in Auto-Match.
+    </div>
+    {% endif %}
+
+    {% if bracket_generated %}
+    <div class="rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
+        <h2 class="font-display text-lg font-bold text-ink">Matches Already Generated</h2>
+        <p class="mt-1 text-sm text-slate-600">This event already has generated matches. Clear the existing bracket first if you want to re-assign Team 1&ndash;Team {{ confirmed_entries|length }} and regenerate.</p>
+        <div class="mt-4 flex flex-wrap gap-3">
+            <a href="{% url 'match_schedule' event.id %}" class="rounded-lg bg-pine px-4 py-2.5 text-sm font-bold text-white hover:bg-pine-deep">View Match Schedule</a>
+            <a href="{% url 'sport_event_detail' event.id %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Manage Event</a>
+        </div>
+    </div>
+    {% elif confirmed_entries|length < 2 %}
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+        <h2 class="font-display text-lg font-bold text-ink">At least 2 confirmed registered teams are required</h2>
+        <p class="mt-1.5 text-sm text-slate-500">
+            Currently {{ confirmed_entries|length }} confirmed entr{{ confirmed_entries|length|pluralize:"y,ies" }} registered for <strong>{{ event.name }}</strong>.
+            Approve team event registrations or add confirmed teams to this event first.
+        </p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+            <a href="{% url 'sport_event_detail' event.id %}" class="rounded-lg bg-pine px-4 py-2.5 text-sm font-bold text-white hover:bg-pine-deep">Go to Event Entries</a>
+            <a href="{% url 'registration_review_queue' %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Review Registrations</a>
+        </div>
+    </div>
+    {% else %}
+    <form method="post" class="grid gap-6 lg:grid-cols-12" data-automatch-form data-direct-pairing="{% if is_direct_pairing %}1{% else %}0{% endif %}">
+        {% csrf_token %}
+        {% if from_board %}
+        <input type="hidden" name="event_id" value="{{ event.id }}">
+        <input type="hidden" name="next" value="match_board">
+        {% endif %}
+
+        <!-- Slot Assignment -->
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:col-span-7">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-display text-lg font-bold text-ink">Assign Team 1 to Team {{ slots|length }}</h2>
+                    <p class="text-xs text-slate-500">Choose which registered team occupies each slot. Picking a team already in another slot swaps them automatically.</p>
+                </div>
+                <button type="button" data-automatch-shuffle class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-pine hover:text-pine">
+                    Shuffle Teams
+                </button>
+            </div>
+
+            <div class="space-y-3" data-automatch-slots>
+                {% for slot in slots %}
+                <div class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div class="flex shrink-0 items-center gap-2 sm:w-28">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-pine font-display text-xs font-bold text-white">{{ slot.number }}</span>
+                        <label for="slot-entry-{{ slot.number }}" class="text-sm font-bold text-ink">Team {{ slot.number }}</label>
+                    </div>
+                    <select id="slot-entry-{{ slot.number }}" name="slot_entry" data-slot-select data-slot-number="{{ slot.number }}" required
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-pine focus:outline-none focus:ring-2 focus:ring-pine/20">
+                        {% for entry in confirmed_entries %}
+                        <option value="{{ entry.id }}" {% if slot.selected_id == entry.id|stringformat:'s' %}selected{% endif %}>
+                            {{ entry.display_name }}{% if entry.team and entry.team.department %} ({{ entry.team.get_department_display }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="font-display text-sm font-bold text-ink">Auto-Schedule &amp; Static Venue</h3>
+                        <p class="text-xs text-slate-500">Matches are automatically scheduled without venue conflicts and remain editable anytime if schedules change.</p>
+                    </div>
+                    {% if default_venue %}
+                    <span class="rounded-full bg-moss px-2.5 py-1 text-[11px] font-bold text-pine-deep">Static: {{ default_venue.name }}</span>
+                    {% endif %}
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label for="automatch-venue" class="mb-1 block text-xs font-bold text-slate-600">Venue</label>
+                        <select id="automatch-venue" name="venue_id" data-schedule-venue class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                            <option value="">Auto-assign static venue</option>
+                            {% for venue in venues %}
+                            <option value="{{ venue.id }}" {% if selected_venue_id == venue.id|stringformat:'s' %}selected{% endif %}>{{ venue.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="automatch-start" class="mb-1 block text-xs font-bold text-slate-600">First Match Start (Asia/Manila)</label>
+                        <input id="automatch-start" type="datetime-local" name="start_time" value="{{ schedule_start_value }}" data-schedule-start
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                    </div>
+                    <div>
+                        <label for="automatch-duration" class="mb-1 block text-xs font-bold text-slate-600">Match Duration (mins)</label>
+                        <input id="automatch-duration" type="number" min="10" max="480" name="duration_minutes" value="{{ duration_minutes }}" data-schedule-duration
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                    </div>
+                    <div>
+                        <label for="automatch-break" class="mb-1 block text-xs font-bold text-slate-600">Break Between Matches (mins)</label>
+                        <input id="automatch-break" type="number" min="0" max="240" name="break_minutes" value="{{ break_minutes }}" data-schedule-break
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-col gap-2.5 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <a href="{% if from_board %}{% url 'match_board' %}{% else %}{% url 'sport_event_detail' event.id %}{% endif %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</a>
+                <button type="submit" class="cursor-pointer rounded-lg bg-pine px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-pine-deep">
+                    Generate &amp; Schedule Auto-Matches
+                </button>
+            </div>
+        </section>
+
+        <!-- Live Matchup Preview -->
+        <aside class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5">
+            <h2 class="font-display text-lg font-bold text-ink">Live Matchup Preview</h2>
+            <p class="mt-1 text-xs text-slate-500">
+                {% if is_direct_pairing %}
+                Round 1 pairs <strong>Team 1 vs Team 2</strong>, <strong>Team 3 vs Team 4</strong>, and winners advance automatically.
+                {% else %}
+                Matches will be generated in <strong>{{ event.get_format_display }}</strong> format using your exact Team 1&ndash;Team {{ slots|length }} order.
+                {% endif %}
+            </p>
+            <div class="mt-4 space-y-3" data-automatch-preview aria-live="polite"></div>
+        </aside>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+(() => {
+    const form = document.querySelector('[data-automatch-form]');
+    if (!form) return;
+
+    const selects = Array.from(form.querySelectorAll('[data-slot-select]'));
+    const preview = form.querySelector('[data-automatch-preview]');
+    const shuffleBtn = form.querySelector('[data-automatch-shuffle]');
+    const venueSelect = form.querySelector('[data-schedule-venue]');
+    const startInput = form.querySelector('[data-schedule-start]');
+    const durationInput = form.querySelector('[data-schedule-duration]');
+    const breakInput = form.querySelector('[data-schedule-break]');
+    const isDirect = form.dataset.directPairing === '1';
+
+    let previousValues = selects.map(s => s.value);
+
+    function getLabel(select) {
+        const opt = select.options[select.selectedIndex];
+        return opt ? opt.textContent.trim() : 'TBD';
+    }
+
+    function formatSlot(startDate, durationMin) {
+        if (!startDate || Number.isNaN(startDate.getTime())) return '';
+        const endDate = new Date(startDate.getTime() + durationMin * 60000);
+        const dayStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const sStr = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const eStr = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return `${dayStr} · ${sStr} – ${eStr}`;
+    }
+
+    function renderPreview() {
+        const names = selects.map(s => getLabel(s));
+        const n = names.length;
+        const venueLabel = venueSelect && venueSelect.value ? getLabel(venueSelect) : '{{ default_venue.name|default:"Static Venue"|escapejs }}';
+        const durationMin = Math.max(10, parseInt(durationInput?.value || '90', 10) || 90);
+        const breakMin = Math.max(0, parseInt(breakInput?.value || '15', 10) || 0);
+        let cursor = startInput?.value ? new Date(startInput.value) : null;
+        preview.innerHTML = '';
+
+        if (isDirect) {
+            const matches = [];
+            let idx = 0;
+            let matchNum = 1;
+            if (n % 2 === 1) {
+                matches.push({ title: `Match ${matchNum++} (Bye)`, a: names[0], b: 'BYE (Advances)', isBye: true });
+                idx = 1;
+            }
+            while (idx < n) {
+                matches.push({
+                    title: `Match ${matchNum++} · Round 1`,
+                    a: `Team ${idx + 1}: ${names[idx]}`,
+                    b: idx + 1 < n ? `Team ${idx + 2}: ${names[idx + 1]}` : 'BYE',
+                    isBye: false,
+                });
+                idx += 2;
+            }
+            matches.forEach(m => {
+                let timeHtml = '';
+                if (!m.isBye && cursor && !Number.isNaN(cursor.getTime())) {
+                    if (cursor.getHours() >= 18) {
+                        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1, 8, 0, 0);
+                    }
+                    timeHtml = `<p class="mt-2 border-t border-slate-200/80 pt-1.5 text-[11px] font-medium text-slate-500">${venueLabel} &middot; ${formatSlot(cursor, durationMin)}</p>`;
+                    cursor = new Date(cursor.getTime() + (durationMin + breakMin) * 60000);
+                }
+                const card = document.createElement('div');
+                card.className = 'rounded-lg border border-slate-200 bg-slate-50/70 p-3.5';
+                card.innerHTML = `
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-campus">${m.title}</p>
+                    <p class="mt-1.5 text-sm font-bold text-ink">${m.a}</p>
+                    <p class="my-0.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">vs</p>
+                    <p class="text-sm font-bold text-ink">${m.b}</p>
+                    ${timeHtml}
+                `;
+                preview.appendChild(card);
+            });
+            if (n > 2) {
+                let nextTime = '';
+                if (cursor && !Number.isNaN(cursor.getTime())) {
+                    if (cursor.getHours() >= 18) {
+                        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1, 8, 0, 0);
+                    }
+                    nextTime = `<p class="mt-1.5 text-[11px] font-semibold text-emerald-700">${venueLabel} &middot; ${formatSlot(cursor, durationMin)}</p>`;
+                }
+                const nextCard = document.createElement('div');
+                nextCard.className = 'rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-3.5';
+                nextCard.innerHTML = `
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Next Round / Finals</p>
+                    <p class="mt-1 text-xs text-slate-600">Winners from Round 1 automatically advance into the next bracket round.</p>
+                    ${nextTime}
+                `;
+                preview.appendChild(nextCard);
+            }
+        } else {
+            names.forEach((name, i) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm';
+                row.innerHTML = `<span class="rounded bg-pine px-2 py-0.5 text-xs font-bold text-white">Team ${i + 1}</span><span class="font-semibold text-ink">${name}</span>`;
+                preview.appendChild(row);
+            });
+        }
+    }
+
+    [venueSelect, startInput, durationInput, breakInput].forEach(el => {
+        if (el) el.addEventListener('change', renderPreview);
+        if (el) el.addEventListener('input', renderPreview);
+    });
+
+    selects.forEach((select, index) => {
+        select.addEventListener('change', () => {
+            const newVal = select.value;
+            const oldVal = previousValues[index];
+            const duplicateIdx = selects.findIndex((other, idx) => idx !== index && other.value === newVal);
+            if (duplicateIdx !== -1 && oldVal) {
+                selects[duplicateIdx].value = oldVal;
+            }
+            previousValues = selects.map(s => s.value);
+            renderPreview();
+        });
+    });
+
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => {
+            const values = selects.map(s => s.value);
+            for (let i = values.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [values[i], values[j]] = [values[j], values[i]];
+            }
+            selects.forEach((s, i) => { s.value = values[i]; });
+            previousValues = selects.map(s => s.value);
+            renderPreview();
+        });
+    }
+
+    renderPreview();
+})();
+</script>
+{% endblock %}

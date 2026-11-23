@@ -110,7 +110,7 @@ def participant_detail(request, participant_id):
     return render(request, 'participants/participant_detail.html', context)
 
 
-@management_required
+@role_required(UserProfile.Role.TEAM_MANAGER)
 def create_participant(request):
     data = request.POST.copy() if request.method == 'POST' else None
     if data is not None:

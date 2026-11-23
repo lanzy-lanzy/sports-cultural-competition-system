@@ -2,6 +2,8 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import JsonResponse
@@ -12,20 +14,60 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from competitions.models import Competition
-from accounts.access import management_required
+from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required, role_required
+from accounts.models import UserProfile
 from .forms import BoardManualMatchForm, EventEntryForm, ManualMatchForm, SportsEventForm, SportTypeForm, VenueForm
 from .models import EventEntry, Match, SportsEvent, SportType, Venue
 from .services import (
+    automatch_with_slots,
     compute_elimination_standings,
     compute_group_stage_standings,
     compute_standings,
     delete_bracket,
     generate_bracket,
+    get_event_static_schedule_defaults,
     group_stage_overview,
     match_overview,
     record_match_result,
 )
 from audit.models import record_action_from_request
+
+
+SCORING_ROLES = MANAGEMENT_ROLES | {UserProfile.Role.TOURNAMENT_MANAGER}
+scoring_access_required = role_required(*SCORING_ROLES)
+
+
+def _require_event_scoring_access(user, event):
+    """Allow management roles or the Tournament Manager explicitly assigned to ``event``."""
+    role = get_user_role(user)
+    if role in MANAGEMENT_ROLES:
+        return
+    if role == UserProfile.Role.TOURNAMENT_MANAGER and event.tournament_manager_id == user.id:
+        return
+    raise PermissionDenied('You can only access or record scores for your designated sports event.')
+
+
+@scoring_access_required
+def tournament_manager_dashboard(request):
+    """Dashboard for Tournament Managers listing only their designated sports events."""
+    role = get_user_role(request.user)
+    events = SportsEvent.objects.select_related(
+        'competition', 'sport_type', 'venue', 'tournament_manager',
+    ).annotate(
+        match_total=Count('matches', distinct=True),
+        match_done=Count('matches', distinct=True, filter=Q(matches__status=Match.Status.COMPLETED)),
+        match_pending=Count('matches', distinct=True, filter=Q(matches__status__in=[Match.Status.SCHEDULED, Match.Status.ONGOING])),
+    )
+    if role == UserProfile.Role.TOURNAMENT_MANAGER:
+        events = events.filter(tournament_manager=request.user)
+    else:
+        events = events.filter(tournament_manager__isnull=False)
+    events = list(events.order_by('-competition__start_date', 'name'))
+
+    return render(request, 'sports/tournament_manager_dashboard.html', {
+        'assigned_events': events,
+        'is_tournament_manager_only': role == UserProfile.Role.TOURNAMENT_MANAGER,
+    })
 
 
 @management_required
@@ -350,19 +392,61 @@ def edit_sport_event(request, event_id):
 
 @management_required
 def sport_event_detail(request, event_id):
-    event = get_object_or_404(SportsEvent.objects.select_related('competition', 'sport_type', 'venue'), id=event_id)
+    event = get_object_or_404(
+        SportsEvent.objects.select_related('competition', 'sport_type', 'venue', 'tournament_manager'),
+        id=event_id,
+    )
     entries = event.entries.select_related('team', 'participant').order_by('seed', 'id')
     matches = event.matches.select_related('venue').prefetch_related('entries__team', 'entries__participant').order_by('round_number', 'id')
+    User = get_user_model()
+    tournament_managers = User.objects.filter(
+        is_active=True,
+        account_profile__role=UserProfile.Role.TOURNAMENT_MANAGER,
+    ).order_by('first_name', 'last_name', 'username')
     return render(request, 'sports/event_detail.html', {
         'event': event,
         'entries': entries,
         'matches': matches,
         'overview': match_overview(event),
         'entry_form': EventEntryForm(event=event),
+        'tournament_managers': tournament_managers,
         'bracket_generated': event.matches.exists(),
         'can_clear_bracket': not event.confirmed_at and not event.matches.filter(status='COMPLETED', entries__score__isnull=False).exists(),
         **_workflow_context(event),
     })
+
+
+@management_required
+@require_POST
+def assign_tournament_manager(request, event_id):
+    event = get_object_or_404(SportsEvent, id=event_id)
+    raw_user_id = (request.POST.get('tournament_manager') or '').strip()
+    if not raw_user_id:
+        event.tournament_manager = None
+        event.save(update_fields=['tournament_manager', 'updated_at'])
+        messages.success(request, f'Tournament Manager unassigned from {event.name}.')
+        return redirect('sport_event_detail', event_id=event.id)
+
+    User = get_user_model()
+    manager = User.objects.filter(
+        pk=int(raw_user_id) if raw_user_id.isdigit() else 0,
+        is_active=True,
+        account_profile__role=UserProfile.Role.TOURNAMENT_MANAGER,
+    ).first()
+    if manager is None:
+        messages.error(request, 'Select a valid active Tournament Manager account.')
+        return redirect('sport_event_detail', event_id=event.id)
+
+    event.tournament_manager = manager
+    event.save(update_fields=['tournament_manager', 'updated_at'])
+    record_action_from_request(
+        request,
+        'TOURNAMENT_MANAGER_ASSIGNED',
+        target=event,
+        details=f'Assigned {manager.get_full_name() or manager.username} ({manager.username}) as Tournament Manager for {event.name}',
+    )
+    messages.success(request, f'Assigned {manager.get_full_name() or manager.username} as Tournament Manager for {event.name}.')
+    return redirect('sport_event_detail', event_id=event.id)
 
 
 @management_required
@@ -426,6 +510,142 @@ def remove_event_entry(request, event_id, entry_id):
     return redirect('sport_event_detail', event_id=event.id)
 
 
+def _render_automatch_setup(request, event, *, from_board=False, open_events=None):
+    confirmed_entries = list(
+        event.entries.filter(status=EventEntry.Status.CONFIRMED)
+        .select_related('team', 'participant')
+        .order_by('seed', 'id')
+    )
+    pending_entries_count = event.entries.filter(status=EventEntry.Status.PENDING).count()
+    bracket_generated = event.matches.exists()
+    default_venue, default_duration, default_start = get_event_static_schedule_defaults(event)
+    venues = list(Venue.objects.filter(is_active=True).order_by('name'))
+
+    raw_venue_id = (request.POST.get('venue_id') or '').strip() if request.method == 'POST' else (
+        str(default_venue.id) if default_venue else ''
+    )
+    raw_start = (request.POST.get('start_time') or '').strip() if request.method == 'POST' else (
+        default_start.strftime('%Y-%m-%dT%H:%M')
+    )
+    raw_duration = (request.POST.get('duration_minutes') or '').strip() if request.method == 'POST' else str(default_duration)
+    raw_break = (request.POST.get('break_minutes') or '').strip() if request.method == 'POST' else '15'
+
+    if request.method == 'POST':
+        slot_entry_ids = request.POST.getlist('slot_entry')
+        selected_venue = None
+        if raw_venue_id.isdigit():
+            selected_venue = Venue.objects.filter(id=int(raw_venue_id)).first()
+        parsed_start = None
+        if raw_start:
+            try:
+                parsed_start = datetime.strptime(raw_start, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                messages.error(request, 'Enter a valid start date and time for auto-scheduling.')
+                parsed_start = False
+
+        if parsed_start is not False:
+            try:
+                parsed_duration = int(raw_duration) if raw_duration else default_duration
+                parsed_break = int(raw_break) if raw_break else 15
+            except ValueError:
+                messages.error(request, 'Duration and break minutes must be whole numbers.')
+            else:
+                try:
+                    created_matches = automatch_with_slots(
+                        event,
+                        slot_entry_ids,
+                        venue=selected_venue,
+                        start_time=parsed_start,
+                        duration_minutes=parsed_duration,
+                        break_minutes=parsed_break,
+                    )
+                except ValueError as error:
+                    messages.error(request, str(error))
+                else:
+                    venue_label = (selected_venue or default_venue).name if (selected_venue or default_venue) else 'TBD'
+                    record_action_from_request(
+                        request,
+                        'BRACKET_GENERATED',
+                        target=event,
+                        details=f'Auto-match generated and scheduled {len(created_matches)} match(es) for {event.name} at {venue_label}',
+                    )
+                    messages.success(
+                        request,
+                        f'Auto-match generated and scheduled {len(created_matches)} match(es) at {venue_label}. You can adjust any match schedule anytime.',
+                    )
+                    if from_board or request.POST.get('next') == 'match_board':
+                        return redirect('match_board')
+                    return redirect('match_schedule', event_id=event.id)
+
+    selected_ids = (
+        request.POST.getlist('slot_entry')
+        if request.method == 'POST' and request.POST.getlist('slot_entry')
+        else [str(entry.id) for entry in confirmed_entries]
+    )
+    slots = [
+        {
+            'number': idx + 1,
+            'selected_id': selected_ids[idx] if idx < len(selected_ids) else '',
+        }
+        for idx in range(len(confirmed_entries))
+    ]
+
+    return render(request, 'sports/automatch_setup.html', {
+        'event': event,
+        'confirmed_entries': confirmed_entries,
+        'pending_entries_count': pending_entries_count,
+        'bracket_generated': bracket_generated,
+        'slots': slots,
+        'from_board': from_board,
+        'open_events': open_events or [],
+        'is_direct_pairing': event.format in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT),
+        'venues': venues,
+        'selected_venue_id': raw_venue_id,
+        'default_venue': default_venue,
+        'schedule_start_value': raw_start,
+        'duration_minutes': raw_duration,
+        'break_minutes': raw_break,
+    })
+
+
+@management_required
+def automatch_setup(request, event_id):
+    event = get_object_or_404(
+        SportsEvent.objects.select_related('competition', 'sport_type', 'venue'),
+        id=event_id,
+    )
+    return _render_automatch_setup(request, event, from_board=False)
+
+
+@management_required
+def board_automatch_setup(request):
+    open_events = list(
+        SportsEvent.objects.filter(confirmed_at__isnull=True)
+        .exclude(status__in=[SportsEvent.Status.COMPLETED, SportsEvent.Status.CANCELLED])
+        .select_related('competition', 'sport_type', 'venue')
+        .order_by('-competition__start_date', 'name')
+    )
+    raw_event_id = (
+        request.POST.get('event_id') if request.method == 'POST' else request.GET.get('event')
+    ) or ''
+    selected_event = None
+    if raw_event_id.isdigit():
+        selected_event = next((ev for ev in open_events if ev.id == int(raw_event_id)), None)
+    if selected_event is None and open_events:
+        selected_event = open_events[0]
+
+    if selected_event is None:
+        messages.warning(request, 'Create an open sports event first before using Auto-Match.')
+        return redirect('match_board')
+
+    return _render_automatch_setup(
+        request,
+        selected_event,
+        from_board=True,
+        open_events=open_events,
+    )
+
+
 @management_required
 @require_POST
 def generate_event_bracket(request, event_id):
@@ -463,15 +683,18 @@ def clear_event_bracket(request, event_id):
     return redirect('sport_event_detail', event_id=event.id)
 
 
-@management_required
+@scoring_access_required
 def match_schedule(request, event_id):
-    event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
+    event = get_object_or_404(SportsEvent.objects.select_related('competition', 'tournament_manager'), id=event_id)
+    _require_event_scoring_access(request.user, event)
     matches = event.matches.select_related('venue').prefetch_related('entries__team', 'entries__participant').order_by('round_number', 'id')
     from sms.services import is_configured
+    can_manage_schedule = get_user_role(request.user) in MANAGEMENT_ROLES
     return render(request, 'sports/match_schedule.html', {
         'event': event,
         'matches': matches,
-        'sms_configured': is_configured(),
+        'sms_configured': is_configured() and can_manage_schedule,
+        'can_manage_schedule': can_manage_schedule,
     })
 
 
@@ -735,10 +958,11 @@ def edit_match(request, match_id):
     })
 
 
-@management_required
+@scoring_access_required
 @require_POST
 def record_match_result_view(request, match_id):
     match = get_object_or_404(Match.objects.select_related('event'), id=match_id)
+    _require_event_scoring_access(request.user, match.event)
     scores = {
         1: request.POST.get('score_1'),
         2: request.POST.get('score_2'),
@@ -772,9 +996,10 @@ def record_match_result_view(request, match_id):
     return redirect('match_schedule', event_id=match.event_id)
 
 
-@management_required
+@scoring_access_required
 def event_standings(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
+    _require_event_scoring_access(request.user, event)
     if event.format == SportsEvent.Format.GROUP_STAGE:
         return render(request, 'sports/group_standings.html', {
             'event': event,
@@ -978,10 +1203,12 @@ def _scheduled_bracket_event(fallback, now=None):
     return next((m.event for m in selected if m.event_id == fallback.pk), selected[0].event if selected else fallback)
 
 
-@management_required
+@scoring_access_required
 def event_bracket(request, event_id):
     event = get_object_or_404(SportsEvent.objects.select_related('competition'), id=event_id)
-    follow_schedule = request.GET.get('follow', '0' if request.GET.get('format') == 'json' else '1') == '1'
+    _require_event_scoring_access(request.user, event)
+    is_tm_only = get_user_role(request.user) == UserProfile.Role.TOURNAMENT_MANAGER
+    follow_schedule = False if is_tm_only else (request.GET.get('follow', '0' if request.GET.get('format') == 'json' else '1') == '1')
     if follow_schedule:
         event = _scheduled_bracket_event(event)
     bracket = bracket_payload(event)

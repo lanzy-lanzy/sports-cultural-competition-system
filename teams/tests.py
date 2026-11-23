@@ -600,3 +600,267 @@ class TeamBulkAndEventsTest(TestCase):
             with self.captureOnCommitCallbacks(execute=True):
                 self.client.post(reverse('bulk_delete_teams'), {'selected':[self.team.pk],'confirm':'yes'})
             delete.assert_called_once_with('team_logos/bulk-test.png')
+
+
+class DepartmentTeamManagerWorkflowTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('dept-admin', 'admin@example.com', 'pass')
+        self.manager = User.objects.create_user('safes-mgr', 'safes@example.com', 'pass')
+        self.manager.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        self.manager.account_profile.save(update_fields=['role', 'updated_at'])
+
+        self.comp = Competition.objects.create(
+            name='Intramurals 2026', description='Sports meet',
+            kind=Competition.Kind.SPORTS, status='ACTIVE',
+            start_date='2026-03-01T08:00:00Z', end_date='2026-03-05T17:00:00Z',
+            created_by=self.admin,
+        )
+        self.basketball = SportType.objects.create(name='Dept Basketball', team_based=True)
+        self.event = SportsEvent.objects.create(
+            competition=self.comp, sport_type=self.basketball,
+            name='Basketball Men', team_based=True,
+            format=SportsEvent.Format.SINGLE_ELIMINATION,
+            status=SportsEvent.Status.REGISTRATION,
+        )
+
+    def test_departments_and_full_team_manager_workflow(self):
+        self.assertEqual(set(Team.Department.values), {'SAFES', 'SOCJE', 'STE', 'SCS'})
+
+        # 1. Admin cannot create teams or register players.
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('create_team')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('create_participant')).status_code, 403)
+
+        # 2. Team Manager submits department team registration -> PENDING.
+        self.client.force_login(self.manager)
+        resp = self.client.post(reverse('create_team'), {
+            'department': Team.Department.SAFES,
+            'name': 'SAFES Stallions',
+            'category': Team.Category.SPORTS,
+            'sports_categories': [self.basketball.pk],
+        })
+        team = Team.objects.get(name='SAFES Stallions')
+        self.assertRedirects(resp, reverse('team_detail', args=[team.pk]))
+        self.assertEqual(team.department, Team.Department.SAFES)
+        self.assertEqual(team.status, Team.Status.PENDING)
+
+        # 3. Pending team cannot register players, submit roster, or register for events.
+        self.assertEqual(self.client.post(reverse('register_team_player', args=[team.pk]), {
+            'first_name': 'Juan', 'last_name': 'Dela Cruz', 'phone': '09171234567',
+            'gender': 'male', 'category': 'OPEN',
+        }).status_code, 403)
+        self.assertEqual(self.client.post(reverse('submit_team_roster', args=[team.pk])).status_code, 403)
+        reg_resp = self.client.get(reverse('register_for_event'))
+        self.assertNotIn('team', reg_resp.context['form'].fields)
+
+        # 4. Admin can reject, then approve the department team.
+        self.client.force_login(self.admin)
+        self.client.post(reverse('update_team_status', args=[team.pk]), {'status': Team.Status.REJECTED})
+        team.refresh_from_db()
+        self.assertEqual(team.status, Team.Status.REJECTED)
+
+        self.client.post(reverse('update_team_status', args=[team.pk]), {'status': Team.Status.APPROVED})
+        team.refresh_from_db()
+        self.assertEqual(team.status, Team.Status.APPROVED)
+
+        # 5. Admin still cannot register players or mutate the approved team's roster.
+        self.assertEqual(self.client.post(reverse('register_team_player', args=[team.pk]), {
+            'first_name': 'Admin', 'last_name': 'Blocked', 'phone': '0917',
+            'gender': 'male', 'category': 'OPEN',
+        }).status_code, 403)
+
+        # 6. Team Manager registers a player under the approved team and assigns sports event.
+        self.client.force_login(self.manager)
+        player_resp = self.client.post(reverse('register_team_player', args=[team.pk]), {
+            'first_name': 'Juan', 'last_name': 'Dela Cruz', 'phone': '09171234567',
+            'identification_number': '2026-001', 'age': 20,
+            'gender': 'male', 'category': 'OPEN', 'member_number': 7,
+            'events': [self.event.pk],
+        })
+        self.assertRedirects(player_resp, reverse('team_detail', args=[team.pk]))
+        membership = TeamMembership.objects.get(team=team)
+        self.assertEqual(membership.participant.name, 'Juan Dela Cruz')
+        self.assertEqual(membership.member_number, 7)
+        self.assertEqual(list(membership.events.all()), [self.event])
+
+        # 7. Team Manager submits the final roster.
+        submit_resp = self.client.post(reverse('submit_team_roster', args=[team.pk]))
+        self.assertRedirects(submit_resp, reverse('team_detail', args=[team.pk]))
+        team.refresh_from_db()
+        self.assertTrue(team.roster_submitted)
+        self.assertEqual(team.roster_submitted_by, self.manager)
+        self.assertIsNotNone(team.roster_submitted_at)
+
+        # 8. Approved team can now register for the sport event.
+        event_reg_resp = self.client.post(reverse('register_for_event'), {
+            'target_type': 'sport_event',
+            'sport_event': str(self.event.pk),
+            'team': team.pk,
+        })
+        self.assertRedirects(event_reg_resp, reverse('my_registrations'))
+
+        # 9. Admin verifies submitted roster in read-only mode (no Register/Add/Remove forms).
+        self.client.force_login(self.admin)
+        verify_resp = self.client.get(reverse('team_detail', args=[team.pk]))
+        self.assertEqual(verify_resp.status_code, 200)
+        self.assertContains(verify_resp, 'Roster Submitted')
+        self.assertContains(verify_resp, 'Juan Dela Cruz')
+        self.assertContains(verify_resp, 'Basketball Men')
+        self.assertNotContains(verify_resp, 'Register new player')
+        self.assertNotContains(verify_resp, 'Remove player')
+
+    def test_admin_receives_department_team_submission_and_sidebar_badges(self):
+        from announcements.models import Notification
+
+        # Team Manager submits a department team registration.
+        self.client.force_login(self.manager)
+        self.client.post(reverse('create_team'), {
+            'department': Team.Department.SCS,
+            'name': 'SCS Wizards',
+            'category': Team.Category.SPORTS,
+            'sports_categories': [self.basketball.pk],
+        })
+        team = Team.objects.get(name='SCS Wizards')
+
+        # Admin receives an in-app notification pointing to the review queue.
+        admin_notifs = Notification.objects.filter(recipient=self.admin, is_read=False)
+        self.assertTrue(admin_notifs.filter(title='New department team registration').exists())
+
+        # Admin sees the pending department team inside Registration Review Queue
+        # and sees sidebar counter badges for pending registrations.
+        self.client.force_login(self.admin)
+        queue_resp = self.client.get(reverse('registration_review_queue'))
+        self.assertEqual(queue_resp.status_code, 200)
+        self.assertContains(queue_resp, 'Department Team Registrations Pending Approval')
+        self.assertContains(queue_resp, 'SCS Wizards')
+        self.assertEqual(queue_resp.context['pending_team_registrations'], 1)
+        self.assertEqual(queue_resp.context['pending_registrations_total'], 1)
+        self.assertEqual(queue_resp.context['pending_count'], 1)
+
+        # Approving directly from Registration Review Queue redirects back, clears badges,
+        # and notifies the Team Manager.
+        approve_resp = self.client.post(reverse('update_team_status', args=[team.pk]), {
+            'status': Team.Status.APPROVED,
+            'next': 'registration_review_queue',
+        })
+        self.assertRedirects(approve_resp, reverse('registration_review_queue'))
+        team.refresh_from_db()
+        self.assertEqual(team.status, Team.Status.APPROVED)
+
+        after_resp = self.client.get(reverse('registration_review_queue'))
+        self.assertEqual(after_resp.context['pending_team_registrations'], 0)
+        self.assertEqual(after_resp.context['pending_registrations_total'], 0)
+        self.assertNotContains(after_resp, 'Department Team Registrations Pending Approval')
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.manager,
+                title='Team registration approved',
+            ).exists()
+        )
+
+    def test_admin_can_add_departments_and_approved_department_cannot_be_reselected(self):
+        from teams.models import Department
+
+        # Admin adds a new department (SBA) beyond the default 4.
+        self.client.force_login(self.admin)
+        add_resp = self.client.post(reverse('department_manage'), {
+            'code': 'sba',
+            'name': 'School of Business Administration',
+        })
+        self.assertRedirects(add_resp, reverse('department_manage'))
+        self.assertTrue(Department.objects.filter(code='SBA', is_active=True).exists())
+
+        # Create an APPROVED team for SAFES.
+        Team.objects.create(
+            name='SAFES Approved',
+            department='SAFES',
+            category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED,
+            created_by=self.manager,
+        )
+
+        # Team Manager opening create_team sees SBA selectable, but SAFES is excluded & locked.
+        self.client.force_login(self.manager)
+        form_resp = self.client.get(reverse('create_team'))
+        self.assertEqual(form_resp.status_code, 200)
+        choice_codes = [code for code, _ in form_resp.context['form'].fields['department'].choices]
+        self.assertIn('SBA', choice_codes)
+        self.assertNotIn('SAFES', choice_codes)
+        self.assertContains(form_resp, 'Already approved (locked)')
+
+        # Submitting SAFES again via POST is rejected.
+        blocked_resp = self.client.post(reverse('create_team'), {
+            'department': 'SAFES',
+            'name': 'Duplicate SAFES Team',
+            'category': Team.Category.SPORTS,
+            'sports_categories': [self.basketball.pk],
+        })
+        self.assertEqual(blocked_resp.status_code, 200)
+        self.assertFalse(Team.objects.filter(name='Duplicate SAFES Team').exists())
+
+        # Submitting the newly added SBA department succeeds.
+        ok_resp = self.client.post(reverse('create_team'), {
+            'department': 'SBA',
+            'name': 'SBA Eagles',
+            'category': Team.Category.SPORTS,
+            'sports_categories': [self.basketball.pk],
+        })
+        self.assertEqual(ok_resp.status_code, 302)
+        self.assertTrue(Team.objects.filter(name='SBA Eagles', department='SBA', status=Team.Status.PENDING).exists())
+
+    def test_player_assignment_rbac_isolates_players_per_team_manager(self):
+        other_mgr = User.objects.create_user('ste-mgr', 'ste@example.com', 'pass')
+        other_mgr.account_profile.role = UserProfile.Role.TEAM_MANAGER
+        other_mgr.account_profile.save(update_fields=['role', 'updated_at'])
+
+        bulls = Team.objects.create(
+            name='BULLS RBAC', department='SAFES', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.manager,
+        )
+        bulls.sports_categories.add(self.basketball)
+        TeamStaff.objects.create(team=bulls, user=self.manager, role=TeamStaff.Role.MANAGER)
+
+        phoenix = Team.objects.create(
+            name='PHOENIX RBAC', department='STE', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=other_mgr,
+        )
+        phoenix.sports_categories.add(self.basketball)
+        TeamStaff.objects.create(team=phoenix, user=other_mgr, role=TeamStaff.Role.MANAGER)
+
+        bulls_player = Participant.objects.create(name='Bulls Star', phone='09170001', gender='male', status='ACTIVE', team_name=bulls.name)
+        phoenix_player = Participant.objects.create(name='Phoenix Star', phone='09170002', gender='male', status='ACTIVE', team_name=phoenix.name)
+        unassigned_player = Participant.objects.create(name='Global Free Agent', phone='09170003', gender='male', status='ACTIVE')
+
+        bulls_member = TeamMembership.objects.create(team=bulls, participant=bulls_player, member_number=1)
+        phoenix_member = TeamMembership.objects.create(team=phoenix, participant=phoenix_player, member_number=2)
+
+        # SAFES manager only sees Bulls Star in Assign Players — never Phoenix Star or Global Free Agent.
+        self.client.force_login(self.manager)
+        resp = self.client.get(reverse('team_detail', args=[bulls.pk]))
+        self.assertEqual(resp.status_code, 200)
+        event_field = resp.context['roster_form'].fields[str(self.event.pk)]
+        choice_ids = {int(val) for val, _ in event_field.choices}
+        self.assertEqual(choice_ids, {bulls_player.pk})
+        self.assertNotIn(phoenix_player.pk, choice_ids)
+        self.assertNotIn(unassigned_player.pk, choice_ids)
+
+        # Forged POST attempting to assign Phoenix Star or Global Free Agent to BULLS is rejected.
+        for foreign_player in (phoenix_player, unassigned_player):
+            forged = self.client.post(reverse('team_detail', args=[bulls.pk]), {
+                'roster-event': [str(self.event.pk)],
+                f'event-players-{self.event.pk}': [str(foreign_player.pk)],
+            })
+            self.assertEqual(forged.status_code, 400)
+            self.assertFalse(TeamMembership.objects.filter(team=bulls, participant=foreign_player).exists())
+
+        # SAFES manager cannot access PHOENIX workspace or mutate PHOENIX players.
+        self.assertEqual(self.client.get(reverse('team_detail', args=[phoenix.pk])).status_code, 404)
+        self.assertEqual(self.client.post(reverse('remove_team_member', args=[phoenix.pk, phoenix_member.pk])).status_code, 404)
+
+        # Assigning Bulls Star to BULLS succeeds cleanly.
+        ok = self.client.post(reverse('team_detail', args=[bulls.pk]), {
+            'roster-event': [str(self.event.pk)],
+            f'event-players-{self.event.pk}': [str(bulls_player.pk)],
+        })
+        self.assertRedirects(ok, reverse('team_detail', args=[bulls.pk]))
+        self.assertTrue(bulls_member.events.filter(pk=self.event.pk).exists())

@@ -105,6 +105,19 @@ class SportsEvent(models.Model):
         blank=True,
         help_text='Maximum number of participating teams or individuals.',
     )
+    players_per_event = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text='Required number of players per team/entry for this sport event.',
+    )
+    tournament_manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='managed_sport_events',
+        help_text='Designated Tournament Manager authorized to record match scores for this sport event.',
+    )
     venue = models.ForeignKey(Venue, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)

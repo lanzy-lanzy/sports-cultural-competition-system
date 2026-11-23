@@ -19,7 +19,7 @@
             <button type="button" class="tw-button tw-button-secondary" data-roster-close aria-label="Close assignment panel">Close</button>
         </div>
         <div class="event-roster-panel-body">
-            <p id="event-roster-help" class="text-sm text-slate-600">Choose an event, then select its players. Players can join multiple events. Selecting an available player adds them to the team.</p>
+            <p id="event-roster-help" class="text-sm text-slate-600">Choose an event, then select players from this team's registered roster. Players can join multiple events.</p>
             <label for="roster-event-picker" class="mt-4 block text-sm font-bold text-ink">Event</label>
             <select id="roster-event-picker" class="mt-1 w-full rounded-md border border-slate-300 bg-white p-2 text-sm" aria-describedby="event-roster-help" autofocus>
                 {% regroup roster_form.event_rosters by 0.competition as competitions %}
@@ -54,7 +54,7 @@
         <div class="mt-2 text-sm text-rose-600" role="alert" data-roster-error>{{ roster_form.non_field_errors }}</div>
     {% endif %}
     {% if roster_form.event_rosters %}
-        <p class="mt-2 text-sm text-slate-600">Select the players for each event. A player can join multiple events. Selecting an available player adds them to the team roster.</p>
+        <p class="mt-2 text-sm text-slate-600">Select players from this team's registered roster for each event. A player can join multiple events.</p>
         {% regroup roster_form.event_rosters by 0.competition as competitions %}
         {% for competition in competitions %}
             <h3 class="mt-5 text-base font-bold text-ink">{{ competition.grouper }}</h3>

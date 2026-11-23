@@ -1,14 +1,17 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
-from accounts.access import get_user_role, management_required, role_required
+from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required, role_required
 from accounts.models import UserProfile
+from announcements.services import notify_users
 from competitions.models import Competition
 from participants.models import Participant
-from teams.models import TeamMembership
+from teams.models import Team, TeamMembership
 
 from .forms import EventRegistrationForm
 from .models import EventRegistration, RegistrationTemplate
@@ -20,6 +23,15 @@ from .services import (
     registrations_for_user,
     soft_delete_registration_template,
 )
+
+
+def _notify_management(title, body, link=''):
+    User = get_user_model()
+    admins = User.objects.filter(
+        Q(is_superuser=True) | Q(account_profile__role__in=MANAGEMENT_ROLES),
+        is_active=True,
+    ).distinct()
+    notify_users(admins, title=title, body=body, link=link)
 
 
 @role_required(UserProfile.Role.PARTICIPANT, UserProfile.Role.TEAM_MANAGER)
@@ -46,7 +58,7 @@ def register_for_event(request):
 
         try:
             with transaction.atomic():
-                EventRegistration.objects.create(
+                registration = EventRegistration.objects.create(
                     registrant=request.user,
                     competition=form.cleaned_data['competition'],
                     sport_event=form.cleaned_data['sport_event'],
@@ -56,6 +68,11 @@ def register_for_event(request):
         except IntegrityError:
             form.add_error(None, 'This entry has already been submitted. Check your registrations for its status.')
         else:
+            _notify_management(
+                title='New event registration',
+                body=f'{registration.contestant_name} submitted a registration for {registration.target_name}.',
+                link=reverse('registration_review_queue'),
+            )
             messages.success(request, 'Your registration was submitted and is awaiting organizer approval.')
             return redirect('my_registrations')
 
@@ -114,13 +131,22 @@ def registration_review_queue(request):
 
     status_counts = dict(registrations.values_list('status').annotate(total=Count('id')))
     page_obj = Paginator(registrations.order_by('status', '-created_at'), 20).get_page(request.GET.get('page'))
+    pending_teams = (
+        Team.objects.filter(status=Team.Status.PENDING)
+        .select_related('created_by')
+        .prefetch_related('sports_categories')
+        .order_by('-created_at')
+    )
+    pending_team_count = pending_teams.count()
 
     return render(request, 'registrations/review_queue.html', {
         'page_obj': page_obj,
         'competitions': Competition.objects.all().order_by('-id'),
         'selected_competition': int(competition_id) if competition_id else None,
         'status_counts': status_counts,
-        'pending_count': status_counts.get(EventRegistration.Status.PENDING, 0),
+        'pending_teams': pending_teams,
+        'pending_team_count': pending_team_count,
+        'pending_count': status_counts.get(EventRegistration.Status.PENDING, 0) + pending_team_count,
     })
 
 

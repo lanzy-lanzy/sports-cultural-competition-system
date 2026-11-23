@@ -22,6 +22,12 @@ def available_member_events(team, participant=None):
     query = Q(team_based=True, entries__team=team, entries__status=EventEntry.Status.CONFIRMED)
     if participant is not None:
         query |= Q(team_based=False, entries__participant=participant, entries__status=EventEntry.Status.CONFIRMED)
+    if team.pk and team.status == Team.Status.APPROVED:
+        sport_ids = list(team.sports_categories.values_list('pk', flat=True))
+        if sport_ids:
+            query |= Q(
+                pk__in=assignable_team_events().filter(sport_type_id__in=sport_ids).values('pk'),
+            )
     return SportsEvent.objects.filter(query).select_related('competition').distinct().order_by('competition__name', 'name')
 
 
@@ -35,15 +41,17 @@ def assignable_team_events():
 
 
 def assignment_players(team):
-    available = Q(team_membership__isnull=True, status='ACTIVE')
-    if team.pk:
-        available |= Q(team_membership__team=team.pk)
-    return Participant.objects.filter(available).order_by('name', 'pk')
+    """Return only players who belong to ``team`` (strict per-team RBAC)."""
+    if not team or not team.pk:
+        return Participant.objects.none()
+    return Participant.objects.filter(team_membership__team=team.pk).order_by('name', 'pk')
 
 
 def save_team_event_roster(team, selections, user):
-    """Save management's event rosters inside the team form's transaction."""
+    """Save a team's event rosters inside a transaction, strictly scoped to team members."""
     from sports.forms import EventEntryForm
+
+    require_team_access(user, team)
 
     members = {
         member.participant_id: member
@@ -83,7 +91,7 @@ def save_team_event_roster(team, selections, user):
         ).order_by('pk')
     }
     if set(players) != player_ids:
-        raise ValidationError('A selected player is no longer available. Review the roster.')
+        raise ValidationError('Only players registered under this team can be assigned to its events.')
 
     for event_id, selected in changed.items():
         additions = selected - current[event_id]

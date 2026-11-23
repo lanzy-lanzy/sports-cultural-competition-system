@@ -1,19 +1,22 @@
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from accounts.access import MANAGEMENT_ROLES, get_user_role, role_required
+from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required, role_required
 from accounts.models import UserProfile
 from .forms import (
-    TeamEventRosterForm, TeamForm, TeamMembershipForm, TeamMemberEventsForm,
-    TeamRosterFilterForm, TeamStaffForm,
+    DepartmentForm, TeamEventRosterForm, TeamForm, TeamMembershipForm, TeamMemberEventsForm,
+    TeamPlayerRegistrationForm, TeamRosterFilterForm, TeamStaffForm,
 )
-from .models import Team, TeamMembership, TeamStaff
+from .models import Department, Team, TeamMembership, TeamStaff
 from .services import save_team_event_roster
 
 
@@ -37,59 +40,90 @@ def _require_management(user):
         raise PermissionDenied('Only competition management can change team staff or approval status.')
 
 
+def _require_team_manager(user):
+    if get_user_role(user) != UserProfile.Role.TEAM_MANAGER:
+        raise PermissionDenied('Team registration and roster management belong to department Team Managers.')
+
+
+def _require_approved_team(team):
+    if team.status != Team.Status.APPROVED:
+        raise PermissionDenied('Only approved teams can manage players, assign sports, or submit rosters.')
+
+
+def _notify_management(title, body, link=''):
+    from announcements.services import notify_users
+    recipients = User.objects.filter(
+        Q(is_superuser=True) | Q(account_profile__role__in=MANAGEMENT_ROLES),
+        is_active=True,
+    ).distinct()
+    notify_users(recipients, title=title, body=body, link=link)
+
+
 @team_editor_required
 def team_list(request):
-    teams = _accessible_teams(request.user).order_by('name')
-    return render(request, 'teams/team_list.html', {'teams': teams, 'can_delete_teams': get_user_role(request.user) in MANAGEMENT_ROLES})
+    teams = _accessible_teams(request.user).order_by('status', 'department', 'name')
+    is_management = get_user_role(request.user) in MANAGEMENT_ROLES
+    is_team_manager = get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER
+    pending_count = sum(1 for t in teams if t.status == Team.Status.PENDING)
+    return render(request, 'teams/team_list.html', {
+        'teams': teams,
+        'can_delete_teams': is_management,
+        'can_approve_teams': is_management,
+        'can_create_team': is_team_manager,
+        'pending_count': pending_count,
+    })
 
 
 @team_editor_required
 def create_team(request):
-    can_approve = get_user_role(request.user) in MANAGEMENT_ROLES
+    _require_team_manager(request.user)
     form = TeamForm(
         request.POST or None,
         request.FILES or None,
-        allow_status=can_approve,
-        force_approved=can_approve,
+        allow_status=False,
+        force_approved=False,
+        require_department=True,
     )
-    roster_form = _event_roster_form(request, form.instance) if can_approve else None
-    team = _save_team_form(request, form, roster_form)
+    team = _save_team_form(request, form, None)
     if team is not None:
-        if can_approve:
-            messages.success(
-                request,
-                f'{team.name} was created with code {team.code} and is approved.',
-            )
-        else:
-            messages.success(
-                request,
-                f'{team.name} was created with code {team.code}. '
-                'It is awaiting approval from competition management.',
-            )
+        dept_label = team.get_department_display() or 'Department'
+        submitter = request.user.get_full_name() or request.user.username
+        _notify_management(
+            title='New department team registration',
+            body=f'{team.name} ({dept_label}) was submitted by {submitter} and is awaiting approval.',
+            link=reverse('registration_review_queue'),
+        )
+        messages.success(
+            request,
+            f'{team.name} ({dept_label}) was submitted with code {team.code} '
+            'and is awaiting Admin approval.',
+        )
         return redirect('team_detail', team_id=team.id)
     return render(request, 'teams/team_form.html', {
         'form': form,
-        'roster_form': roster_form,
+        'roster_form': None,
         'team': None,
-        'auto_approved': can_approve,
+        'auto_approved': False,
     })
 
 
 @team_editor_required
 def edit_team(request, team_id):
     team = _get_accessible_team(request.user, team_id)
-    can_approve = get_user_role(request.user) in MANAGEMENT_ROLES
+    is_team_manager = get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER
+    if not is_team_manager:
+        raise PermissionDenied('Only the assigned department Team Manager can edit team details.')
     form = TeamForm(
         request.POST or None,
         request.FILES or None,
         instance=team,
-        allow_status=can_approve,
+        allow_status=False,
+        require_department=True,
     )
-    roster_form = _event_roster_form(request, team) if can_approve else None
-    if _save_team_form(request, form, roster_form) is not None:
+    if _save_team_form(request, form, None) is not None:
         messages.success(request, 'Team details updated successfully.')
         return redirect('team_detail', team_id=team.id)
-    return render(request, 'teams/team_form.html', {'form': form, 'team': team, 'roster_form': roster_form})
+    return render(request, 'teams/team_form.html', {'form': form, 'team': team, 'roster_form': None})
 
 
 def _event_roster_form(request, team):
@@ -135,7 +169,9 @@ def _save_team_form(request, form, roster_form):
 def team_detail(request, team_id):
     team = _get_accessible_team(request.user, team_id)
     can_approve = get_user_role(request.user) in MANAGEMENT_ROLES
-    can_assign = can_approve and team.category != Team.Category.CULTURAL
+    is_team_manager = get_user_role(request.user) == UserProfile.Role.TEAM_MANAGER
+    can_manage_roster = is_team_manager and team.status == Team.Status.APPROVED
+    can_assign = can_manage_roster and team.category != Team.Category.CULTURAL
     if request.method == 'POST' and not can_assign:
         raise PermissionDenied
     roster_form = None
@@ -182,7 +218,10 @@ def team_detail(request, team_id):
         memberships = memberships.none()
     page_obj = Paginator(memberships, 25).get_page(request.GET.get('page'))
     for membership in page_obj.object_list:
-        membership.events_form = TeamMemberEventsForm(membership=membership, prefix=f'member-{membership.pk}')
+        membership.events_form = (
+            TeamMemberEventsForm(membership=membership, prefix=f'member-{membership.pk}')
+            if can_manage_roster else None
+        )
     query_params = request.GET.copy()
     query_params.pop('page', None)
     return render(request, 'teams/team_detail.html', {
@@ -195,17 +234,83 @@ def team_detail(request, team_id):
         'filter_form': filter_form,
         'filter_query': query_params.urlencode(),
         'staff_assignments': team.staff_assignments.select_related('user'),
-        'membership_form': TeamMembershipForm(team=team),
-        'staff_form': TeamStaffForm(),
+        'membership_form': TeamMembershipForm(team=team) if can_manage_roster else None,
+        'player_registration_form': TeamPlayerRegistrationForm(team=team) if can_manage_roster else None,
+        'staff_form': TeamStaffForm() if can_approve else None,
         'can_approve_teams': can_approve,
+        'is_team_manager': is_team_manager,
+        'can_manage_roster': can_manage_roster,
     }, status=400 if request.method == 'POST' else 200)
 
 
 @team_editor_required
 @require_POST
 @transaction.atomic
-def add_team_member(request, team_id):
+def register_team_player(request, team_id):
+    _require_team_manager(request.user)
     team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
+    form = TeamPlayerRegistrationForm(request.POST, team=team)
+    if form.is_valid():
+        try:
+            membership = form.save(request.user)
+        except ValidationError as error:
+            messages.error(request, ' '.join(error.messages))
+        except IntegrityError:
+            messages.error(request, 'Could not register player due to a duplicate jersey number or record.')
+        else:
+            from audit.models import record_action_from_request
+            record_action_from_request(
+                request,
+                'TEAM_PLAYER_REGISTERED',
+                target=team,
+                details=f'Registered player {membership.participant.name} under {team.name}',
+            )
+            messages.success(request, f'{membership.participant.name} was registered under {team.name}.')
+    else:
+        messages.error(request, ' '.join(str(error) for errors in form.errors.values() for error in errors))
+    return redirect('team_detail', team_id=team.id)
+
+
+@team_editor_required
+@require_POST
+@transaction.atomic
+def submit_team_roster(request, team_id):
+    _require_team_manager(request.user)
+    team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
+    if not team.memberships.filter(status=TeamMembership.Status.ACTIVE).exists():
+        messages.error(request, 'Register at least one active player before submitting the final roster.')
+        return redirect('team_detail', team_id=team.id)
+
+    team.roster_submitted = True
+    team.roster_submitted_at = timezone.now()
+    team.roster_submitted_by = request.user
+    team.save(update_fields=['roster_submitted', 'roster_submitted_at', 'roster_submitted_by', 'updated_at'])
+
+    from audit.models import record_action_from_request
+    record_action_from_request(
+        request,
+        'TEAM_ROSTER_SUBMITTED',
+        target=team,
+        details=f'Final roster submitted for {team.name} ({team.memberships.count()} players)',
+    )
+    _notify_management(
+        title='Final team roster submitted',
+        body=f'{team.name} ({team.get_department_display() or "Team"}) submitted its final roster ({team.memberships.count()} players) for verification.',
+        link=reverse('team_detail', args=[team.id]),
+    )
+    messages.success(request, f'Final roster for {team.name} has been submitted for Admin verification.')
+    return redirect('team_detail', team_id=team.id)
+
+
+@team_editor_required
+@require_POST
+@transaction.atomic
+def add_team_member(request, team_id):
+    _require_team_manager(request.user)
+    team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
     form = TeamMembershipForm(request.POST, team=team)
     if form.is_valid():
         try:
@@ -232,7 +337,9 @@ def add_team_member(request, team_id):
 @team_editor_required
 @require_POST
 def update_member_events(request, team_id, membership_id):
+    _require_team_manager(request.user)
     team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
     membership = get_object_or_404(TeamMembership.objects.select_related('team', 'participant'), pk=membership_id, team=team)
     form = TeamMemberEventsForm(request.POST, membership=membership, prefix=f'member-{membership.pk}')
     if form.is_valid():
@@ -284,7 +391,9 @@ def bulk_delete_teams(request):
 @team_editor_required
 @require_POST
 def bulk_delete_members(request, team_id):
+    _require_team_manager(request.user)
     team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
     from .services import force_delete_memberships
     try:
         ids = _selected_ids(request)
@@ -303,7 +412,9 @@ def bulk_delete_members(request, team_id):
 @team_editor_required
 @require_POST
 def remove_team_member(request, team_id, membership_id):
+    _require_team_manager(request.user)
     team = _get_accessible_team(request.user, team_id)
+    _require_approved_team(team)
     membership = get_object_or_404(TeamMembership, id=membership_id, team=team)
     participant = membership.participant
     membership.delete()
@@ -364,5 +475,75 @@ def update_team_status(request, team_id):
             target=team,
             details=f'Team "{team.name}" status changed to {team.get_status_display()}',
         )
-        messages.success(request, f'Team status changed to {team.get_status_display()}.')
+        from announcements.services import notify_users
+        staff_users = User.objects.filter(
+            Q(id=team.created_by_id) | Q(team_staff_assignments__team=team),
+            is_active=True,
+        ).distinct()
+        notify_users(
+            staff_users,
+            title=f'Team registration {team.get_status_display().lower()}',
+            body=f'Your team "{team.name}" status was updated to {team.get_status_display()}.',
+            link=reverse('team_detail', args=[team.id]),
+        )
+        messages.success(request, f'Team "{team.name}" status changed to {team.get_status_display()}.')
+    next_dest = request.POST.get('next')
+    if next_dest == 'team_list':
+        return redirect('team_list')
+    if next_dest == 'registration_review_queue':
+        return redirect('registration_review_queue')
     return redirect('team_detail', team_id=team.id)
+
+
+@management_required
+def department_manage(request):
+    form = DepartmentForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        dept = form.save()
+        messages.success(request, f'Department "{dept.code}" added and available for team registration.')
+        return redirect('department_manage')
+
+    departments = list(Department.objects.all().order_by('code'))
+    teams_by_dept = {}
+    for team in Team.objects.exclude(department='').order_by('-created_at'):
+        teams_by_dept.setdefault(team.department.strip().upper(), []).append(team)
+
+    rows = []
+    for dept in departments:
+        dept_teams = teams_by_dept.get(dept.code.upper(), [])
+        approved_team = next((t for t in dept_teams if t.status == Team.Status.APPROVED), None)
+        rows.append({
+            'department': dept,
+            'teams': dept_teams,
+            'approved_team': approved_team,
+            'team_count': len(dept_teams),
+        })
+
+    return render(request, 'teams/department_manage.html', {
+        'form': form,
+        'rows': rows,
+    })
+
+
+@management_required
+@require_POST
+def toggle_department(request, department_id):
+    dept = get_object_or_404(Department, id=department_id)
+    dept.is_active = not dept.is_active
+    dept.save(update_fields=['is_active'])
+    state = 'enabled' if dept.is_active else 'disabled'
+    messages.success(request, f'Department "{dept.code}" {state}.')
+    return redirect('department_manage')
+
+
+@management_required
+@require_POST
+def delete_department(request, department_id):
+    dept = get_object_or_404(Department, id=department_id)
+    if Team.objects.filter(department__iexact=dept.code).exists():
+        messages.error(request, f'Cannot delete "{dept.code}" because teams are already linked to it. Disable it instead.')
+        return redirect('department_manage')
+    code = dept.code
+    dept.delete()
+    messages.success(request, f'Department "{code}" deleted.')
+    return redirect('department_manage')

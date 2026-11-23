@@ -9,7 +9,10 @@
     <div>
         <p class="text-xs font-bold uppercase tracking-[0.15em] text-campus">{{ event.competition.name|title }} &middot; Sports Event</p>
         <h1 class="mt-1 font-display text-3xl font-bold text-ink">{{ event.name }}</h1>
-        <p class="mt-2 text-sm text-slate-500">{{ event.sport_type.name }} &middot; {{ event.get_gender_display }} &middot; {{ event.get_category_display }} &middot; {{ event.get_format_display }}</p>
+        <p class="mt-2 text-sm text-slate-500">
+            {{ event.sport_type.name }} &middot; {{ event.get_gender_display }} &middot; {{ event.get_category_display }} &middot; {{ event.get_format_display }}
+            {% if event.players_per_event %}&middot; <strong class="text-slate-700">{{ event.players_per_event }} player{{ event.players_per_event|pluralize }} / team</strong>{% endif %}
+        </p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
         <span class="rounded-full px-3 py-1.5 text-xs font-bold {% if event.status == 'COMPLETED' %}bg-emerald-100 text-emerald-700{% elif event.status == 'ONGOING' %}bg-cyan-100 text-cyan-700{% elif event.status == 'CANCELLED' %}bg-rose-100 text-rose-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ event.get_status_display|upper }}</span>
@@ -21,8 +24,27 @@
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Confirmed entries</p><p class="mt-1 font-display text-2xl font-bold text-ink">{{ event.confirmed_count }}{% if event.max_teams %}<span class="text-sm font-normal text-slate-400"> / {{ event.max_teams }}</span>{% endif %}</p></div>
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matches</p><p class="mt-1 font-display text-2xl font-bold text-ink">{{ matches.count }}</p></div>
     <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Venue</p><p class="mt-1 truncate font-display text-lg font-bold text-ink">{{ event.venue|default:'Not assigned' }}</p></div>
-    <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Dates</p><p class="mt-1 font-display text-lg font-bold text-ink">{% if event.start_date %}{{ event.start_date|date:'M j' }}{% if event.end_date %} – {{ event.end_date|date:'M j' }}{% endif %}{% else %}TBD{% endif %}</p></div>
+    <div class="rounded-md border border-slate-200 bg-white p-5"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tournament Manager</p><p class="mt-1 truncate font-display text-lg font-bold text-ink">{% if event.tournament_manager %}{{ event.tournament_manager.get_full_name|default:event.tournament_manager.username }}{% else %}Unassigned{% endif %}</p></div>
 </div>
+
+<section class="mb-6 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-campus">Designated Tournament Manager (Scoring RBAC)</p>
+            <p class="mt-1 text-xs text-slate-500">Only the assigned Tournament Manager can record and update match scores for <strong>{{ event.name }}</strong>.</p>
+        </div>
+        <form method="post" action="{% url 'assign_tournament_manager' event.id %}" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {% csrf_token %}
+            <select name="tournament_manager" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:min-w-[240px]">
+                <option value="">— Unassigned —</option>
+                {% for tm in tournament_managers %}
+                <option value="{{ tm.id }}" {% if event.tournament_manager_id == tm.id %}selected{% endif %}>{{ tm.get_full_name|default:tm.username }} ({{ tm.username }})</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="cursor-pointer rounded-md bg-pine px-4 py-2 text-sm font-bold text-white transition hover:bg-pine-deep">Save Manager</button>
+        </form>
+    </div>
+</section>
 
 {% if event.rules %}
 <div class="mb-6 rounded-md border border-teal-100 bg-teal-50/60 p-5">
@@ -116,10 +138,9 @@
                 <button type="submit" onclick="return confirm('Delete all matches for this event?')" class="flex-1 rounded-md border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-100 ui-button ui-button--danger">Clear bracket</button>
             </form>
             {% elif not bracket_generated %}
-            <form method="POST" action="{% url 'generate_event_bracket' event.id %}">
-                {% csrf_token %}
-                <button type="submit" class="w-full rounded-md bg-campus px-4 py-2.5 text-sm font-bold text-white shadow ui-button ui-button--primary">Generate {{ event.get_format_display }} bracket</button>
-            </form>
+            <a href="{% url 'automatch_setup' event.id %}" class="block w-full rounded-md bg-campus px-4 py-2.5 text-center text-sm font-bold text-white shadow hover:bg-pine-deep ui-button ui-button--primary">
+                Auto-Match Setup (Assign Team 1&ndash;{{ event.confirmed_count|default:4 }})
+            </a>
             {% endif %}
         </div>
     </section>

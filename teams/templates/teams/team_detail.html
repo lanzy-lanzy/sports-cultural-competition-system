@@ -7,53 +7,175 @@
 
 {% block content %}
 <div class="team-ui team-workspace">
-    <a href="{% url 'team_list' %}" class="team-workspace-back">&larr; All teams</a>
+    <div class="flex items-center justify-between gap-3">
+        <a href="{% url 'team_list' %}" class="team-workspace-back inline-flex items-center gap-1.5">&larr; All teams</a>
+        <span class="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-500">{{ team.code }}</span>
+    </div>
 
-    <header class="team-workspace-card team-workspace-header">
-        <div class="team-workspace-identity">
-            {% if team.logo %}
-                <img src="{{ team.logo.url }}" alt="" class="team-workspace-logo">
-            {% else %}
-                <span class="team-workspace-logo team-workspace-initial" aria-hidden="true">{{ team.name|first|upper }}</span>
-            {% endif %}
-            <div>
-                <h1 class="font-display">{{ team.name }}</h1>
-                <p class="team-workspace-meta">{{ team.get_category_display }} &middot; {{ team.get_status_display }} &middot; {{ team.code }}</p>
+    <header class="team-workspace-card team-workspace-hero">
+        <div class="team-workspace-hero-top">
+            <div class="team-workspace-identity">
+                {% if team.logo %}
+                    <img src="{{ team.logo.url }}" alt="" class="team-workspace-logo">
+                {% else %}
+                    <span class="team-workspace-logo team-workspace-initial" aria-hidden="true">{{ team.name|first|upper }}</span>
+                {% endif %}
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        {% if team.department %}
+                        <span class="rounded bg-moss px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-pine-deep">{{ team.get_department_display }}</span>
+                        {% endif %}
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold
+                            {% if team.status == 'APPROVED' %}bg-emerald-100 text-emerald-700
+                            {% elif team.status == 'REJECTED' or team.status == 'SUSPENDED' %}bg-rose-100 text-rose-700
+                            {% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {{ team.get_status_display }}
+                        </span>
+                        {% if team.roster_submitted %}
+                        <span class="rounded-full bg-moss px-2.5 py-0.5 text-[11px] font-bold text-pine-deep">Roster Submitted</span>
+                        {% endif %}
+                    </div>
+                    <h1 class="mt-1 truncate font-display">{{ team.name }}</h1>
+                    <p class="team-workspace-meta">{{ team.get_category_display }} &middot; {{ team.code }}</p>
+                </div>
+            </div>
+
+            <div class="team-workspace-hero-actions">
+                {% if can_manage_roster %}
+                <form method="post" action="{% url 'submit_team_roster' team.pk %}" class="team-action-item">
+                    {% csrf_token %}
+                    <button type="submit" class="tw-button tw-button-primary w-full sm:w-auto">
+                        {% if team.roster_submitted %}Re-submit Final Roster{% else %}Submit Final Roster{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+                {% if roster_form is not None %}
+                <form method="post" data-workspace-assignments class="team-action-item">
+                    {% csrf_token %}
+                    {% include 'teams/event_roster_fields.html' with workspace_assignments=True %}
+                </form>
+                {% endif %}
+                {% if is_team_manager %}
+                <a href="{% url 'edit_team' team.pk %}" class="tw-button tw-button-secondary team-action-item">Edit team</a>
+                {% endif %}
             </div>
         </div>
-        <a href="{% url 'edit_team' team.pk %}" class="tw-button tw-button-secondary">Edit team</a>
-        {% if team.description %}<p class="team-workspace-description">{{ team.description }}</p>{% endif %}
+
+        {% if team.description %}
+        <p class="team-workspace-description mt-3">{{ team.description }}</p>
+        {% endif %}
+
         {% with sports=team.sports_categories.all %}
             {% if sports %}
-            <ul class="team-workspace-tags" aria-label="Team sports">
+            <ul class="team-workspace-tags mt-3" aria-label="Team sports">
                 {% for sport in sports %}<li>{{ sport.name }}</li>{% endfor %}
             </ul>
             {% endif %}
         {% endwith %}
+
+        <dl class="team-kpi-grid mt-4">
+            <div class="team-kpi-card">
+                <dt>Players</dt>
+                <dd>{{ total_members }}</dd>
+            </div>
+            <div class="team-kpi-card">
+                <dt>Sports</dt>
+                <dd>{{ team.sports_categories.count }}</dd>
+            </div>
+            <div class="team-kpi-card">
+                <dt>Roster</dt>
+                <dd class="{% if team.roster_submitted %}text-emerald-700{% else %}text-slate-600{% endif %}">
+                    {% if team.roster_submitted %}Submitted{% else %}Draft{% endif %}
+                </dd>
+            </div>
+            <div class="team-kpi-card">
+                <dt>Approval</dt>
+                <dd class="{% if team.status == 'APPROVED' %}text-emerald-700{% elif team.status == 'REJECTED' or team.status == 'SUSPENDED' %}text-rose-700{% else %}text-amber-700{% endif %}">
+                    {{ team.get_status_display }}
+                </dd>
+            </div>
+        </dl>
     </header>
 
-    <section id="team-roster" class="team-workspace-card" aria-labelledby="roster-heading">
-        <div class="team-workspace-roster-head">
+    {% if can_approve_teams and team.status == 'PENDING' %}
+    <section class="team-workspace-card border-l-4 border-l-amber-500 bg-amber-50/50 p-4 sm:p-5">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-                <h2 id="roster-heading" class="font-display">Team roster</h2>
-                <p class="team-workspace-meta">{{ total_members }} player{{ total_members|pluralize }}{% if page_obj.paginator.count != total_members %} &middot; {{ page_obj.paginator.count }} matching{% endif %}</p>
+                <h2 class="font-display text-base font-bold text-ink sm:text-lg">Team Registration Pending Approval</h2>
+                <p class="mt-1 text-sm text-slate-600">Review this department team registration and approve or reject participation.</p>
             </div>
-            {% if roster_form is not None %}
-                <form method="post" data-workspace-assignments>
+            <div class="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap">
+                <form method="post" action="{% url 'update_team_status' team.pk %}">
                     {% csrf_token %}
-                    {% include 'teams/event_roster_fields.html' with workspace_assignments=True %}
+                    <input type="hidden" name="status" value="APPROVED">
+                    <button type="submit" class="w-full cursor-pointer rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto">Approve Team</button>
                 </form>
+                <form method="post" action="{% url 'update_team_status' team.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="REJECTED">
+                    <button type="submit" class="w-full cursor-pointer rounded-lg border border-rose-300 bg-white px-5 py-2.5 text-sm font-bold text-rose-700 shadow-sm transition hover:bg-rose-50 sm:w-auto">Reject Team</button>
+                </form>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if is_team_manager and team.status != 'APPROVED' %}
+    <div role="alert" class="team-workspace-card border-l-4 border-l-amber-500 bg-amber-50/60 p-4 sm:p-5">
+        <h2 class="font-display text-base font-bold text-amber-950">
+            {% if team.status == 'REJECTED' %}Team Registration Rejected{% elif team.status == 'SUSPENDED' %}Team Suspended{% else %}Awaiting Admin Approval{% endif %}
+        </h2>
+        <p class="mt-1 text-sm text-amber-900">
+            {% if team.status == 'REJECTED' %}
+            This team registration was rejected by the Admin and cannot participate in competitions.
+            {% elif team.status == 'SUSPENDED' %}
+            This team is currently suspended. Contact competition management for assistance.
+            {% else %}
+            Only approved teams can register players, assign sports events, submit rosters, or join competitions. Once an Admin approves this team, player management will unlock here.
             {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <nav class="team-workspace-tabs" role="tablist" aria-label="Team workspace sections" data-workspace-tabs>
+        <button type="button" role="tab" id="tab-btn-roster" aria-controls="panel-roster" aria-selected="true" data-tab-target="panel-roster" class="team-tab-btn is-active">
+            <span>Roster</span>
+            <span class="team-tab-count">{{ total_members }}</span>
+        </button>
+        <button type="button" role="tab" id="tab-btn-standings" aria-controls="panel-standings" aria-selected="false" data-tab-target="panel-standings" class="team-tab-btn">
+            <span>Standings</span>
+            <span class="team-tab-count">{{ sports_standings|length }}</span>
+        </button>
+        <button type="button" role="tab" id="tab-btn-management" aria-controls="panel-management" aria-selected="false" data-tab-target="panel-management" class="team-tab-btn">
+            <span>Managers{% if can_approve_teams %} &amp; Status{% endif %}</span>
+            <span class="team-tab-count">{{ staff_assignments|length }}</span>
+        </button>
+    </nav>
+
+    <section id="panel-roster" role="tabpanel" aria-labelledby="tab-btn-roster" data-tab-panel class="team-workspace-card">
+        <div id="team-roster" class="team-workspace-roster-head">
+            <div>
+                <h2 id="roster-heading" class="font-display">{% if can_approve_teams %}Submitted Roster Verification{% else %}Team Roster &amp; Sports Assignments{% endif %}</h2>
+                <p class="team-workspace-meta">
+                    {{ total_members }} player{{ total_members|pluralize }}{% if page_obj.paginator.count != total_members %} &middot; {{ page_obj.paginator.count }} matching{% endif %}
+                    {% if team.roster_submitted and team.roster_submitted_at %}
+                    &middot; Final roster submitted {{ team.roster_submitted_at|date:'M j, Y · g:i A' }}{% if team.roster_submitted_by %} by {{ team.roster_submitted_by.get_full_name|default:team.roster_submitted_by.username }}{% endif %}
+                    {% endif %}
+                </p>
+            </div>
         </div>
 
         <div class="team-roster-tools">
             <details class="team-roster-tool" {% if filter_query %}open{% endif %}>
-                <summary>Search and filter</summary>
+                <summary>
+                    <span>Search and filter</span>
+                    {% if filter_query %}<span class="team-tool-badge">Active</span>{% endif %}
+                </summary>
                 <form method="get" class="team-workspace-form" aria-label="Filter team players">
                     {% for field in filter_form %}
                         <div>
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
-                            {% for error in field.errors %}<p class="text-xs text-rose-600" role="alert">{{ error }}</p>{% endfor %}
+                            {% for error in field.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ error }}</p>{% endfor %}
                         </div>
                     {% endfor %}
                     <div class="team-workspace-form-actions">
@@ -62,44 +184,79 @@
                     </div>
                 </form>
             </details>
-            <details class="team-roster-tool">
-                <summary>Add player</summary>
-                <form method="post" action="{% url 'add_team_member' team.pk %}" class="team-workspace-form">
+
+            {% if can_manage_roster and player_registration_form %}
+            <details class="team-roster-tool team-roster-tool-accent">
+                <summary>
+                    <span>+ Register new player</span>
+                    <span class="team-tool-hint">Add to roster</span>
+                </summary>
+                <form method="post" action="{% url 'register_team_player' team.pk %}" class="team-workspace-form">
                     {% csrf_token %}
-                    <div><label for="{{ membership_form.participant.id_for_label }}">Player</label>{{ membership_form.participant }}</div>
-                    <div><label for="{{ membership_form.member_number.id_for_label }}">Jersey number</label>{{ membership_form.member_number }}</div>
-                    {% if membership_form.events.field.queryset.exists %}
-                        <details class="team-workspace-form-actions">
-                            <summary>Choose events (optional)</summary>
-                            {{ membership_form.events }}
-                        </details>
+                    <div><label for="{{ player_registration_form.first_name.id_for_label }}">First name *</label>{{ player_registration_form.first_name }}</div>
+                    <div><label for="{{ player_registration_form.last_name.id_for_label }}">Last name *</label>{{ player_registration_form.last_name }}</div>
+                    <div><label for="{{ player_registration_form.middle_name.id_for_label }}">Middle name</label>{{ player_registration_form.middle_name }}</div>
+                    <div><label for="{{ player_registration_form.phone.id_for_label }}">Phone number *</label>{{ player_registration_form.phone }}</div>
+                    <div><label for="{{ player_registration_form.identification_number.id_for_label }}">School ID</label>{{ player_registration_form.identification_number }}</div>
+                    <div><label for="{{ player_registration_form.age.id_for_label }}">Age</label>{{ player_registration_form.age }}</div>
+                    <div><label for="{{ player_registration_form.gender.id_for_label }}">Gender</label>{{ player_registration_form.gender }}</div>
+                    <div><label for="{{ player_registration_form.category.id_for_label }}">Category</label>{{ player_registration_form.category }}</div>
+                    <div><label for="{{ player_registration_form.member_number.id_for_label }}">Jersey number</label>{{ player_registration_form.member_number }}</div>
+                    {% if player_registration_form.events.field.queryset.exists %}
+                    <div class="team-workspace-form-actions">
+                        <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Assign to sports / events (optional)</label>
+                        {{ player_registration_form.events }}
+                    </div>
                     {% endif %}
-                    <div class="team-workspace-form-actions"><button type="submit" class="tw-button tw-button-primary">Add to roster</button></div>
+                    <div class="team-workspace-form-actions">
+                        <button type="submit" class="tw-button tw-button-primary">Register player to roster</button>
+                    </div>
                 </form>
             </details>
+            {% endif %}
         </div>
 
         {% if memberships %}
+            {% if can_manage_roster %}
             <form id="bulk-member-delete" method="post" action="{% url 'bulk_delete_members' team.pk %}" class="team-bulk-bar team-roster-bulk">
                 {% csrf_token %}
                 <label><input type="checkbox" data-select-all="bulk-member-delete"> Select visible players</label>
                 <span data-selection-count="bulk-member-delete" aria-live="polite">0 selected</span>
                 <button type="submit" class="tw-button tw-button-danger" data-bulk-submit>Review removal</button>
             </form>
+            {% endif %}
+
             <ul class="team-roster-list" aria-label="Team players">
                 {% for membership in memberships %}
                 <li class="team-roster-player">
                     <div class="team-roster-person">
+                        {% if can_manage_roster %}
                         <label class="team-roster-select">
                             <input type="checkbox" name="selected" value="{{ membership.pk }}" form="bulk-member-delete" aria-label="Select {{ membership.participant.name }} for removal">
                         </label>
-                        {% if membership.participant.profile_image %}<img src="{{ membership.participant.profile_image.url }}" alt="" class="team-roster-avatar">{% endif %}
-                        <div>
-                            <h3>{% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.pk %}">{{ membership.participant.name }}</a>{% else %}{{ membership.participant.name }}{% endif %}</h3>
-                            <p class="team-workspace-meta">{{ membership.participant.participant_id }}{% if membership.member_number is not None %} &middot; #{{ membership.member_number }}{% endif %}</p>
-                            <p class="team-workspace-meta">{{ membership.get_status_display }} member{% if membership.participant.status != 'ACTIVE' %} &middot; Player {{ membership.participant.get_status_display|lower }}{% endif %}</p>
+                        {% endif %}
+                        {% if membership.participant.profile_image %}
+                            <img src="{{ membership.participant.profile_image.url }}" alt="" class="team-roster-avatar">
+                        {% else %}
+                            <span class="team-roster-jersey" aria-hidden="true">
+                                {% if membership.member_number is not None %}#{{ membership.member_number }}{% else %}{{ membership.participant.name|first|upper }}{% endif %}
+                            </span>
+                        {% endif %}
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <h3 class="truncate">{% if can_approve_teams %}<a href="{% url 'participant_detail' membership.participant.pk %}">{{ membership.participant.name }}</a>{% else %}{{ membership.participant.name }}{% endif %}</h3>
+                                <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {% if membership.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {{ membership.get_status_display }} member
+                                </span>
+                            </div>
+                            <p class="team-workspace-meta">
+                                {{ membership.participant.participant_id }}{% if membership.member_number is not None %} &middot; #{{ membership.member_number }}{% endif %}
+                                {% if membership.participant.gender %} &middot; {{ membership.participant.get_gender_display }}{% endif %}
+                                {% if membership.participant.status != 'ACTIVE' %} &middot; Player {{ membership.participant.get_status_display|lower }}{% endif %}
+                            </p>
                         </div>
                     </div>
+
                     <div class="team-roster-assignments">
                         <ul class="team-workspace-tags" aria-label="Assigned events">
                             {% for event in membership.events.all %}
@@ -107,32 +264,39 @@
                             {% empty %}<li class="team-roster-no-events">No sports events assigned</li>{% endfor %}
                         </ul>
                     </div>
+
+                    {% if can_manage_roster %}
                     <details class="team-roster-player-tools">
                         <summary>Manage events</summary>
-                        <p class="team-workspace-meta mb-2">
-                            {{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}
-                            {% if membership.participant.age is not None %} &middot; Age {{ membership.participant.age }}{% endif %}
-                            <br>Joined {{ membership.joined_at|date:'M j, Y' }}
-                        </p>
-                        <form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">
-                            {% csrf_token %}
-                            {% if membership.events_form.events.field.queryset.exists %}
-                                {{ membership.events_form.events }}
-                                <button type="submit" class="tw-button tw-button-primary">Save events</button>
-                            {% else %}
-                                <p class="team-workspace-meta">No confirmed entries available for this player.</p>
-                            {% endif %}
-                        </form>
-                        <form method="post" action="{% url 'remove_team_member' team.pk membership.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" class="tw-button tw-button-danger" aria-label="Remove {{ membership.participant.name }} from team">Remove player</button>
-                        </form>
+                        <div class="team-roster-player-drawer">
+                            <p class="team-workspace-meta mb-2">
+                                {{ membership.participant.get_category_display }} &middot; {{ membership.participant.get_gender_display }}
+                                {% if membership.participant.age is not None %} &middot; Age {{ membership.participant.age }}{% endif %}
+                                &middot; Joined {{ membership.joined_at|date:'M j, Y' }}
+                            </p>
+                            <form method="post" action="{% url 'update_member_events' team.pk membership.pk %}" class="team-event-editor">
+                                {% csrf_token %}
+                                {% if membership.events_form.events.field.queryset.exists %}
+                                    {{ membership.events_form.events }}
+                                    <button type="submit" class="tw-button tw-button-primary w-full sm:w-auto">Save events</button>
+                                {% else %}
+                                    <p class="team-workspace-meta">No active sports events available for this player.</p>
+                                {% endif %}
+                            </form>
+                            <form method="post" action="{% url 'remove_team_member' team.pk membership.pk %}" class="mt-2">
+                                {% csrf_token %}
+                                <button type="submit" class="tw-button tw-button-danger w-full sm:w-auto" aria-label="Remove {{ membership.participant.name }} from team">Remove player</button>
+                            </form>
+                        </div>
                     </details>
+                    {% endif %}
                 </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="team-roster-empty">{% if total_members %}No players match these filters.{% else %}No team members assigned. Use Add player to start the roster.{% endif %}</p>
+            <p class="team-roster-empty">
+                {% if total_members %}No players match these filters.{% elif can_manage_roster %}No players registered yet. Tap <strong>+ Register new player</strong> above to build your roster.{% else %}No players have been registered by this team's Team Manager yet.{% endif %}
+            </p>
         {% endif %}
 
         {% if page_obj.has_other_pages %}
@@ -144,58 +308,87 @@
         {% endif %}
     </section>
 
-    <div class="team-workspace-secondary">
-        <section class="team-workspace-card" aria-labelledby="team-standings-title">
-            <div class="team-workspace-roster-head">
-                <div>
-                    <h2 id="team-standings-title" class="font-display">Sports standings</h2>
-                    <p class="team-workspace-meta">Completed, scored matches by stage. Byes do not count as wins.</p>
-                </div>
+    <section id="panel-standings" role="tabpanel" aria-labelledby="tab-btn-standings" data-tab-panel hidden class="team-workspace-card">
+        <div class="team-workspace-roster-head">
+            <div>
+                <h2 id="team-standings-title" class="font-display">Sports standings</h2>
+                <p class="team-workspace-meta">Completed, scored matches by stage. Byes do not count as wins.</p>
             </div>
-            {% if sports_standings %}
-                <ul aria-label="Results by event">
-                {% for row in sports_standings %}
-                    <li class="team-standings-row">
-                        <div>
-                            <h3 class="font-bold">{% if can_approve_teams %}<a href="{% url 'event_standings' row.event.id %}">{{ row.event.name }}</a>{% else %}{{ row.event.name }}{% endif %}</h3>
-                            <p class="team-workspace-meta">{{ row.event.competition.name }} &middot; {{ row.stage }}</p>
-                        </div>
-                        <dl>
-                            <div><dt>Rank</dt><dd>{% if row.played %}{{ row.rank }}{% else %}&mdash;{% endif %}</dd></div>
-                            <div><dt>Played</dt><dd>{{ row.played }}</dd></div>
-                            <div><dt>Wins</dt><dd>{{ row.wins }}</dd></div>
-                            <div><dt>Draws</dt><dd>{{ row.draws|default:0 }}</dd></div>
-                            <div><dt>Losses</dt><dd>{{ row.losses }}</dd></div>
-                            <div><dt>Points</dt><dd>{{ row.total_points|default_if_none:'—' }}</dd></div>
-                        </dl>
-                    </li>
+        </div>
+        {% if sports_standings %}
+            <ul aria-label="Results by event">
+            {% for row in sports_standings %}
+                <li class="team-standings-row">
+                    <div>
+                        <h3 class="font-bold">{% if can_approve_teams %}<a href="{% url 'event_standings' row.event.id %}" class="hover:text-campus hover:underline">{{ row.event.name }}</a>{% else %}{{ row.event.name }}{% endif %}</h3>
+                        <p class="team-workspace-meta">{{ row.event.competition.name }} &middot; {{ row.stage }}</p>
+                    </div>
+                    <dl>
+                        <div><dt>Rank</dt><dd>{% if row.played %}{{ row.rank }}{% else %}&mdash;{% endif %}</dd></div>
+                        <div><dt>Played</dt><dd>{{ row.played }}</dd></div>
+                        <div><dt>Wins</dt><dd>{{ row.wins }}</dd></div>
+                        <div><dt>Draws</dt><dd>{{ row.draws|default:0 }}</dd></div>
+                        <div><dt>Losses</dt><dd>{{ row.losses }}</dd></div>
+                        <div><dt>Points</dt><dd>{{ row.total_points|default_if_none:'—' }}</dd></div>
+                    </dl>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="team-roster-empty">No confirmed sports event entries for this team yet.</p>
+        {% endif %}
+    </section>
+
+    <section id="panel-management" role="tabpanel" aria-labelledby="tab-btn-management" data-tab-panel hidden class="team-workspace-management-grid">
+        <div class="team-workspace-card overflow-hidden">
+            <div class="border-b border-slate-100 px-5 py-4 sm:px-6"><h2 class="font-display text-lg font-bold text-ink">Department Team Managers</h2></div>
+            {% if staff_assignments %}
+            <div class="divide-y divide-slate-100">
+                {% for assignment in staff_assignments %}
+                <div class="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
+                    <div class="min-w-0">
+                        <p class="truncate font-bold text-ink">{{ assignment.user.get_full_name|default:assignment.user.username }}</p>
+                        <p class="text-xs text-slate-500">{{ assignment.get_role_display }}</p>
+                    </div>
+                    {% if can_approve_teams %}
+                    <form method="post" action="{% url 'remove_team_staff' team.id assignment.id %}">
+                        {% csrf_token %}
+                        <button class="text-xs font-bold text-rose-600 tw-button tw-button-danger">Remove</button>
+                    </form>
+                    {% endif %}
+                </div>
                 {% endfor %}
-                </ul>
+            </div>
             {% else %}
-                <p class="team-roster-empty">No confirmed sports event entries for this team yet.</p>
+            <div class="px-5 py-8 text-center text-sm text-slate-500">No staff assigned.</div>
             {% endif %}
-        </section>
-<section class="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-6 py-5"><h2 class="font-display text-xl font-bold text-ink">Coaches and managers</h2></div>
-            {% if staff_assignments %}<div class="divide-y divide-slate-100">{% for assignment in staff_assignments %}<div class="flex items-center justify-between gap-3 px-5 py-4"><div><p class="font-bold text-ink">{{ assignment.user.get_full_name|default:assignment.user.username }}</p><p class="text-xs text-slate-500">{{ assignment.get_role_display }}</p></div>{% if can_approve_teams %}<form method="post" action="{% url 'remove_team_staff' team.id assignment.id %}">{% csrf_token %}<button class="text-xs font-bold text-rose-600 tw-button tw-button-danger">Remove</button></form>{% endif %}</div>{% endfor %}</div>{% else %}<div class="px-5 py-8 text-center text-sm text-slate-500">No staff assigned.</div>{% endif %}
-            {% if can_approve_teams %}<form method="post" action="{% url 'add_team_staff' team.id %}" class="space-y-3 border-t border-slate-100 bg-slate-50/70 p-5">{% csrf_token %}<div><label for="{{ staff_form.user.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Staff member</label>{{ staff_form.user }}</div><div><label for="{{ staff_form.role.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Role</label>{{ staff_form.role }}</div><button class="w-full rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Assign staff</button></form>{% endif %}
-        </section>
+            {% if can_approve_teams and staff_form %}
+            <form method="post" action="{% url 'add_team_staff' team.id %}" class="space-y-3 border-t border-slate-100 bg-slate-50/70 p-5">
+                {% csrf_token %}
+                <div><label for="{{ staff_form.user.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Staff member</label>{{ staff_form.user }}</div>
+                <div><label for="{{ staff_form.role.id_for_label }}" class="mb-1.5 block text-xs font-bold text-slate-600">Role</label>{{ staff_form.role }}</div>
+                <button class="w-full rounded-md bg-ink px-4 py-3 text-sm font-bold text-white hover:bg-campus tw-button tw-button-primary">Assign staff</button>
+            </form>
+            {% endif %}
+        </div>
+
         {% if can_approve_teams %}
-        <details class="team-workspace-card team-workspace-settings">
-            <summary>Team status</summary>
-            <form method="post" action="{% url 'update_team_status' team.pk %}" class="team-workspace-form">
+        <div class="team-workspace-card p-5 sm:p-6">
+            <h2 class="font-display text-lg font-bold text-ink">Team approval status</h2>
+            <p class="mt-1 text-xs text-slate-500">Update whether this department team is approved, pending, rejected, or suspended.</p>
+            <form method="post" action="{% url 'update_team_status' team.pk %}" class="mt-4 space-y-3">
                 {% csrf_token %}
                 <div>
-                    <label for="team-status">Status</label>
-                    <select id="team-status" name="status">
+                    <label for="team-status" class="mb-1.5 block text-xs font-bold text-slate-600">Status</label>
+                    <select id="team-status" name="status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800">
                         {% for value, label in team.Status.choices %}<option value="{{ value }}" {% if team.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
                     </select>
                 </div>
-                <div class="team-workspace-form-actions"><button type="submit" class="tw-button tw-button-secondary">Update status</button></div>
+                <button type="submit" class="tw-button tw-button-primary w-full sm:w-auto">Update approval status</button>
             </form>
-        </details>
+        </div>
         {% endif %}
-    </div>
+    </section>
 </div>
 {% endblock %}
 {% block extra_scripts %}<script src="{% static_v 'js/team-management.js' %}" defer></script>{% endblock %}

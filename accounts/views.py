@@ -315,19 +315,113 @@ def dashboard(request):
 
 @administrator_required
 def user_management(request):
-    users = User.objects.select_related('account_profile').order_by('username')
+    from django.db.models import Q
+    from sports.models import SportsEvent
+
+    q = (request.GET.get('q') or '').strip()
+    role_filter = (request.GET.get('role') or '').strip()
+
+    all_users = User.objects.select_related('account_profile')
+    stats = {
+        'total': all_users.count(),
+        'active': all_users.filter(is_active=True).count(),
+        'tournament_managers': all_users.filter(account_profile__role=UserProfile.Role.TOURNAMENT_MANAGER).count(),
+        'team_managers': all_users.filter(account_profile__role=UserProfile.Role.TEAM_MANAGER).count(),
+    }
+
+    users = all_users.prefetch_related(
+        'managed_sport_events',
+        'team_staff_assignments__team',
+    ).order_by('username')
+    if q:
+        users = users.filter(
+            Q(username__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(last_name__icontains=q)
+        )
+    if role_filter and role_filter in UserProfile.Role.values:
+        users = users.filter(account_profile__role=role_filter)
+    else:
+        role_filter = ''
+
     page_obj = Paginator(users, 20).get_page(request.GET.get('page'))
+    sport_events = list(
+        SportsEvent.objects.select_related('competition', 'sport_type', 'tournament_manager')
+        .order_by('competition__name', 'name')
+    )
+
     return render(request, 'accounts/user_management.html', {
         'page_obj': page_obj,
         'users': page_obj,
+        'stats': stats,
+        'query': q,
+        'role_filter': role_filter,
         'role_choices': UserProfile.Role.choices,
         'management_roles': MANAGEMENT_ROLES,
+        'sport_events': sport_events,
     })
 
 
 @administrator_required
 @require_POST
+def admin_create_user(request):
+    from sports.models import SportsEvent
+    from .access import sync_staff_status
+
+    username = (request.POST.get('username') or '').strip()
+    first_name = (request.POST.get('first_name') or '').strip()
+    last_name = (request.POST.get('last_name') or '').strip()
+    password = (request.POST.get('password') or '').strip()
+    role = (request.POST.get('role') or UserProfile.Role.TOURNAMENT_MANAGER).strip()
+    is_active = request.POST.get('is_active') == 'on'
+
+    if not username or not password:
+        messages.error(request, 'Username and password are required to create an account.')
+        return redirect('user_management')
+    if len(password) < 6:
+        messages.error(request, 'Password must be at least 6 characters long.')
+        return redirect('user_management')
+    if User.objects.filter(username__iexact=username).exists():
+        messages.error(request, f'Username "{username}" is already taken.')
+        return redirect('user_management')
+    if role not in UserProfile.Role.values:
+        messages.error(request, 'Select a valid access role.')
+        return redirect('user_management')
+
+    with transaction.atomic():
+        new_user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=is_active,
+        )
+        profile, _ = UserProfile.objects.get_or_create(user=new_user)
+        profile.role = role
+        profile.save(update_fields=['role', 'updated_at'])
+        sync_staff_status(new_user, role)
+
+        if role == UserProfile.Role.TOURNAMENT_MANAGER:
+            event_ids = [int(eid) for eid in request.POST.getlist('sport_event_ids') if str(eid).isdigit()]
+            if event_ids:
+                SportsEvent.objects.filter(id__in=event_ids).update(tournament_manager=new_user)
+
+    from audit.models import record_action_from_request
+    record_action_from_request(
+        request,
+        'USER_CREATED',
+        target=new_user,
+        details=f'Created user account {new_user.username} with role {role}',
+    )
+    messages.success(request, f'Account "{new_user.username}" created successfully.')
+    return redirect('user_management')
+
+
+@administrator_required
+@require_POST
 def update_user_access(request, user_id):
+    from sports.models import SportsEvent
+
     target_user = get_object_or_404(User, id=user_id)
     if target_user == request.user:
         messages.error(request, 'You cannot change your own role or deactivate your own account.')
@@ -338,7 +432,25 @@ def update_user_access(request, user_id):
 
     form = UserAccessForm(request.POST)
     if form.is_valid():
-        form.save(target_user)
+        with transaction.atomic():
+            form.save(target_user)
+            new_password = (request.POST.get('new_password') or '').strip()
+            if new_password:
+                if len(new_password) < 6:
+                    messages.warning(request, 'Password was not changed (minimum 6 characters required).')
+                else:
+                    target_user.set_password(new_password)
+                    target_user.save(update_fields=['password'])
+
+            if request.POST.get('sync_sport_events') == '1':
+                if form.cleaned_data['role'] == UserProfile.Role.TOURNAMENT_MANAGER:
+                    selected_ids = [int(eid) for eid in request.POST.getlist('sport_event_ids') if str(eid).isdigit()]
+                    SportsEvent.objects.filter(tournament_manager=target_user).exclude(id__in=selected_ids).update(tournament_manager=None)
+                    if selected_ids:
+                        SportsEvent.objects.filter(id__in=selected_ids).update(tournament_manager=target_user)
+                else:
+                    SportsEvent.objects.filter(tournament_manager=target_user).update(tournament_manager=None)
+
         from audit.models import record_action_from_request
         record_action_from_request(
             request,
