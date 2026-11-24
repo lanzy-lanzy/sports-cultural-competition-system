@@ -229,7 +229,8 @@ def competition_list(request):
     else:
         selected_year = ''
 
-    valid_statuses = [choice[0] for choice in Competition.STATUS_CHOICES]
+    status_choices = list(Competition._meta.get_field('status').choices)
+    valid_statuses = [choice[0] for choice in status_choices]
     selected_status = (request.GET.get('status') or '').strip().upper()
     if selected_status in valid_statuses:
         competitions = competitions.filter(status=selected_status)
@@ -294,7 +295,7 @@ def competition_list(request):
         'query': query,
         'available_years': available_years,
         'selected_year': selected_year,
-        'status_choices': Competition.STATUS_CHOICES,
+        'status_choices': status_choices,
         'selected_status': selected_status,
         'selected_format': selected_format,
         'all_count': all_count,
