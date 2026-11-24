@@ -541,6 +541,204 @@ def compute_partial_match_tally(competitions=None, medal_lookup=None):
     return {'rows': rows, 'totals': totals}
 
 
+def build_sports_tally_matrix(competitions):
+    """Build a matrix with all sports as columns and teams/delegations as rows,
+    tallying medals, points, and completed match W-L-D records per sport plus totals.
+    """
+    from sports.models import Match, MatchEntry, SportType, SportsEvent
+    from sports.services import event_podium
+    from teams.models import Team
+
+    sports_comps = [c for c in competitions if c.kind != Competition.Kind.CULTURAL]
+    if not sports_comps:
+        return {'columns': [], 'rows': [], 'column_totals': [], 'grand_totals': {}}
+
+    comp_ids = [c.id for c in sports_comps]
+    events = list(
+        SportsEvent.objects.filter(competition_id__in=comp_ids)
+        .select_related('competition', 'sport_type')
+    )
+
+    sport_map = OrderedDict()
+    for st in SportType.objects.filter(is_active=True).order_by('name'):
+        sport_map[st.id] = {'id': st.id, 'name': st.name}
+    for ev in sorted(events, key=lambda e: e.sport_type.name.lower()):
+        if ev.sport_type_id not in sport_map:
+            sport_map[ev.sport_type_id] = {'id': ev.sport_type_id, 'name': ev.sport_type.name}
+
+    columns = list(sport_map.values())
+    if not columns:
+        return {'columns': [], 'rows': [], 'column_totals': [], 'grand_totals': {}}
+
+    col_ids = [col['id'] for col in columns]
+
+    def _blank_cell():
+        return {
+            'gold': 0,
+            'silver': 0,
+            'bronze': 0,
+            'points': Decimal('0'),
+            'wins': 0,
+            'losses': 0,
+            'draws': 0,
+            'played': 0,
+        }
+
+    row_buckets = {}
+
+    def _ensure_row(key, name, department='', status='', status_display=''):
+        bucket = row_buckets.get(key)
+        if bucket is None:
+            bucket = {
+                'key': key,
+                'name': name,
+                'department': department,
+                'status': status,
+                'status_display': status_display,
+                'cells': {cid: _blank_cell() for cid in col_ids},
+            }
+            row_buckets[key] = bucket
+        return bucket
+
+    # Include approved teams (prioritizing department teams) so all delegations appear on the board.
+    for team in Team.objects.filter(status=Team.Status.APPROVED).order_by('department', 'name'):
+        key, name = contestant_identity(team=team)
+        _ensure_row(
+            key,
+            name,
+            department=team.department,
+            status=team.status,
+            status_display=team.get_status_display(),
+        )
+
+    # Accumulate confirmed sports medals & points per (team, sport_type).
+    points_by_comp = {c.id: medal_points_for(c) for c in sports_comps}
+    for ev in events:
+        pmap = points_by_comp.get(ev.competition_id) or {}
+        for entry, medal in event_podium(ev):
+            atype = SPORT_MEDAL_TO_AWARD.get(medal)
+            if atype is None:
+                continue
+            key, name = contestant_identity(team=entry.team, participant=entry.participant)
+            dept = entry.team.department if entry.team_id else ''
+            bucket = _ensure_row(key, name, department=dept)
+            cell = bucket['cells'].setdefault(ev.sport_type_id, _blank_cell())
+            if atype == Award.Type.GOLD_MEDAL:
+                cell['gold'] += 1
+            elif atype == Award.Type.SILVER_MEDAL:
+                cell['silver'] += 1
+            elif atype == Award.Type.BRONZE_MEDAL:
+                cell['bronze'] += 1
+            cell['points'] += pmap.get(atype, Decimal('0'))
+
+    # Accumulate completed match W-L-D records per (team, sport_type) (excluding byes).
+    completed_entries = list(
+        MatchEntry.objects.filter(
+            match__event__competition_id__in=comp_ids,
+            match__status=Match.Status.COMPLETED,
+        )
+        .select_related('team', 'participant__team_membership__team', 'match__event')
+    )
+    entries_per_match = {}
+    for me in completed_entries:
+        entries_per_match.setdefault(me.match_id, []).append(me)
+
+    for match_entries in entries_per_match.values():
+        if len(match_entries) < 2:
+            continue
+        for me in match_entries:
+            key, name = contestant_identity(team=me.team, participant=me.participant)
+            dept = me.team.department if me.team_id else ''
+            bucket = _ensure_row(key, name, department=dept)
+            cell = bucket['cells'].setdefault(me.match.event.sport_type_id, _blank_cell())
+            if me.is_winner:
+                cell['wins'] += 1
+            elif me.is_draw:
+                cell['draws'] += 1
+            else:
+                cell['losses'] += 1
+            cell['played'] += 1
+
+    matrix_rows = []
+    for bucket in row_buckets.values():
+        ordered_cells = [bucket['cells'][cid] for cid in col_ids]
+        total_gold = sum(c['gold'] for c in ordered_cells)
+        total_silver = sum(c['silver'] for c in ordered_cells)
+        total_bronze = sum(c['bronze'] for c in ordered_cells)
+        total_points = sum((c['points'] for c in ordered_cells), Decimal('0'))
+        total_wins = sum(c['wins'] for c in ordered_cells)
+        total_losses = sum(c['losses'] for c in ordered_cells)
+        total_draws = sum(c['draws'] for c in ordered_cells)
+        total_played = sum(c['played'] for c in ordered_cells)
+        matrix_rows.append({
+            'key': bucket['key'],
+            'name': bucket['name'],
+            'department': bucket['department'],
+            'cells': ordered_cells,
+            'gold': total_gold,
+            'silver': total_silver,
+            'bronze': total_bronze,
+            'total_medals': total_gold + total_silver + total_bronze,
+            'points': total_points,
+            'wins': total_wins,
+            'losses': total_losses,
+            'draws': total_draws,
+            'played': total_played,
+        })
+
+    matrix_rows.sort(
+        key=lambda r: (
+            -r['points'],
+            -r['gold'],
+            -r['silver'],
+            -r['bronze'],
+            -r['wins'],
+            r['losses'],
+            r['name'].lower(),
+        )
+    )
+    prev_sig = None
+    rank = 0
+    for idx, row in enumerate(matrix_rows, start=1):
+        sig = (row['points'], row['gold'], row['silver'], row['bronze'], row['wins'], row['losses'])
+        if sig != prev_sig:
+            rank = idx
+            prev_sig = sig
+        row['rank'] = rank
+
+    column_totals = []
+    for col_idx, col in enumerate(columns):
+        col_pts = sum((r['cells'][col_idx]['points'] for r in matrix_rows), Decimal('0'))
+        col_medals = sum(
+            r['cells'][col_idx]['gold'] + r['cells'][col_idx]['silver'] + r['cells'][col_idx]['bronze']
+            for r in matrix_rows
+        )
+        col_played = sum(r['cells'][col_idx]['played'] for r in matrix_rows) // 2
+        column_totals.append({
+            'id': col['id'],
+            'name': col['name'],
+            'points': col_pts,
+            'medals': col_medals,
+            'matches': col_played,
+        })
+
+    grand_totals = {
+        'gold': sum(r['gold'] for r in matrix_rows),
+        'silver': sum(r['silver'] for r in matrix_rows),
+        'bronze': sum(r['bronze'] for r in matrix_rows),
+        'points': sum((r['points'] for r in matrix_rows), Decimal('0')),
+        'wins': sum(r['wins'] for r in matrix_rows),
+        'losses': sum(r['losses'] for r in matrix_rows),
+    }
+
+    return {
+        'columns': columns,
+        'rows': matrix_rows,
+        'column_totals': column_totals,
+        'grand_totals': grand_totals,
+    }
+
+
 def compute_overall_medal_tally(competitions=None):
     """Aggregate medals across competitions into one system-wide tally.
 
@@ -594,6 +792,7 @@ def compute_overall_medal_tally(competitions=None):
 
     medal_lookup = {row['key']: row for row in rows if 'key' in row}
     partial = compute_partial_match_tally(queryset, medal_lookup=medal_lookup)
+    sports_matrix = build_sports_tally_matrix(queryset)
 
     totals = {
         'gold': sum(row['gold'] for row in rows),
@@ -610,6 +809,7 @@ def compute_overall_medal_tally(competitions=None):
         'totals': totals,
         'partial_rows': partial['rows'],
         'partial_totals': partial['totals'],
+        'sports_matrix': sports_matrix,
         # Bar graph series: delegation/team rows vs raw per-participant rows.
         'team_rows': team_rows,
         'individuals': individuals,

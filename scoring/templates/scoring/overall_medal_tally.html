@@ -70,6 +70,107 @@
         </div>
     </form>
 
+    {% if tally.sports_matrix.columns and tally.sports_matrix.rows %}
+    <!-- ===== Overall Sports-by-Sports Tally Matrix ===== -->
+    <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="sports-matrix-title">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 id="sports-matrix-title" class="font-display text-xl font-semibold text-ink">Overall Sports Tally by Event</h2>
+                    <span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">{{ tally.sports_matrix.columns|length }} Sports</span>
+                </div>
+                <p class="mt-0.5 text-xs text-slate-500">All sports listed across columns with each team's points, medals (G/S/B), live W&ndash;L record, and overall total.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-500">
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>Gold</span>
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>Silver</span>
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-orange-400"></span>Bronze</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left text-xs sm:text-sm" aria-labelledby="sports-matrix-title">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-paper/90 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        <th class="sticky left-0 z-20 w-14 border-r border-slate-200/80 bg-paper px-3 py-3.5 text-center">#</th>
+                        <th class="sticky left-14 z-20 min-w-[165px] border-r border-slate-200 bg-paper px-4 py-3.5">Team / Dept</th>
+                        {% for col in tally.sports_matrix.columns %}
+                        <th class="min-w-[96px] whitespace-nowrap border-r border-slate-100 px-3 py-3.5 text-center">{{ col.name }}</th>
+                        {% endfor %}
+                        <th class="border-l border-slate-200 bg-amber-50/60 px-3 py-3.5 text-center text-amber-700">G</th>
+                        <th class="bg-slate-100/70 px-3 py-3.5 text-center text-slate-600">S</th>
+                        <th class="bg-orange-50/60 px-3 py-3.5 text-center text-orange-700">B</th>
+                        <th class="bg-moss/70 px-4 py-3.5 text-center text-pine-deep">Total Pts</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in tally.sports_matrix.rows %}
+                    <tr class="{% if row.rank == 1 and row.points %}bg-amber-50/30{% endif %} transition-colors hover:bg-paper/70">
+                        <td class="sticky left-0 z-10 border-r border-slate-200/80 bg-white px-3 py-3 text-center font-display text-sm font-bold tabular-nums text-ink">{{ row.rank }}</td>
+                        <td class="sticky left-14 z-10 border-r border-slate-200 bg-white px-4 py-3">
+                            <p class="truncate font-bold text-ink">{{ row.name }}</p>
+                            {% if row.department %}
+                            <span class="mt-0.5 inline-block rounded bg-moss px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">{{ row.department }}</span>
+                            {% endif %}
+                        </td>
+                        {% for cell in row.cells %}
+                        <td class="border-r border-slate-100 px-2.5 py-3 text-center tabular-nums">
+                            {% if cell.points or cell.gold or cell.silver or cell.bronze %}
+                                <p class="font-display text-sm font-bold text-ink">{{ cell.points|floatformat:"-1" }}</p>
+                                <div class="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold">
+                                    {% if cell.gold %}<span class="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">{{ cell.gold }}G</span>{% endif %}
+                                    {% if cell.silver %}<span class="rounded bg-slate-200 px-1.5 py-0.5 text-slate-700">{{ cell.silver }}S</span>{% endif %}
+                                    {% if cell.bronze %}<span class="rounded bg-orange-100 px-1.5 py-0.5 text-orange-800">{{ cell.bronze }}B</span>{% endif %}
+                                </div>
+                                {% if cell.played %}
+                                <p class="mt-0.5 text-[10px] text-slate-400">{{ cell.wins }}W-{{ cell.losses }}L</p>
+                                {% endif %}
+                            {% elif cell.played %}
+                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold">
+                                    <span class="text-emerald-700">{{ cell.wins }}W</span><span class="text-slate-400">-</span><span class="text-rose-600">{{ cell.losses }}L</span>{% if cell.draws %}<span class="text-slate-400">-{{ cell.draws }}D</span>{% endif %}
+                                </span>
+                            {% else %}
+                                <span class="text-slate-300">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="border-l border-slate-200 bg-amber-50/30 px-3 py-3 text-center font-bold tabular-nums text-amber-700">{{ row.gold }}</td>
+                        <td class="bg-slate-50/60 px-3 py-3 text-center font-bold tabular-nums text-slate-600">{{ row.silver }}</td>
+                        <td class="bg-orange-50/30 px-3 py-3 text-center font-bold tabular-nums text-orange-700">{{ row.bronze }}</td>
+                        <td class="bg-moss/40 px-4 py-3 text-center font-display text-base font-bold tabular-nums text-pine-deep">
+                            {{ row.points|floatformat:"-1" }}
+                            {% if row.played and not row.points %}
+                            <span class="block text-[10px] font-semibold text-slate-500">{{ row.wins }}W-{{ row.losses }}L</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-slate-200 bg-paper/90 text-xs font-bold text-ink">
+                        <td class="sticky left-0 z-10 border-r border-slate-200/80 bg-paper px-3 py-3 text-center">&Sigma;</td>
+                        <td class="sticky left-14 z-10 border-r border-slate-200 bg-paper px-4 py-3 uppercase tracking-wider text-slate-600">Totals</td>
+                        {% for col_tot in tally.sports_matrix.column_totals %}
+                        <td class="border-r border-slate-100 px-2.5 py-3 text-center tabular-nums">
+                            {% if col_tot.points %}
+                                <span>{{ col_tot.points|floatformat:"-1" }} pts</span>
+                            {% elif col_tot.matches %}
+                                <span class="text-[11px] font-semibold text-slate-500">{{ col_tot.matches }} m</span>
+                            {% else %}
+                                <span class="text-slate-300">0</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="border-l border-slate-200 bg-amber-50/60 px-3 py-3 text-center tabular-nums text-amber-800">{{ tally.sports_matrix.grand_totals.gold }}</td>
+                        <td class="bg-slate-100/80 px-3 py-3 text-center tabular-nums text-slate-700">{{ tally.sports_matrix.grand_totals.silver }}</td>
+                        <td class="bg-orange-50/60 px-3 py-3 text-center tabular-nums text-orange-800">{{ tally.sports_matrix.grand_totals.bronze }}</td>
+                        <td class="bg-moss px-4 py-3 text-center font-display text-sm font-bold tabular-nums text-pine-deep">{{ tally.sports_matrix.grand_totals.points|floatformat:"-1" }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
     {% if tally.rows %}
     <!-- ===== Official / Provisional Medal Tally KPI Grid ===== -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
