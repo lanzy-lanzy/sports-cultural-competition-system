@@ -45,6 +45,10 @@
                     class="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
                 Reject Selected
             </button>
+            <button type="submit" name="action" value="delete" data-bulk-teams-btn data-bulk-delete-btn disabled
+                    class="cursor-pointer rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40">
+                Delete Selected
+            </button>
         </form>
     </div>
     <table class="w-full text-left text-sm">
@@ -135,13 +139,17 @@
         <form id="bulk-events-form" method="post" action="{% url 'bulk_review_registrations' %}" class="flex flex-wrap items-center gap-2">
             {% csrf_token %}
             <span id="bulk-events-count" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">0 selected</span>
-            <button type="submit" name="action" value="approve" data-bulk-events-btn disabled
+            <button type="submit" name="action" value="approve" data-bulk-events-review-btn disabled
                     class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
                 Approve Selected
             </button>
-            <button type="submit" name="action" value="reject" data-bulk-events-btn disabled
+            <button type="submit" name="action" value="reject" data-bulk-events-review-btn disabled
                     class="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
                 Reject Selected
+            </button>
+            <button type="submit" name="action" value="delete" data-bulk-events-btn data-bulk-delete-btn disabled
+                    class="cursor-pointer rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40">
+                Delete Selected
             </button>
         </form>
     </div>
@@ -149,7 +157,7 @@
         <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <tr>
                 <th class="w-10 py-3 pl-5 pr-2">
-                    <input type="checkbox" id="select-all-event-regs" aria-label="Select all pending event registrations"
+                    <input type="checkbox" id="select-all-event-regs" aria-label="Select all event registrations"
                            class="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
                 </th>
                 <th class="px-5 py-3">Contestant</th>
@@ -164,13 +172,10 @@
             {% for registration in page_obj %}
             <tr class="border-slate-100 transition-colors hover:bg-slate-50/60 {% if not forloop.first %}border-t{% endif %}">
                 <td class="w-10 py-3 pl-5 pr-2">
-                    {% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}
                     <input type="checkbox" name="registration_ids" value="{{ registration.id }}" form="bulk-events-form"
+                           data-reviewable="{% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}1{% else %}0{% endif %}"
                            aria-label="Select {{ registration.contestant_name }}"
                            class="bulk-event-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
-                    {% else %}
-                    <input type="checkbox" disabled class="h-4 w-4 cursor-not-allowed rounded border-slate-200 opacity-40">
-                    {% endif %}
                 </td>
                 <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
@@ -275,15 +280,18 @@
 
 <script>
 (() => {
-    function wireBulkGroup(selectAllId, boxSelector, countId, btnSelector) {
+    function wireBulkGroup(selectAllId, boxSelector, countId, btnSelector, reviewBtnSelector) {
         const selectAll = document.getElementById(selectAllId);
         const boxes = Array.from(document.querySelectorAll(boxSelector));
         const countEl = document.getElementById(countId);
         const buttons = Array.from(document.querySelectorAll(btnSelector));
+        const reviewButtons = reviewBtnSelector ? Array.from(document.querySelectorAll(reviewBtnSelector)) : [];
         if (!selectAll && !boxes.length) return;
 
         function sync() {
-            const checked = boxes.filter(b => b.checked).length;
+            const checkedBoxes = boxes.filter(b => b.checked);
+            const checked = checkedBoxes.length;
+            const reviewableChecked = checkedBoxes.filter(b => b.dataset.reviewable !== '0').length;
             if (selectAll) {
                 selectAll.checked = boxes.length > 0 && checked === boxes.length;
                 selectAll.indeterminate = checked > 0 && checked < boxes.length;
@@ -291,6 +299,7 @@
             }
             if (countEl) countEl.textContent = `${checked} selected`;
             buttons.forEach(btn => { btn.disabled = checked === 0; });
+            reviewButtons.forEach(btn => { btn.disabled = reviewableChecked === 0; });
         }
 
         if (selectAll) {
@@ -300,11 +309,21 @@
             });
         }
         boxes.forEach(b => b.addEventListener('change', sync));
+
+        buttons.filter(btn => btn.hasAttribute('data-bulk-delete-btn')).forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                const checked = boxes.filter(b => b.checked).length;
+                if (!checked || !window.confirm(`Delete ${checked} selected item(s)? This cannot be undone.`)) {
+                    event.preventDefault();
+                }
+            });
+        });
+
         sync();
     }
 
     wireBulkGroup('select-all-pending-teams', '.bulk-team-checkbox', 'bulk-teams-count', '[data-bulk-teams-btn]');
-    wireBulkGroup('select-all-event-regs', '.bulk-event-checkbox', 'bulk-events-count', '[data-bulk-events-btn]');
+    wireBulkGroup('select-all-event-regs', '.bulk-event-checkbox', 'bulk-events-count', '[data-bulk-events-btn]', '[data-bulk-events-review-btn]');
 })();
 </script>
 {% endblock %}

@@ -2,10 +2,10 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {% if not competition %}
         <div class="sm:col-span-2">
-            <label class="block text-sm font-semibold text-slate-800">Static Sports Event / Competition <span class="text-rose-500">*</span>
+            <label class="block text-sm font-semibold text-slate-800">Sports Event <span class="text-rose-500">*</span>
                 <select name="static_event" required disabled data-static-event-select
                         class="mt-2 block w-full cursor-pointer rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                    <option value="">Select PALARO 2026 sport event</option>
+                    <option value="">Select sport event</option>
                     {% for item in static_sports_events %}
                     <option value="{{ item.slug }}"
                             data-event-name="{{ item.name }}"
@@ -95,7 +95,7 @@
 
             if (metaBox) {
                 if (eventName) {
-                    metaBox.textContent = `Static Venue: ${venue} · Duration: ${duration} min · Required Players: ${players} per team · Points: ${gold} / ${silver} / ${bronze}`;
+                    metaBox.textContent = `Venue: ${venue} · Duration: ${duration} min · Required Players: ${players} per team · Points: ${gold} / ${silver} / ${bronze}`;
                     metaBox.classList.remove('hidden');
                 } else {
                     metaBox.classList.add('hidden');

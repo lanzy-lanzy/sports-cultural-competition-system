@@ -237,19 +237,33 @@ def bulk_review_teams(request):
 
     action = (request.POST.get('action') or '').strip()
     team_ids = [int(tid) for tid in request.POST.getlist('team_ids') if str(tid).isdigit()]
-    if action not in ('approve', 'reject'):
+    if action not in ('approve', 'reject', 'delete'):
         messages.error(request, 'Invalid bulk team review action.')
         return redirect('registration_review_queue')
     if not team_ids:
         messages.warning(request, 'Select at least one pending department team.')
         return redirect('registration_review_queue')
 
-    new_status = Team.Status.APPROVED if action == 'approve' else Team.Status.REJECTED
-    User = get_user_model()
     teams = list(Team.objects.filter(id__in=team_ids, status=Team.Status.PENDING))
     if not teams:
         messages.warning(request, 'No pending department teams matched your selection.')
         return redirect('registration_review_queue')
+
+    if action == 'delete':
+        with transaction.atomic():
+            for team in teams:
+                team_name = team.name
+                team.delete()
+                record_action_from_request(
+                    request,
+                    'TEAM_DELETED',
+                    details=f'Bulk deleted pending team registration: "{team_name}"',
+                )
+        messages.success(request, f'Deleted {len(teams)} department team registration(s).')
+        return redirect('registration_review_queue')
+
+    new_status = Team.Status.APPROVED if action == 'approve' else Team.Status.REJECTED
+    User = get_user_model()
 
     with transaction.atomic():
         for team in teams:
@@ -284,11 +298,32 @@ def bulk_review_registrations(request):
 
     action = (request.POST.get('action') or '').strip()
     reg_ids = [int(rid) for rid in request.POST.getlist('registration_ids') if str(rid).isdigit()]
-    if action not in ('approve', 'reject'):
+    if action not in ('approve', 'reject', 'delete'):
         messages.error(request, 'Invalid bulk registration action.')
         return redirect('registration_review_queue')
     if not reg_ids:
-        messages.warning(request, 'Select at least one pending event registration.')
+        messages.warning(request, 'Select at least one event registration.')
+        return redirect('registration_review_queue')
+
+    if action == 'delete':
+        regs = list(
+            EventRegistration.objects.filter(id__in=reg_ids).select_related(
+                'registrant', 'sport_event', 'competition', 'team', 'participant',
+            )
+        )
+        if not regs:
+            messages.warning(request, 'No event registrations matched your selection.')
+            return redirect('registration_review_queue')
+        with transaction.atomic():
+            for reg in regs:
+                contestant_name = reg.contestant_name
+                delete_registration(reg)
+                record_action_from_request(
+                    request,
+                    'REGISTRATION_DELETED',
+                    details=f'Bulk deleted registration from review queue: {contestant_name}',
+                )
+        messages.success(request, f'Deleted {len(regs)} event registration(s).')
         return redirect('registration_review_queue')
 
     admin_notes = (request.POST.get('admin_notes') or '').strip()

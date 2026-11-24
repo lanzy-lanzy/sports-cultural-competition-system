@@ -437,3 +437,74 @@ class RegistrationTest(TestCase):
         self.assertEqual(registration.competition, cultural_comp)
         self.assertIsNone(registration.sport_event)
         self.assertEqual(registration.participant, self.participant)
+
+    def test_bulk_delete_event_registrations_removes_pending_and_finalized(self):
+        other_user = User.objects.create_user('athlete3', 'athlete3@example.com', 'pass')
+        other_participant = Participant.objects.create(
+            user=other_user,
+            name='Carlos Reyes',
+            email='athlete3@example.com',
+            age=20,
+        )
+        pending_reg = EventRegistration.objects.create(
+            registrant=self.participant_user,
+            participant=self.participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+            status=EventRegistration.Status.PENDING,
+        )
+        approved_reg = EventRegistration.objects.create(
+            registrant=other_user,
+            participant=other_participant,
+            competition=self.competition,
+            status=EventRegistration.Status.APPROVED,
+        )
+        kept_user = User.objects.create_user('athlete4', 'athlete4@example.com', 'pass')
+        kept_participant = Participant.objects.create(
+            user=kept_user,
+            name='Dina Cruz',
+            email='athlete4@example.com',
+            age=21,
+        )
+        kept_reg = EventRegistration.objects.create(
+            registrant=kept_user,
+            participant=kept_participant,
+            sport_event=self.sport_event,
+            competition=self.competition,
+            status=EventRegistration.Status.PENDING,
+        )
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_review_registrations'), {
+            'action': 'delete',
+            'registration_ids': [pending_reg.id, approved_reg.id],
+        })
+        self.assertRedirects(resp, reverse('registration_review_queue'))
+        self.assertFalse(EventRegistration.objects.filter(id=pending_reg.id).exists())
+        self.assertFalse(EventRegistration.objects.filter(id=approved_reg.id).exists())
+        self.assertTrue(EventRegistration.objects.filter(id=kept_reg.id).exists())
+        from audit.models import AuditLog
+        self.assertEqual(AuditLog.objects.filter(action='REGISTRATION_DELETED').count(), 2)
+
+    def test_bulk_delete_pending_department_teams_only_deletes_pending(self):
+        pending_team = Team.objects.create(
+            name='Pending Eagles',
+            category=Team.Category.SPORTS,
+            status=Team.Status.PENDING,
+            created_by=self.admin,
+        )
+        approved_team = Team.objects.create(
+            name='Approved Hawks',
+            category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED,
+            created_by=self.admin,
+        )
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_review_teams'), {
+            'action': 'delete',
+            'team_ids': [pending_team.id, approved_team.id],
+        })
+        self.assertRedirects(resp, reverse('registration_review_queue'))
+        self.assertFalse(Team.objects.filter(id=pending_team.id).exists())
+        self.assertTrue(Team.objects.filter(id=approved_team.id).exists())
+        from audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='TEAM_DELETED').exists())
