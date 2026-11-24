@@ -785,6 +785,37 @@ def delete_competition(request, competition_id):
 
 
 @management_required
+@require_POST
+def bulk_delete_competitions(request):
+    from audit.models import record_action_from_request
+
+    category = (request.POST.get('category') or 'sports').strip().lower()
+    redirect_kind = Competition.Kind.CULTURAL if category == 'cultural' else Competition.Kind.SPORTS
+    comp_ids = list({int(cid) for cid in request.POST.getlist('competition_ids') if str(cid).isdigit()})
+    if not comp_ids:
+        messages.warning(request, 'Select at least one competition to delete.')
+        return redirect(_competition_list_url(redirect_kind))
+
+    competitions = list(Competition.objects.filter(id__in=comp_ids))
+    if not competitions:
+        messages.warning(request, 'No matching competitions found.')
+        return redirect(_competition_list_url(redirect_kind))
+
+    with transaction.atomic():
+        for comp in competitions:
+            comp_name = comp.name
+            comp.delete()
+            record_action_from_request(
+                request,
+                'COMPETITION_DELETED',
+                details=f'Bulk deleted competition: {comp_name}',
+            )
+
+    messages.success(request, f'Deleted {len(competitions)} competition(s).')
+    return redirect(_competition_list_url(redirect_kind))
+
+
+@management_required
 def toggle_competition_status(request, competition_id):
     if request.method == 'POST':
         competition = get_object_or_404(Competition, id=competition_id)

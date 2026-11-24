@@ -837,3 +837,85 @@ class SportsTournamentFormatTest(TestCase):
             self.assertEqual(ev.format, SportsEvent.Format.SINGLE_ELIMINATION)
             self.assertEqual(ev.venue.name, 'JHCSC Basketball Court')
             self.assertEqual(ev.players_per_event, 15)
+
+
+class CompetitionBulkDeleteTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('bulkadmin', 'ba@example.com', 'pass')
+        self.viewer = User.objects.create_user('bulkviewer', 'bv@example.com', 'pass')
+        self.sport_1 = Competition.objects.create(
+            name='BASKETBALL',
+            description='Sports 1',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-03-01',
+            end_date='2026-03-02',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.sport_2 = Competition.objects.create(
+            name='VOLLEYBALL',
+            description='Sports 2',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.ROUND_ROBIN,
+            start_date='2026-03-01',
+            end_date='2026-03-02',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.cultural_1 = Competition.objects.create(
+            name='SOLO SINGING',
+            description='Cultural 1',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            start_date='2026-03-01',
+            end_date='2026-03-02',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.cultural_2 = Competition.objects.create(
+            name='FOLK DANCE',
+            description='Cultural 2',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.DANCE,
+            start_date='2026-03-01',
+            end_date='2026-03-02',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+
+    def test_bulk_delete_sports_competitions(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_delete_competitions'), {
+            'category': 'sports',
+            'competition_ids': [self.sport_1.id, self.sport_2.id],
+        })
+        self.assertRedirects(resp, reverse('competition_list'))
+        self.assertFalse(Competition.objects.filter(id__in=[self.sport_1.id, self.sport_2.id]).exists())
+        self.assertTrue(Competition.objects.filter(id=self.cultural_1.id).exists())
+
+    def test_bulk_delete_cultural_competitions(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('bulk_delete_competitions'), {
+            'category': 'cultural',
+            'competition_ids': [self.cultural_1.id, self.cultural_2.id],
+        })
+        self.assertRedirects(resp, f"{reverse('competition_list')}?category=cultural")
+        self.assertFalse(Competition.objects.filter(id__in=[self.cultural_1.id, self.cultural_2.id]).exists())
+        self.assertTrue(Competition.objects.filter(id=self.sport_1.id).exists())
+
+    def test_non_management_cannot_bulk_delete(self):
+        self.client.force_login(self.viewer)
+        resp = self.client.post(reverse('bulk_delete_competitions'), {
+            'category': 'sports',
+            'competition_ids': [self.sport_1.id],
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(Competition.objects.filter(id=self.sport_1.id).exists())
+
+    def test_bulk_delete_toolbar_rendered_for_both_categories(self):
+        self.client.force_login(self.admin)
+        for cat in ('sports', 'cultural'):
+            resp = self.client.get(f"{reverse('competition_list')}?category={cat}")
+            self.assertContains(resp, 'id="bulk-delete-comps-form"')
+            self.assertContains(resp, 'Delete Selected')

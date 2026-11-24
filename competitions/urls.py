@@ -5,6 +5,7 @@ urlpatterns = [
     path('competitions/', views.competition_list, name='competition_list'),
     path('competitions/cultural/management/', views.socio_cultural_management, name='socio_cultural_management'),
     path('competitions/create/', views.create_competition, name='create_competition'),
+    path('competitions/bulk-delete/', views.bulk_delete_competitions, name='bulk_delete_competitions'),
     path('competitions/cultural/subtypes/add/', views.add_cultural_subtype, name='add_cultural_subtype'),
     path('competitions/cultural/subtypes/edit/', views.edit_cultural_subtype, name='edit_cultural_subtype'),
     path('competitions/cultural/subtypes/delete/', views.delete_cultural_subtype, name='delete_cultural_subtype'),

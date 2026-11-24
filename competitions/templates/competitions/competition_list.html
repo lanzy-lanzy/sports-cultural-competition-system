@@ -146,6 +146,27 @@
 
 {% if page_obj %}
 
+{% if can_manage %}
+<form id="bulk-delete-comps-form" method="post" action="{% url 'bulk_delete_competitions' %}"
+      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+    {% csrf_token %}
+    <input type="hidden" name="category" value="{{ category }}">
+    <div id="bulk-comp-hidden-inputs"></div>
+    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+        <input type="checkbox" id="select-all-comps" aria-label="Select all competitions on this page"
+               class="h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600">
+        <span>Select all</span>
+    </label>
+    <div class="flex items-center gap-2.5">
+        <span id="bulk-comps-count" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">0 selected</span>
+        <button type="submit" id="bulk-delete-comps-btn" disabled
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+            Delete Selected
+        </button>
+    </div>
+</form>
+{% endif %}
+
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for competition in page_obj %}
@@ -159,7 +180,13 @@
 
         <div class="flex flex-1 flex-col p-6">
             <div class="mb-3 flex items-start justify-between gap-3">
-                <h3 class="font-display text-lg font-semibold uppercase leading-snug tracking-tight text-slate-900"><a href="{% url 'competition_detail' competition.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="View {{ competition.name }} details">{{ competition.name }}</a></h3>
+                <div class="flex items-start gap-2.5">
+                    {% if can_manage %}
+                    <input type="checkbox" data-comp-id="{{ competition.id }}" aria-label="Select {{ competition.name }}"
+                           class="bulk-comp-checkbox relative z-[2] mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-rose-600">
+                    {% endif %}
+                    <h3 class="font-display text-lg font-semibold uppercase leading-snug tracking-tight text-slate-900"><a href="{% url 'competition_detail' competition.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="View {{ competition.name }} details">{{ competition.name }}</a></h3>
+                </div>
                 <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold
                     {% if competition.status == 'ACTIVE' %}border-emerald-200 bg-emerald-50 text-emerald-700
                     {% elif competition.status == 'DRAFT' %}border-slate-200 bg-slate-50 text-slate-600
@@ -244,6 +271,12 @@
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50/80">
                 <tr>
+                    {% if can_manage %}
+                    <th scope="col" class="w-10 py-3.5 pl-5 pr-2">
+                        <input type="checkbox" id="select-all-comps-table" aria-label="Select all competitions"
+                               class="h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600">
+                    </th>
+                    {% endif %}
                     <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Competition</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
                     <th scope="col" class="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Start</th>
@@ -256,6 +289,12 @@
             <tbody class="divide-y divide-slate-100 bg-white">
                 {% for competition in page_obj %}
                 <tr class="transition-colors duration-150 hover:bg-cyan-50/40">
+                    {% if can_manage %}
+                    <td class="w-10 py-4 pl-5 pr-2">
+                        <input type="checkbox" data-comp-id="{{ competition.id }}" aria-label="Select {{ competition.name }}"
+                               class="bulk-comp-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-rose-600">
+                    </td>
+                    {% endif %}
                     <td class="px-6 py-4">
                         <p class="font-semibold uppercase tracking-tight text-slate-900">{{ competition.name }}</p>
                         <div class="mt-1">{% include 'competitions/partials/category_badge.html' %}</div>
@@ -999,7 +1038,73 @@
             if (form.querySelector('.category-card')) updateCategoryUI(form);
         });
         initSearch();
+        initBulkDelete();
     });
+
+    function initBulkDelete() {
+        const form = document.getElementById('bulk-delete-comps-form');
+        if (!form) return;
+        const boxes = Array.from(document.querySelectorAll('.bulk-comp-checkbox'));
+        const selectAllBar = document.getElementById('select-all-comps');
+        const selectAllTable = document.getElementById('select-all-comps-table');
+        const countEl = document.getElementById('bulk-comps-count');
+        const deleteBtn = document.getElementById('bulk-delete-comps-btn');
+        const hiddenContainer = document.getElementById('bulk-comp-hidden-inputs');
+        const allIds = Array.from(new Set(boxes.map(b => b.dataset.compId)));
+        const selected = new Set();
+
+        function sync() {
+            boxes.forEach(b => { b.checked = selected.has(b.dataset.compId); });
+            const total = allIds.length;
+            const count = selected.size;
+            [selectAllBar, selectAllTable].forEach(ctrl => {
+                if (!ctrl) return;
+                ctrl.checked = total > 0 && count === total;
+                ctrl.indeterminate = count > 0 && count < total;
+                ctrl.disabled = total === 0;
+            });
+            if (countEl) countEl.textContent = `${count} selected`;
+            if (deleteBtn) deleteBtn.disabled = count === 0;
+        }
+
+        boxes.forEach(b => {
+            b.addEventListener('change', () => {
+                if (b.checked) selected.add(b.dataset.compId);
+                else selected.delete(b.dataset.compId);
+                sync();
+            });
+        });
+
+        [selectAllBar, selectAllTable].forEach(ctrl => {
+            if (!ctrl) return;
+            ctrl.addEventListener('change', () => {
+                if (ctrl.checked) allIds.forEach(id => selected.add(id));
+                else selected.clear();
+                sync();
+            });
+        });
+
+        form.addEventListener('submit', (event) => {
+            if (selected.size === 0) {
+                event.preventDefault();
+                return;
+            }
+            if (!window.confirm(`Delete ${selected.size} selected competition(s)? This cannot be undone.`)) {
+                event.preventDefault();
+                return;
+            }
+            hiddenContainer.innerHTML = '';
+            selected.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'competition_ids';
+                input.value = id;
+                hiddenContainer.appendChild(input);
+            });
+        });
+
+        sync();
+    }
 
     // Search as you type: the list reloads once the user pauses, and the
     // filter state (category, sub-category) travels with the query string.
