@@ -207,6 +207,47 @@ def team_manager_dashboard(request):
     ).filter(Q(scheduled_start__gte=timezone.now()) | Q(status=Match.Status.ONGOING)).distinct().select_related(
         'event__competition', 'venue',
     ).prefetch_related('entries__team', 'entries__participant').order_by('scheduled_start', 'pk')[:6]
+
+    comp_q = (request.GET.get('comp_q') or '').strip()
+    comp_kind = (request.GET.get('comp_kind') or '').strip()
+    comp_status = (request.GET.get('comp_status') or '').strip()
+    comp_year = (request.GET.get('comp_year') or '').strip()
+
+    base_comps = Competition.objects.filter(status__in=['ACTIVE', 'COMPLETED']).prefetch_related(
+        'sport_events__sport_type', 'sport_events__venue',
+    )
+    comp_years = sorted(
+        {dt.year for dt in base_comps.values_list('start_date', flat=True) if dt},
+        reverse=True,
+    )
+
+    competitions_qs = base_comps
+    if comp_q:
+        competitions_qs = competitions_qs.filter(
+            Q(name__icontains=comp_q)
+            | Q(description__icontains=comp_q)
+            | Q(sport_events__name__icontains=comp_q)
+            | Q(sport_events__sport_type__name__icontains=comp_q)
+            | Q(sport_events__venue__name__icontains=comp_q)
+        ).distinct()
+    if comp_kind in (Competition.Kind.SPORTS, Competition.Kind.CULTURAL):
+        competitions_qs = competitions_qs.filter(kind=comp_kind)
+    else:
+        comp_kind = ''
+    if comp_status in ('ACTIVE', 'COMPLETED'):
+        competitions_qs = competitions_qs.filter(status=comp_status)
+    else:
+        comp_status = ''
+    if comp_year.isdigit():
+        competitions_qs = competitions_qs.filter(start_date__year=int(comp_year))
+    else:
+        comp_year = ''
+
+    workspace_competitions = list(
+        competitions_qs.annotate(event_count=Count('sport_events', distinct=True))
+        .order_by('-start_date', '-id')[:12]
+    )
+
     return render(request, 'accounts/team_manager_dashboard.html', {
         'managed_teams': teams,
         'team_count': teams.count(),
@@ -215,6 +256,15 @@ def team_manager_dashboard(request):
         'registration_counts': counts,
         'recent_registrations': registrations.select_related('team', 'sport_event', 'competition', 'registrant')[:8],
         'upcoming_matches': upcoming,
+        'workspace_competitions': workspace_competitions,
+        'comp_years': comp_years,
+        'comp_filters': {
+            'q': comp_q,
+            'kind': comp_kind,
+            'status': comp_status,
+            'year': comp_year,
+        },
+        'has_comp_filter': bool(comp_q or comp_kind or comp_status or comp_year),
     })
 
 
