@@ -731,7 +731,7 @@ class DepartmentTeamManagerWorkflowTest(TestCase):
         self.client.force_login(self.admin)
         queue_resp = self.client.get(reverse('registration_review_queue'))
         self.assertEqual(queue_resp.status_code, 200)
-        self.assertContains(queue_resp, 'Department Team Registrations Pending Approval')
+        self.assertContains(queue_resp, 'Department Team Registrations')
         self.assertContains(queue_resp, 'SCS Wizards')
         self.assertEqual(queue_resp.context['pending_team_registrations'], 1)
         self.assertEqual(queue_resp.context['pending_registrations_total'], 1)
@@ -750,7 +750,7 @@ class DepartmentTeamManagerWorkflowTest(TestCase):
         after_resp = self.client.get(reverse('registration_review_queue'))
         self.assertEqual(after_resp.context['pending_team_registrations'], 0)
         self.assertEqual(after_resp.context['pending_registrations_total'], 0)
-        self.assertNotContains(after_resp, 'Department Team Registrations Pending Approval')
+        self.assertNotContains(after_resp, 'Department Team Registrations')
         self.assertTrue(
             Notification.objects.filter(
                 recipient=self.manager,

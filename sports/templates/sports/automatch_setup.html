@@ -17,10 +17,6 @@
     <header class="rounded-xl border border-slate-200 border-t-4 border-t-pine bg-white p-5 shadow-sm sm:p-6">
         <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-campus">{{ event.competition.name }} &middot; {{ event.sport_type.name }}</p>
         <h1 class="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Auto-Match Setup &mdash; {{ event.name }}</h1>
-        <p class="mt-1.5 text-sm text-slate-600">
-            Assign each registered {% if event.team_based %}team{% else %}participant{% endif %} to a slot
-            (<strong>Team 1</strong> to <strong>Team {{ confirmed_entries|length|default:4 }}</strong>) before generating matches.
-        </p>
 
         {% if from_board and open_events %}
         <form method="get" class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center">
@@ -74,7 +70,6 @@
             <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <h2 class="font-display text-lg font-bold text-ink">Assign Team 1 to Team {{ slots|length }}</h2>
-                    <p class="text-xs text-slate-500">Choose which registered team occupies each slot. Picking a team already in another slot swaps them automatically.</p>
                 </div>
                 <button type="button" data-automatch-shuffle class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-pine hover:text-pine">
                     Shuffle Teams
@@ -104,7 +99,6 @@
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h3 class="font-display text-sm font-bold text-ink">Auto-Schedule &amp; Static Venue</h3>
-                        <p class="text-xs text-slate-500">Matches are automatically scheduled without venue conflicts and remain editable anytime if schedules change.</p>
                     </div>
                     {% if default_venue %}
                     <span class="rounded-full bg-moss px-2.5 py-1 text-[11px] font-bold text-pine-deep">Static: {{ default_venue.name }}</span>
@@ -118,7 +112,6 @@
                             <option value="{{ val }}" {% if selected_format == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <p class="mt-1 text-[11px] text-slate-500">Change the tournament format here if needed before generating matches.</p>
                     </div>
                     <div class="sm:col-span-2">
                         <label for="automatch-venue" class="mb-1 block text-xs font-bold text-slate-600">Venue</label>
@@ -147,13 +140,10 @@
                     {% if slots|length >= 4 %}
                     <div class="sm:col-span-2" data-consolation-wrap>
                         <input type="hidden" name="include_consolation_present" value="1">
-                        <label class="flex cursor-pointer items-start gap-2.5 rounded-lg border border-emerald-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-ink">
+                        <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-emerald-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-ink">
                             <input type="checkbox" name="include_consolation" data-schedule-consolation {% if include_consolation %}checked{% endif %}
-                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-pine focus:ring-pine">
-                            <span>
-                                Include Consolation / 3rd-Place Match (Loser vs Loser)
-                                <span class="block font-normal text-slate-500">Winners advance to Finals (Win vs Win) and semifinal losers advance to Bronze Match (Loser vs Loser).</span>
-                            </span>
+                                   class="h-4 w-4 rounded border-slate-300 text-pine focus:ring-pine">
+                            <span>Include Consolation / 3rd-Place Match (Loser vs Loser)</span>
                         </label>
                     </div>
                     {% endif %}
@@ -170,14 +160,7 @@
 
         <!-- Live Matchup Preview -->
         <aside class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5">
-            <h2 class="font-display text-lg font-bold text-ink">Live Matchup Preview</h2>
-            <p class="mt-1 text-xs text-slate-500">
-                {% if is_direct_pairing %}
-                Round 1 pairs <strong>Team 1 vs Team 2</strong>, <strong>Team 3 vs Team 4</strong>, and winners advance automatically.
-                {% else %}
-                Matches will be generated in <strong>{{ event.get_format_display }}</strong> format using your exact Team 1&ndash;Team {{ slots|length }} order.
-                {% endif %}
-            </p>
+            <h2 class="font-display text-lg font-bold text-ink">Matchup Preview</h2>
             <div class="mt-4 space-y-3" data-automatch-preview aria-live="polite"></div>
         </aside>
     </form>

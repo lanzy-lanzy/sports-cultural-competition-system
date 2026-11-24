@@ -32,8 +32,7 @@
 <div class="mb-6 overflow-x-auto rounded-md border border-amber-200/90 bg-white/80 shadow-sm backdrop-blur-sm">
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 bg-amber-50/70 px-5 py-3">
         <div>
-            <h2 class="font-display text-sm font-semibold text-slate-900">Department Team Registrations Pending Approval</h2>
-            <p class="text-xs text-slate-500">Review and approve or reject department team submissions from Team Managers.</p>
+            <h2 class="font-display text-sm font-semibold text-slate-900">Department Team Registrations</h2>
         </div>
         <form id="bulk-teams-form" method="post" action="{% url 'bulk_review_teams' %}" class="flex flex-wrap items-center gap-2">
             {% csrf_token %}
@@ -132,7 +131,6 @@
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3">
         <div>
             <h2 class="font-display text-sm font-semibold text-slate-900">Event Registrations</h2>
-            <p class="text-xs text-slate-500">Select pending or under-review entries to approve or reject in bulk.</p>
         </div>
         <form id="bulk-events-form" method="post" action="{% url 'bulk_review_registrations' %}" class="flex flex-wrap items-center gap-2">
             {% csrf_token %}
