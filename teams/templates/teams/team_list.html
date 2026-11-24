@@ -48,7 +48,7 @@
 
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
     {% for team in teams %}
-    <article class="relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft">
+    <article class="relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-soft" style="border-top: 4px solid {{ team.color_theme|default:'#116b3b' }};">
         {% if can_delete_teams %}
         <label class="team-bulk-choice">
             <input type="checkbox" name="selected" value="{{ team.pk }}" form="bulk-team-delete" aria-label="Select {{ team.name }} for deletion"> Select team
@@ -58,7 +58,7 @@
             {% if team.logo %}
             <img src="{{ team.logo.url }}" alt="{{ team.name }} logo" class="h-16 w-16 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
             {% else %}
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-campus font-display text-xl font-bold text-white">{{ team.name|make_list|first|upper }}</div>
+            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md font-display text-xl font-bold text-white" style="background: {{ team.color_theme|default:'#116b3b' }};">{{ team.name|make_list|first|upper }}</div>
             {% endif %}
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-1.5">

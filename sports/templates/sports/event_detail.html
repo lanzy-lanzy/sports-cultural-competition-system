@@ -150,7 +150,6 @@
         <div class="mb-5 flex items-center justify-between">
             <h2 class="font-display text-lg font-bold text-ink">Matches</h2>
             <div class="flex gap-2">
-                {% if not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'create_match' event.id %}" class="rounded-md bg-campus px-3 py-1.5 text-xs font-bold text-white ui-button ui-button--primary ui-button--small">Create match</a>{% endif %}
                 <a href="{% url 'match_schedule' event.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Schedule</a>
                 <a href="{% url 'event_bracket' event.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-teal-200 ui-button ui-button--secondary ui-button--small">Bracket</a>
             </div>

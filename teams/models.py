@@ -63,6 +63,12 @@ class Team(models.Model):
     sports_categories = models.ManyToManyField('sports.SportType', blank=True, related_name='teams')
     description = models.TextField(blank=True)
     logo = models.ImageField(upload_to='team_logos/', blank=True, null=True)
+    color_theme = models.CharField(
+        max_length=20,
+        blank=True,
+        default='#116b3b',
+        help_text='Designated team color theme (hex code) used to identify the team across workspaces and tallies.',
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     roster_submitted = models.BooleanField(default=False)
     roster_submitted_at = models.DateTimeField(null=True, blank=True)

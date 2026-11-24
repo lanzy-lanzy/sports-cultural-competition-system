@@ -398,7 +398,18 @@ def get_event_static_schedule_defaults(event):
 
     now_local = timezone.localtime(timezone.now())
     if event.start_date:
-        start_dt = timezone.localtime(event.start_date).replace(second=0, microsecond=0)
+        if hasattr(event.start_date, 'hour'):
+            start_dt = timezone.localtime(event.start_date).replace(second=0, microsecond=0)
+        else:
+            start_dt = now_local.replace(
+                year=event.start_date.year,
+                month=event.start_date.month,
+                day=event.start_date.day,
+                hour=8,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
     else:
         base_date = now_local.date()
         if now_local.hour >= 17:
@@ -837,6 +848,7 @@ def automatch_with_slots(
     duration_minutes=None,
     break_minutes=15,
     include_consolation=True,
+    tournament_format=None,
 ):
     """Assign Admin-selected slot order (Team 1..Team N), generate tournament matches,
     and automatically schedule them at the event's static venue without conflicts.
@@ -878,6 +890,10 @@ def automatch_with_slots(
     cursor = start_time if start_time is not None else default_start
     if timezone.is_naive(cursor):
         cursor = timezone.make_aware(cursor, timezone.get_current_timezone())
+
+    if tournament_format and tournament_format in SportsEvent.Format.values and tournament_format != event.format:
+        event.format = tournament_format
+        event.save(update_fields=['format', 'updated_at'])
 
     n = len(parsed_ids)
     if event.format in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT):

@@ -28,9 +28,27 @@
         <div class="grid gap-5 p-6 sm:grid-cols-2 sm:p-8">
             {% for field in form %}
                 {% if field.name != 'sports_categories' %}
-                <div class="{% if field.name == 'description' or field.name == 'logo' %}sm:col-span-2{% endif %}">
+                <div class="{% if field.name == 'description' or field.name == 'logo' or field.name == 'color_theme' %}sm:col-span-2{% endif %}">
                     <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-ink">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+                    {% if field.name == 'color_theme' %}
+                    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5" data-color-theme-picker>
+                        {{ field }}
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" data-color-swatch="#dc2626" title="Crimson Red" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#dc2626"></button>
+                            <button type="button" data-color-swatch="#2563eb" title="Royal Blue" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#2563eb"></button>
+                            <button type="button" data-color-swatch="#15803d" title="Forest Green" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#15803d"></button>
+                            <button type="button" data-color-swatch="#d97706" title="Amber Gold" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#d97706"></button>
+                            <button type="button" data-color-swatch="#7c3aed" title="Royal Purple" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#7c3aed"></button>
+                            <button type="button" data-color-swatch="#0d9488" title="Teal" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#0d9488"></button>
+                            <button type="button" data-color-swatch="#ea580c" title="Blaze Orange" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#ea580c"></button>
+                            <button type="button" data-color-swatch="#1e293b" title="Midnight Slate" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#1e293b"></button>
+                        </div>
+                        <span data-color-hex class="ml-auto rounded-md bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-600 ring-1 ring-slate-200">{{ field.value|default:'#116b3b' }}</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">Pick your team's designated color to identify your delegation on rosters, team cards, and the overall tally.</p>
+                    {% else %}
                     {{ field }}
+                    {% endif %}
                     {% if field.name == 'department' and form.locked_departments and not team %}
                     <p class="mt-1.5 text-xs text-slate-500">Already approved (locked): <span class="font-semibold text-slate-700">{{ form.locked_departments|join:", " }}</span></p>
                     {% endif %}
@@ -58,4 +76,21 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}<script src="{% static_v 'js/team-management.js' %}" defer></script>{% endblock %}
+{% block extra_scripts %}
+<script src="{% static_v 'js/team-management.js' %}" defer></script>
+<script>
+document.querySelectorAll('[data-color-theme-picker]').forEach(function (picker) {
+    var input = picker.querySelector('input[type="color"]');
+    var hex = picker.querySelector('[data-color-hex]');
+    if (!input) return;
+    function sync(val) {
+        input.value = val;
+        if (hex) hex.textContent = val;
+    }
+    picker.querySelectorAll('[data-color-swatch]').forEach(function (btn) {
+        btn.addEventListener('click', function () { sync(btn.dataset.colorSwatch); });
+    });
+    input.addEventListener('input', function () { if (hex) hex.textContent = input.value; });
+});
+</script>
+{% endblock %}

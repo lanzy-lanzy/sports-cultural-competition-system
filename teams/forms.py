@@ -66,9 +66,10 @@ class TeamForm(forms.ModelForm):
 
     class Meta:
         model = Team
-        fields = ('department', 'name', 'category', 'description', 'logo', 'status', 'sports_categories')
+        fields = ('department', 'name', 'category', 'color_theme', 'description', 'logo', 'status', 'sports_categories')
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'color_theme': forms.TextInput(attrs={'type': 'color', 'class': 'h-12 w-16 cursor-pointer rounded-xl border border-slate-200 bg-white p-1'}),
             'sports_categories': forms.CheckboxSelectMultiple,
         }
 
@@ -109,7 +110,11 @@ class TeamForm(forms.ModelForm):
 
         if force_approved or not allow_status:
             self.fields.pop('status')
-        for field in self.fields.values():
+        for name, field in self.fields.items():
+            if name == 'color_theme':
+                field.label = 'Team Color Theme'
+                field.required = False
+                continue
             field.widget.attrs['class'] = INPUT_CLASS
         sports = self.fields['sports_categories']
         available = Q(is_active=True)
@@ -117,6 +122,15 @@ class TeamForm(forms.ModelForm):
             available |= Q(teams=self.instance.pk)
         sports.queryset = sports.queryset.filter(available).distinct()
         sports.widget.attrs['class'] = 'team-sport-options'
+
+    def clean_color_theme(self):
+        import re
+        color = (self.cleaned_data.get('color_theme') or '').strip()
+        if not color:
+            return '#116b3b'
+        if not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+            raise forms.ValidationError('Select a valid hex color (e.g. #dc2626).')
+        return color.lower()
 
     def clean_department(self):
         dept = (self.cleaned_data.get('department') or '').strip().upper()

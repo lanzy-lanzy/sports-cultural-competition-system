@@ -12,7 +12,7 @@
         <p class="mt-2 text-sm text-slate-500">{{ event.name }} &middot; {{ event.get_format_display }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-4">
-        {% if can_manage_schedule and not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'create_match' event.id %}" class="rounded-md bg-ink px-4 py-2 text-sm font-bold text-white ui-button ui-button--primary">Create manual match</a>{% endif %}
+        {% if can_manage_schedule and not matches and not event.confirmed_at and event.status != 'COMPLETED' and event.status != 'CANCELLED' %}<a href="{% url 'automatch_setup' event.id %}" class="rounded-md bg-pine px-4 py-2 text-sm font-bold text-white ui-button ui-button--primary">Auto-Match Setup</a>{% endif %}
     </div>
 </div>
 

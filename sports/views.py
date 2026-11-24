@@ -529,6 +529,16 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
     )
     raw_duration = (request.POST.get('duration_minutes') or '').strip() if request.method == 'POST' else str(default_duration)
     raw_break = (request.POST.get('break_minutes') or '').strip() if request.method == 'POST' else '15'
+    selected_format = (
+        (request.POST.get('tournament_format') or '').strip()
+        if request.method == 'POST'
+        else event.format
+    ) or event.format
+    format_choices = [
+        (val, label)
+        for val, label in SportsEvent.Format.choices
+        if val != SportsEvent.Format.KNOCKOUT or event.format == SportsEvent.Format.KNOCKOUT
+    ]
     include_consolation = (
         request.POST.get('include_consolation') == 'on'
         if request.method == 'POST' and 'include_consolation_present' in request.POST
@@ -564,6 +574,7 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
                         duration_minutes=parsed_duration,
                         break_minutes=parsed_break,
                         include_consolation=include_consolation,
+                        tournament_format=selected_format,
                     )
                 except ValueError as error:
                     messages.error(request, str(error))
@@ -612,6 +623,8 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
         'duration_minutes': raw_duration,
         'break_minutes': raw_break,
         'include_consolation': include_consolation,
+        'format_choices': format_choices,
+        'selected_format': selected_format,
     })
 
 

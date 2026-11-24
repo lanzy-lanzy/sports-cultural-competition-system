@@ -107,7 +107,10 @@
                     <tr class="{% if row.rank == 1 and row.points %}bg-amber-50/30{% endif %} transition-colors hover:bg-paper/70">
                         <td class="sticky left-0 z-10 border-r border-slate-200/80 bg-white px-3 py-3 text-center font-display text-sm font-bold tabular-nums text-ink">{{ row.rank }}</td>
                         <td class="sticky left-14 z-10 border-r border-slate-200 bg-white px-4 py-3">
-                            <p class="truncate font-bold text-ink">{{ row.name }}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme|default:'#116b3b' }};" title="Team color theme"></span>
+                                <p class="truncate font-bold text-ink">{{ row.name }}</p>
+                            </div>
                             {% if row.department %}
                             <span class="mt-0.5 inline-block rounded bg-moss px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">{{ row.department }}</span>
                             {% endif %}

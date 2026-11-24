@@ -12,13 +12,13 @@
         <span class="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-500">{{ team.code }}</span>
     </div>
 
-    <header class="team-workspace-card team-workspace-hero">
+    <header class="team-workspace-card team-workspace-hero" style="border-top: 4px solid {{ team.color_theme|default:'#116b3b' }};">
         <div class="team-workspace-hero-top">
             <div class="team-workspace-identity">
                 {% if team.logo %}
                     <img src="{{ team.logo.url }}" alt="" class="team-workspace-logo">
                 {% else %}
-                    <span class="team-workspace-logo team-workspace-initial" aria-hidden="true">{{ team.name|first|upper }}</span>
+                    <span class="team-workspace-logo team-workspace-initial" aria-hidden="true" style="background: {{ team.color_theme|default:'#116b3b' }}; color: #fff;">{{ team.name|first|upper }}</span>
                 {% endif %}
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-1.5">

@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -10,7 +11,13 @@ from competitions.models import Competition
 from participants.models import Participant
 from registrations.models import EventRegistration
 from sports.models import EventAward, EventEntry, Match, SportType, SportsEvent, Venue
-from sports.services import PALARO_STATIC_EVENTS, resolve_default_tournament_manager
+from sports.services import (
+    PALARO_STATIC_EVENTS,
+    automatch_with_slots,
+    record_match_result,
+    resolve_default_tournament_manager,
+)
+from sports.workflow import confirm_awards, final_match
 from teams.models import Department, Team, TeamMembership, TeamStaff
 
 
@@ -43,6 +50,7 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SAFES',
         'team_name': 'BULLS',
+        'color_theme': '#dc2626',
         'description': 'School of Agriculture, Forestry and Environmental Studies official delegation',
         'username': 'safes_manager',
         'password': 'SafesManager2026!',
@@ -69,6 +77,7 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'STE',
         'team_name': 'PHOENIX',
+        'color_theme': '#d97706',
         'description': 'School of Teacher Education official delegation',
         'username': 'ste_manager',
         'password': 'SteManager2026!',
@@ -95,6 +104,7 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SOCJE',
         'team_name': 'DRAGON',
+        'color_theme': '#2563eb',
         'description': 'School of Criminal Justice Education official delegation',
         'username': 'socje_manager',
         'password': 'SocjeManager2026!',
@@ -121,6 +131,7 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SCS',
         'team_name': 'KITSUNE',
+        'color_theme': '#15803d',
         'description': 'School of Computing Studies official delegation',
         'username': 'scs_manager',
         'password': 'ScsManager2026!',
@@ -155,6 +166,11 @@ class Command(BaseCommand):
             '--reset-competitions',
             action='store_true',
             help='Clear existing competitions, events, matches, entries, and registrations while preserving teams and rosters.',
+        )
+        parser.add_argument(
+            '--simulate-years',
+            action='store_true',
+            help='Populate simulated intramurals activity across 2026, 2027, and 2028 with scored brackets, consolation matches, and medals.',
         )
 
     @transaction.atomic
@@ -214,6 +230,7 @@ class Command(BaseCommand):
                     name=item['team_name'],
                     department=item['department'],
                     category=Team.Category.SPORTS,
+                    color_theme=item['color_theme'],
                     description=item['description'],
                     status=Team.Status.APPROVED,
                     created_by=mgr,
@@ -225,8 +242,9 @@ class Command(BaseCommand):
             else:
                 if not team.department:
                     team.department = item['department']
+                team.color_theme = item['color_theme']
                 team.status = Team.Status.APPROVED
-                team.save(update_fields=['department', 'status', 'updated_at'])
+                team.save(update_fields=['department', 'color_theme', 'status', 'updated_at'])
 
             team.sports_categories.set(all_sports)
 
@@ -320,9 +338,137 @@ class Command(BaseCommand):
                 },
             )
 
+        if options['simulate_years']:
+            self._simulate_multi_year_intramurals(admin, bball_type, vball_type, bball_venue, vball_venue)
+
         self.stdout.write(self.style.SUCCESS(
             f'Seeded PALARO 2026: {Department.objects.count()} departments, '
             f'{len(TOURNAMENT_MANAGERS)} tournament managers, '
             f'{Team.objects.exclude(department="").count()} department teams, '
-            f'{SportsEvent.objects.count()} sports events.'
+            f'{Competition.objects.count()} competitions, '
+            f'{SportsEvent.objects.count()} sports events, '
+            f'{Match.objects.count()} matches.'
         ))
+
+    def _simulate_multi_year_intramurals(self, admin, bball_type, vball_type, bball_venue, vball_venue):
+        manila = ZoneInfo('Asia/Manila')
+        teams_by_name = {
+            t.name: t
+            for t in Team.objects.filter(name__in=['BULLS', 'PHOENIX', 'DRAGON', 'KITSUNE'], status=Team.Status.APPROVED)
+        }
+        if len(teams_by_name) < 4:
+            return
+
+        yearly_plan = [
+            {
+                'year': 2026,
+                'start': datetime(2026, 11, 16, 8, 0, tzinfo=manila),
+                'end': datetime(2026, 11, 21, 17, 0, tzinfo=manila),
+                'mode': 'COMPLETE',
+                'bball_order': ['BULLS', 'PHOENIX', 'DRAGON', 'KITSUNE'],
+                'bball_scores': ((84, 76), (79, 71), (74, 68), (88, 82)),
+                'vball_order': ['PHOENIX', 'DRAGON', 'KITSUNE', 'BULLS'],
+                'vball_scores': ((3, 1), (3, 2), (3, 0), (3, 2)),
+            },
+            {
+                'year': 2027,
+                'start': datetime(2027, 11, 15, 8, 0, tzinfo=manila),
+                'end': datetime(2027, 11, 20, 17, 0, tzinfo=manila),
+                'mode': 'COMPLETE',
+                'bball_order': ['DRAGON', 'KITSUNE', 'BULLS', 'PHOENIX'],
+                'bball_scores': ((81, 74), (77, 83), (72, 69), (86, 80)),
+                'vball_order': ['KITSUNE', 'BULLS', 'PHOENIX', 'DRAGON'],
+                'vball_scores': ((3, 2), (3, 1), (3, 1), (3, 0)),
+            },
+            {
+                'year': 2028,
+                'start': datetime(2028, 11, 13, 8, 0, tzinfo=manila),
+                'end': datetime(2028, 11, 18, 17, 0, tzinfo=manila),
+                'mode': 'PARTIAL',
+                'bball_order': ['KITSUNE', 'BULLS', 'PHOENIX', 'DRAGON'],
+                'bball_scores': ((78, 73), (82, 75), None, None),
+                'vball_order': ['BULLS', 'DRAGON', 'KITSUNE', 'PHOENIX'],
+                'vball_scores': (None, None, None, None),
+            },
+        ]
+
+        for plan in yearly_plan:
+            year = plan['year']
+            for sport_label, stype, venue, slug, req_players, order, score_plan in [
+                ('BASKETBALL 5X5', bball_type, bball_venue, 'basketball_5x5', 15, plan['bball_order'], plan['bball_scores']),
+                ('VOLLEYBALL', vball_type, vball_venue, 'volleyball', 12, plan['vball_order'], plan['vball_scores']),
+            ]:
+                comp_name = f'PALARO {year} - {sport_label}'
+                comp, _ = Competition.objects.get_or_create(
+                    name=comp_name,
+                    defaults={
+                        'description': f'Simulated {year} JHCSC Intramurals {sport_label.title()} tournament.',
+                        'kind': Competition.Kind.SPORTS,
+                        'tournament_format': Competition.TournamentFormat.SINGLE_ELIMINATION,
+                        'status': 'ACTIVE',
+                        'start_date': plan['start'],
+                        'end_date': plan['end'],
+                        'gold_points': 10,
+                        'silver_points': 7,
+                        'bronze_points': 5,
+                        'created_by': admin,
+                    },
+                )
+                ev_name = f'{sport_label.title()} ({year}) - Men'
+                event, _ = SportsEvent.objects.get_or_create(
+                    competition=comp,
+                    name=ev_name,
+                    defaults={
+                        'sport_type': stype,
+                        'category': 'OPEN',
+                        'gender': 'male',
+                        'team_based': True,
+                        'format': SportsEvent.Format.SINGLE_ELIMINATION,
+                        'players_per_event': req_players,
+                        'bronze_policy': 'MATCH',
+                        'tournament_manager': resolve_default_tournament_manager(slug, 'male'),
+                        'status': SportsEvent.Status.REGISTRATION,
+                        'venue': venue,
+                        'start_date': plan['start'].date(),
+                        'end_date': plan['end'].date(),
+                    },
+                )
+
+                entries = []
+                for tname in order:
+                    entry, _ = EventEntry.objects.get_or_create(
+                        event=event,
+                        team=teams_by_name[tname],
+                        defaults={'status': EventEntry.Status.CONFIRMED},
+                    )
+                    entries.append(entry)
+
+                if not event.matches.exists():
+                    automatch_with_slots(
+                        event,
+                        [e.id for e in entries],
+                        venue=venue,
+                        start_time=plan['start'],
+                        duration_minutes=90,
+                        break_minutes=15,
+                        include_consolation=True,
+                        tournament_format=SportsEvent.Format.SINGLE_ELIMINATION,
+                    )
+
+                semis = list(event.matches.filter(round_number=1).order_by('id'))
+                if len(semis) == 2:
+                    if score_plan[0] and semis[0].status != Match.Status.COMPLETED:
+                        record_match_result(semis[0], {1: score_plan[0][0], 2: score_plan[0][1]})
+                    if score_plan[1] and semis[1].status != Match.Status.COMPLETED:
+                        record_match_result(semis[1], {1: score_plan[1][0], 2: score_plan[1][1]})
+
+                if plan['mode'] == 'COMPLETE':
+                    bronze = event.matches.filter(name='Bronze Match').first()
+                    final = final_match(event)
+                    if bronze and score_plan[2] and bronze.status != Match.Status.COMPLETED:
+                        record_match_result(bronze, {1: score_plan[2][0], 2: score_plan[2][1]})
+                    if final and score_plan[3] and final.status != Match.Status.COMPLETED:
+                        record_match_result(final, {1: score_plan[3][0], 2: score_plan[3][1]})
+                    event.refresh_from_db()
+                    if not event.confirmed_at:
+                        confirm_awards(event, admin)

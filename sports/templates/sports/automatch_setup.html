@@ -112,6 +112,15 @@
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
+                        <label for="automatch-format" class="mb-1 block text-xs font-bold text-slate-600">Tournament Format</label>
+                        <select id="automatch-format" name="tournament_format" data-schedule-format class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+                            {% for val, label in format_choices %}
+                            <option value="{{ val }}" {% if selected_format == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-[11px] text-slate-500">Change the tournament format here if needed before generating matches.</p>
+                    </div>
+                    <div class="sm:col-span-2">
                         <label for="automatch-venue" class="mb-1 block text-xs font-bold text-slate-600">Venue</label>
                         <select id="automatch-venue" name="venue_id" data-schedule-venue class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
                             <option value="">Auto-assign static venue</option>
@@ -135,8 +144,8 @@
                         <input id="automatch-break" type="number" min="0" max="240" name="break_minutes" value="{{ break_minutes }}" data-schedule-break
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
                     </div>
-                    {% if is_direct_pairing and slots|length >= 4 %}
-                    <div class="sm:col-span-2">
+                    {% if slots|length >= 4 %}
+                    <div class="sm:col-span-2" data-consolation-wrap>
                         <input type="hidden" name="include_consolation_present" value="1">
                         <label class="flex cursor-pointer items-start gap-2.5 rounded-lg border border-emerald-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-ink">
                             <input type="checkbox" name="include_consolation" data-schedule-consolation {% if include_consolation %}checked{% endif %}
@@ -183,18 +192,24 @@
     const selects = Array.from(form.querySelectorAll('[data-slot-select]'));
     const preview = form.querySelector('[data-automatch-preview]');
     const shuffleBtn = form.querySelector('[data-automatch-shuffle]');
+    const formatSelect = form.querySelector('[data-schedule-format]');
     const venueSelect = form.querySelector('[data-schedule-venue]');
     const startInput = form.querySelector('[data-schedule-start]');
     const durationInput = form.querySelector('[data-schedule-duration]');
     const breakInput = form.querySelector('[data-schedule-break]');
     const consolationInput = form.querySelector('[data-schedule-consolation]');
-    const isDirect = form.dataset.directPairing === '1';
+    const consolationWrap = form.querySelector('[data-consolation-wrap]');
 
     let previousValues = selects.map(s => s.value);
 
     function getLabel(select) {
         const opt = select.options[select.selectedIndex];
         return opt ? opt.textContent.trim() : 'TBD';
+    }
+
+    function isDirectFormat() {
+        const fmt = formatSelect ? formatSelect.value : '{{ selected_format|escapejs }}';
+        return fmt === 'SINGLE_ELIMINATION' || fmt === 'KNOCKOUT';
     }
 
     function formatSlot(startDate, durationMin) {
@@ -207,6 +222,10 @@
     }
 
     function renderPreview() {
+        const isDirect = isDirectFormat();
+        if (consolationWrap) {
+            consolationWrap.classList.toggle('hidden', !isDirect);
+        }
         const names = selects.map(s => getLabel(s));
         const n = names.length;
         const venueLabel = venueSelect && venueSelect.value ? getLabel(venueSelect) : '{{ default_venue.name|default:"Static Venue"|escapejs }}';
@@ -298,7 +317,7 @@
         }
     }
 
-    [venueSelect, startInput, durationInput, breakInput, consolationInput].forEach(el => {
+    [formatSelect, venueSelect, startInput, durationInput, breakInput, consolationInput].forEach(el => {
         if (el) el.addEventListener('change', renderPreview);
         if (el) el.addEventListener('input', renderPreview);
     });

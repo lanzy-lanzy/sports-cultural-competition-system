@@ -16,8 +16,11 @@ Implemented in `sports/management/commands/seed_palaro2026.py` (idempotent — s
 # Seed departments, 15 tournament managers, 4 department teams (60 players), and Basketball/Volleyball events
 .\.venv\Scripts\python.exe manage.py seed_palaro2026
 
-# Optional: clear old competitions/events/matches/registrations while preserving teams & rosters, then re-seed Basketball & Volleyball
-.\.venv\Scripts\python.exe manage.py seed_palaro2026 --reset-competitions
+# Populate simulated 2026, 2027, and 2028 intramurals activity (with consolation matches, scores, and medals)
+.\.venv\Scripts\python.exe manage.py seed_palaro2026 --simulate-years
+
+# Optional: clear old competitions/events/matches/registrations while preserving teams & rosters, then re-seed
+.\.venv\Scripts\python.exe manage.py seed_palaro2026 --reset-competitions --simulate-years
 ```
 
 ### Local SQLite Fallback (`db.sqlite3`)

@@ -586,13 +586,14 @@ def build_sports_tally_matrix(competitions):
 
     row_buckets = {}
 
-    def _ensure_row(key, name, department='', status='', status_display=''):
+    def _ensure_row(key, name, department='', color_theme='#116b3b', status='', status_display=''):
         bucket = row_buckets.get(key)
         if bucket is None:
             bucket = {
                 'key': key,
                 'name': name,
                 'department': department,
+                'color_theme': color_theme or '#116b3b',
                 'status': status,
                 'status_display': status_display,
                 'cells': {cid: _blank_cell() for cid in col_ids},
@@ -607,6 +608,7 @@ def build_sports_tally_matrix(competitions):
             key,
             name,
             department=team.department,
+            color_theme=team.color_theme,
             status=team.status,
             status_display=team.get_status_display(),
         )
@@ -674,6 +676,7 @@ def build_sports_tally_matrix(competitions):
             'key': bucket['key'],
             'name': bucket['name'],
             'department': bucket['department'],
+            'color_theme': bucket['color_theme'],
             'cells': ordered_cells,
             'gold': total_gold,
             'silver': total_silver,
