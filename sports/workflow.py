@@ -121,13 +121,18 @@ def update_progress(event):
             event.matches.exclude(status='COMPLETED').update(status='CANCELLED', notes='Series clinched; game not required.')
     elif event.bronze_policy == 'MATCH' and event.format in ('SINGLE_ELIMINATION', 'KNOCKOUT', 'GROUP_STAGE', 'LEAGUE'):
         final = final_match(event)
-        semis = list(final.previous_matches.all()) if final else []
-        if len(semis) == 2 and all(m.status == 'COMPLETED' for m in semis):
-            losers = [m.entries.exclude(is_winner=True).first() for m in semis if m.entries.count() == 2]
-            if len(losers) == 2 and not event.matches.filter(name='Bronze Match').exists():
-                bronze = Match.objects.create(event=event, name='Bronze Match', round_number=final.round_number)
-                for side, loser in enumerate(losers, 1):
-                    _place_entry(bronze, loser, side)
+        semis = list(final.previous_matches.order_by('id')) if final else []
+        if len(semis) == 2 and any(m.status == 'COMPLETED' for m in semis):
+            bronze, _ = Match.objects.get_or_create(
+                event=event,
+                name='Bronze Match',
+                defaults={'round_number': final.round_number, 'venue': final.venue},
+            )
+            for side, semi in enumerate(semis, 1):
+                if semi.status == 'COMPLETED' and semi.winner and semi.entries.count() == 2:
+                    loser = semi.entries.exclude(is_winner=True).first()
+                    if loser is not None:
+                        _place_entry(bronze, loser, side)
     try:
         proposed_podium(event)
         event.status = 'REVIEW'

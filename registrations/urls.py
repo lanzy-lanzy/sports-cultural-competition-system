@@ -7,6 +7,8 @@ urlpatterns = [
     path('registrations/register/', views.register_for_event, name='register_for_event'),
     path('registrations/my/', views.my_registrations, name='my_registrations'),
     path('registrations/review/', views.registration_review_queue, name='registration_review_queue'),
+    path('registrations/review/bulk-teams/', views.bulk_review_teams, name='bulk_review_teams'),
+    path('registrations/review/bulk-events/', views.bulk_review_registrations, name='bulk_review_registrations'),
     path('registrations/<int:registration_id>/review/', views.registration_review, name='registration_review'),
     path('registrations/templates/', views.registration_templates, name='registration_templates'),
 ]

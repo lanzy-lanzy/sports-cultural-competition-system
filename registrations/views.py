@@ -5,6 +5,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from accounts.access import MANAGEMENT_ROLES, get_user_role, management_required, role_required
 from accounts.models import UserProfile
@@ -226,6 +227,101 @@ def registration_review(request, registration_id):
     else:
         messages.error(request, 'Invalid review action.')
 
+    return redirect('registration_review_queue')
+
+
+@management_required
+@require_POST
+def bulk_review_teams(request):
+    from audit.models import record_action_from_request
+
+    action = (request.POST.get('action') or '').strip()
+    team_ids = [int(tid) for tid in request.POST.getlist('team_ids') if str(tid).isdigit()]
+    if action not in ('approve', 'reject'):
+        messages.error(request, 'Invalid bulk team review action.')
+        return redirect('registration_review_queue')
+    if not team_ids:
+        messages.warning(request, 'Select at least one pending department team.')
+        return redirect('registration_review_queue')
+
+    new_status = Team.Status.APPROVED if action == 'approve' else Team.Status.REJECTED
+    User = get_user_model()
+    teams = list(Team.objects.filter(id__in=team_ids, status=Team.Status.PENDING))
+    if not teams:
+        messages.warning(request, 'No pending department teams matched your selection.')
+        return redirect('registration_review_queue')
+
+    with transaction.atomic():
+        for team in teams:
+            team.status = new_status
+            team.save(update_fields=['status', 'updated_at'])
+            record_action_from_request(
+                request,
+                'TEAM_STATUS',
+                target=team,
+                details=f'Bulk {action}: Team "{team.name}" status changed to {team.get_status_display()}',
+            )
+            staff_users = User.objects.filter(
+                Q(id=team.created_by_id) | Q(team_staff_assignments__team=team),
+                is_active=True,
+            ).distinct()
+            notify_users(
+                staff_users,
+                title=f'Team registration {team.get_status_display().lower()}',
+                body=f'Your team "{team.name}" status was updated to {team.get_status_display()}.',
+                link=reverse('team_detail', args=[team.id]),
+            )
+
+    verb = 'Approved' if action == 'approve' else 'Rejected'
+    messages.success(request, f'{verb} {len(teams)} department team registration(s).')
+    return redirect('registration_review_queue')
+
+
+@management_required
+@require_POST
+def bulk_review_registrations(request):
+    from audit.models import record_action_from_request
+
+    action = (request.POST.get('action') or '').strip()
+    reg_ids = [int(rid) for rid in request.POST.getlist('registration_ids') if str(rid).isdigit()]
+    if action not in ('approve', 'reject'):
+        messages.error(request, 'Invalid bulk registration action.')
+        return redirect('registration_review_queue')
+    if not reg_ids:
+        messages.warning(request, 'Select at least one pending event registration.')
+        return redirect('registration_review_queue')
+
+    admin_notes = (request.POST.get('admin_notes') or '').strip()
+    regs = list(
+        EventRegistration.objects.filter(
+            id__in=reg_ids,
+            status__in=[EventRegistration.Status.PENDING, EventRegistration.Status.UNDER_REVIEW],
+        ).select_related('registrant', 'sport_event', 'competition', 'team', 'participant')
+    )
+    if not regs:
+        messages.warning(request, 'No pending or under-review event registrations matched your selection.')
+        return redirect('registration_review_queue')
+
+    processed = 0
+    errors = []
+    for reg in regs:
+        try:
+            if action == 'approve':
+                approve_registration(reg, request.user, admin_notes)
+                detail = f'Bulk approved registration for {reg.contestant_name}'
+            else:
+                reject_registration(reg, request.user, admin_notes)
+                detail = f'Bulk rejected registration for {reg.contestant_name}'
+            record_action_from_request(request, 'REGISTRATION_REVIEW', target=reg, details=detail)
+            processed += 1
+        except ValueError as err:
+            errors.append(f'{reg.contestant_name}: {err}')
+
+    if processed:
+        verb = 'Approved' if action == 'approve' else 'Rejected'
+        messages.success(request, f'{verb} {processed} event registration(s).')
+    for err in errors:
+        messages.error(request, err)
     return redirect('registration_review_queue')
 
 

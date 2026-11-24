@@ -30,19 +30,31 @@
 
 {% if pending_teams %}
 <div class="mb-6 overflow-x-auto rounded-md border border-amber-200/90 bg-white/80 shadow-sm backdrop-blur-sm">
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 bg-amber-50/70 px-5 py-3">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 bg-amber-50/70 px-5 py-3">
         <div>
             <h2 class="font-display text-sm font-semibold text-slate-900">Department Team Registrations Pending Approval</h2>
             <p class="text-xs text-slate-500">Review and approve or reject department team submissions from Team Managers.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-            {{ pending_team_count }} pending
-        </span>
+        <form id="bulk-teams-form" method="post" action="{% url 'bulk_review_teams' %}" class="flex flex-wrap items-center gap-2">
+            {% csrf_token %}
+            <span id="bulk-teams-count" class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">0 selected</span>
+            <button type="submit" name="action" value="approve" data-bulk-teams-btn disabled
+                    class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
+                Approve Selected
+            </button>
+            <button type="submit" name="action" value="reject" data-bulk-teams-btn disabled
+                    class="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                Reject Selected
+            </button>
+        </form>
     </div>
     <table class="w-full text-left text-sm">
         <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <tr>
+                <th class="w-10 py-3 pl-5 pr-2">
+                    <input type="checkbox" id="select-all-pending-teams" aria-label="Select all pending department teams"
+                           class="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
+                </th>
                 <th class="px-5 py-3">Department &amp; Team</th>
                 <th class="px-5 py-3">Category &amp; Sports</th>
                 <th class="hidden px-5 py-3 lg:table-cell">Submitted by</th>
@@ -53,6 +65,11 @@
         <tbody>
             {% for team in pending_teams %}
             <tr class="border-slate-100 transition-colors hover:bg-slate-50/60 {% if not forloop.first %}border-t{% endif %}">
+                <td class="w-10 py-3 pl-5 pr-2">
+                    <input type="checkbox" name="team_ids" value="{{ team.id }}" form="bulk-teams-form"
+                           aria-label="Select {{ team.name }}"
+                           class="bulk-team-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
+                </td>
                 <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-500 font-display text-xs font-bold text-white">
@@ -112,9 +129,31 @@
 
 {% if page_obj %}
 <div class="overflow-x-auto rounded-md border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3">
+        <div>
+            <h2 class="font-display text-sm font-semibold text-slate-900">Event Registrations</h2>
+            <p class="text-xs text-slate-500">Select pending or under-review entries to approve or reject in bulk.</p>
+        </div>
+        <form id="bulk-events-form" method="post" action="{% url 'bulk_review_registrations' %}" class="flex flex-wrap items-center gap-2">
+            {% csrf_token %}
+            <span id="bulk-events-count" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">0 selected</span>
+            <button type="submit" name="action" value="approve" data-bulk-events-btn disabled
+                    class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
+                Approve Selected
+            </button>
+            <button type="submit" name="action" value="reject" data-bulk-events-btn disabled
+                    class="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40">
+                Reject Selected
+            </button>
+        </form>
+    </div>
     <table class="w-full text-left text-sm">
         <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <tr>
+                <th class="w-10 py-3 pl-5 pr-2">
+                    <input type="checkbox" id="select-all-event-regs" aria-label="Select all pending event registrations"
+                           class="h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
+                </th>
                 <th class="px-5 py-3">Contestant</th>
                 <th class="px-5 py-3">Competition</th>
                 <th class="hidden px-5 py-3 lg:table-cell">Submitted by</th>
@@ -126,6 +165,15 @@
         <tbody>
             {% for registration in page_obj %}
             <tr class="border-slate-100 transition-colors hover:bg-slate-50/60 {% if not forloop.first %}border-t{% endif %}">
+                <td class="w-10 py-3 pl-5 pr-2">
+                    {% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}
+                    <input type="checkbox" name="registration_ids" value="{{ registration.id }}" form="bulk-events-form"
+                           aria-label="Select {{ registration.contestant_name }}"
+                           class="bulk-event-checkbox h-4 w-4 cursor-pointer rounded border-slate-300 text-emerald-600">
+                    {% else %}
+                    <input type="checkbox" disabled class="h-4 w-4 cursor-not-allowed rounded border-slate-200 opacity-40">
+                    {% endif %}
+                </td>
                 <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cyan-500 font-display text-xs font-bold text-white">
@@ -203,7 +251,7 @@
             </tr>
             {% if registration.status == 'PENDING' or registration.status == 'UNDER_REVIEW' %}
             <tr class="bg-slate-50/50">
-                <td colspan="6" class="px-5 py-3">
+                <td colspan="7" class="px-5 py-3">
                     <form method="post" action="{% url 'registration_review' registration.id %}" class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         {% csrf_token %}
                         <input type="text" name="admin_notes" placeholder="Review note (optional)" class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-200 sm:flex-1">
@@ -226,4 +274,39 @@
     <p class="mt-2 text-sm text-slate-500">Self-service registrations appear here for review.</p>
 </div>
 {% endif %}
+
+<script>
+(() => {
+    function wireBulkGroup(selectAllId, boxSelector, countId, btnSelector) {
+        const selectAll = document.getElementById(selectAllId);
+        const boxes = Array.from(document.querySelectorAll(boxSelector));
+        const countEl = document.getElementById(countId);
+        const buttons = Array.from(document.querySelectorAll(btnSelector));
+        if (!selectAll && !boxes.length) return;
+
+        function sync() {
+            const checked = boxes.filter(b => b.checked).length;
+            if (selectAll) {
+                selectAll.checked = boxes.length > 0 && checked === boxes.length;
+                selectAll.indeterminate = checked > 0 && checked < boxes.length;
+                selectAll.disabled = boxes.length === 0;
+            }
+            if (countEl) countEl.textContent = `${checked} selected`;
+            buttons.forEach(btn => { btn.disabled = checked === 0; });
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', () => {
+                boxes.forEach(b => { b.checked = selectAll.checked; });
+                sync();
+            });
+        }
+        boxes.forEach(b => b.addEventListener('change', sync));
+        sync();
+    }
+
+    wireBulkGroup('select-all-pending-teams', '.bulk-team-checkbox', 'bulk-teams-count', '[data-bulk-teams-btn]');
+    wireBulkGroup('select-all-event-regs', '.bulk-event-checkbox', 'bulk-events-count', '[data-bulk-events-btn]');
+})();
+</script>
 {% endblock %}

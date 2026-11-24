@@ -1351,19 +1351,19 @@ class AutoMatchSetupTest(TestCase):
         self.assertRedirects(post_resp, reverse('match_schedule', args=[self.event.pk]))
 
         round1 = list(self.event.matches.filter(round_number=1).order_by('id'))
-        round2 = list(self.event.matches.filter(round_number=2).order_by('id'))
+        round2_final = self.event.matches.filter(round_number=2).exclude(name='Bronze Match').get()
+        bronze_match = self.event.matches.filter(round_number=2, name='Bronze Match').get()
         self.assertEqual(len(round1), 2)
-        self.assertEqual(len(round2), 1)
 
         match1_teams = [me.team.name for me in round1[0].entries.select_related('team').order_by('side')]
         match2_teams = [me.team.name for me in round1[1].entries.select_related('team').order_by('side')]
         self.assertEqual(match1_teams, ['DRAGON', 'BULLS'])
         self.assertEqual(match2_teams, ['KITSUNE', 'PHOENIX'])
-        self.assertEqual(round1[0].next_match_id, round2[0].pk)
-        self.assertEqual(round1[1].next_match_id, round2[0].pk)
+        self.assertEqual(round1[0].next_match_id, round2_final.pk)
+        self.assertEqual(round1[1].next_match_id, round2_final.pk)
 
-        # Static venue & non-overlapping auto-schedule verified.
-        all_matches = round1 + round2
+        # Static venue & non-overlapping auto-schedule verified across semis, consolation, and finals.
+        all_matches = round1 + [bronze_match, round2_final]
         for idx, m in enumerate(all_matches):
             self.assertEqual(m.venue.name, 'JHCSC Basketball Court')
             self.assertEqual(m.status, Match.Status.SCHEDULED)
@@ -1373,18 +1373,27 @@ class AutoMatchSetupTest(TestCase):
             if idx > 0:
                 self.assertGreaterEqual(m.scheduled_start, all_matches[idx - 1].scheduled_end)
 
+        # Record semifinal scores: DRAGON beats BULLS, PHOENIX beats KITSUNE.
+        # Winners (DRAGON vs PHOENIX) advance to Finals; Losers (BULLS vs KITSUNE) advance to Consolation (Bronze Match).
+        self.client.post(reverse('record_match_result', args=[round1[0].pk]), {'score_1': '80', 'score_2': '70'})
+        self.client.post(reverse('record_match_result', args=[round1[1].pk]), {'score_1': '65', 'score_2': '75'})
+        finals_teams = [me.team.name for me in round2_final.entries.select_related('team').order_by('side')]
+        consolation_teams = [me.team.name for me in bronze_match.entries.select_related('team').order_by('side')]
+        self.assertEqual(finals_teams, ['DRAGON', 'PHOENIX'])
+        self.assertEqual(consolation_teams, ['BULLS', 'KITSUNE'])
+
         # Admin can still edit/reschedule any auto-scheduled match if schedule changes.
-        reschedule_resp = self.client.post(reverse('edit_match', args=[round1[0].pk]), {
-            'name': round1[0].name,
-            'round_number': round1[0].round_number,
+        reschedule_resp = self.client.post(reverse('edit_match', args=[round2_final.pk]), {
+            'name': round2_final.name,
+            'round_number': round2_final.round_number,
             'status': Match.Status.SCHEDULED,
-            'venue': round1[0].venue_id,
+            'venue': round2_final.venue_id,
             'scheduled_start': '2026-11-25T14:00',
             'scheduled_end': '2026-11-25T15:30',
         })
         self.assertRedirects(reschedule_resp, reverse('match_schedule', args=[self.event.pk]))
-        round1[0].refresh_from_db()
-        self.assertEqual(round1[0].scheduled_start.astimezone().hour, 14)
+        round2_final.refresh_from_db()
+        self.assertEqual(round2_final.scheduled_start.astimezone().hour, 14)
 
     def test_automatch_rejects_duplicate_team_slots(self):
         url = reverse('automatch_setup', args=[self.event.pk])

@@ -529,6 +529,11 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
     )
     raw_duration = (request.POST.get('duration_minutes') or '').strip() if request.method == 'POST' else str(default_duration)
     raw_break = (request.POST.get('break_minutes') or '').strip() if request.method == 'POST' else '15'
+    include_consolation = (
+        request.POST.get('include_consolation') == 'on'
+        if request.method == 'POST' and 'include_consolation_present' in request.POST
+        else True
+    )
 
     if request.method == 'POST':
         slot_entry_ids = request.POST.getlist('slot_entry')
@@ -558,6 +563,7 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
                         start_time=parsed_start,
                         duration_minutes=parsed_duration,
                         break_minutes=parsed_break,
+                        include_consolation=include_consolation,
                     )
                 except ValueError as error:
                     messages.error(request, str(error))
@@ -605,6 +611,7 @@ def _render_automatch_setup(request, event, *, from_board=False, open_events=Non
         'schedule_start_value': raw_start,
         'duration_minutes': raw_duration,
         'break_minutes': raw_break,
+        'include_consolation': include_consolation,
     })
 
 

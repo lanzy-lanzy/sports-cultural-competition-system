@@ -836,6 +836,7 @@ def automatch_with_slots(
     start_time=None,
     duration_minutes=None,
     break_minutes=15,
+    include_consolation=True,
 ):
     """Assign Admin-selected slot order (Team 1..Team N), generate tournament matches,
     and automatically schedule them at the event's static venue without conflicts.
@@ -899,13 +900,35 @@ def automatch_with_slots(
         event.venue = resolved_venue
         event.save(update_fields=['venue'])
 
+    wants_consolation = (
+        include_consolation
+        and n >= 4
+        and event.format in (SportsEvent.Format.SINGLE_ELIMINATION, SportsEvent.Format.KNOCKOUT)
+    )
+    if wants_consolation and event.bronze_policy != 'MATCH':
+        event.bronze_policy = 'MATCH'
+        event.save(update_fields=['bronze_policy'])
+
     generate_bracket(event)
+
+    if wants_consolation and not event.matches.filter(name='Bronze Match').exists():
+        from .workflow import final_match
+        final = final_match(event)
+        if final is not None:
+            Match.objects.create(
+                event=event,
+                name='Bronze Match',
+                round_number=final.round_number,
+                venue=resolved_venue,
+            )
 
     generated = list(
         event.matches.select_related('venue')
         .prefetch_related('entries__team', 'entries__participant')
         .order_by('round_number', 'id')
     )
+    # Schedule Bronze Match (Consolation: Loser vs Loser) right before Championship Finals (Win vs Win).
+    generated.sort(key=lambda m: (m.round_number, 0 if m.name == 'Bronze Match' else 1, m.id))
     gap = timedelta(minutes=resolved_break)
     for match in generated:
         if match.status == Match.Status.COMPLETED:

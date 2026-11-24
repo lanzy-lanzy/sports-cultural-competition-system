@@ -135,6 +135,19 @@
                         <input id="automatch-break" type="number" min="0" max="240" name="break_minutes" value="{{ break_minutes }}" data-schedule-break
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
                     </div>
+                    {% if is_direct_pairing and slots|length >= 4 %}
+                    <div class="sm:col-span-2">
+                        <input type="hidden" name="include_consolation_present" value="1">
+                        <label class="flex cursor-pointer items-start gap-2.5 rounded-lg border border-emerald-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-ink">
+                            <input type="checkbox" name="include_consolation" data-schedule-consolation {% if include_consolation %}checked{% endif %}
+                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-pine focus:ring-pine">
+                            <span>
+                                Include Consolation / 3rd-Place Match (Loser vs Loser)
+                                <span class="block font-normal text-slate-500">Winners advance to Finals (Win vs Win) and semifinal losers advance to Bronze Match (Loser vs Loser).</span>
+                            </span>
+                        </label>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -174,6 +187,7 @@
     const startInput = form.querySelector('[data-schedule-start]');
     const durationInput = form.querySelector('[data-schedule-duration]');
     const breakInput = form.querySelector('[data-schedule-break]');
+    const consolationInput = form.querySelector('[data-schedule-consolation]');
     const isDirect = form.dataset.directPairing === '1';
 
     let previousValues = selects.map(s => s.value);
@@ -239,6 +253,25 @@
                 preview.appendChild(card);
             });
             if (n > 2) {
+                if (n >= 4 && (!consolationInput || consolationInput.checked)) {
+                    let consTime = '';
+                    if (cursor && !Number.isNaN(cursor.getTime())) {
+                        if (cursor.getHours() >= 18) {
+                            cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1, 8, 0, 0);
+                        }
+                        consTime = `<p class="mt-1.5 text-[11px] font-semibold text-amber-800">${venueLabel} &middot; ${formatSlot(cursor, durationMin)}</p>`;
+                        cursor = new Date(cursor.getTime() + (durationMin + breakMin) * 60000);
+                    }
+                    const consCard = document.createElement('div');
+                    consCard.className = 'rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-3.5';
+                    consCard.innerHTML = `
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-amber-800">Consolation / 3rd Place (Loser vs Loser)</p>
+                        <p class="mt-1 text-xs text-slate-600">Loser of Match 1 vs Loser of Match 2 automatically advance here for Bronze.</p>
+                        ${consTime}
+                    `;
+                    preview.appendChild(consCard);
+                }
+
                 let nextTime = '';
                 if (cursor && !Number.isNaN(cursor.getTime())) {
                     if (cursor.getHours() >= 18) {
@@ -249,8 +282,8 @@
                 const nextCard = document.createElement('div');
                 nextCard.className = 'rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-3.5';
                 nextCard.innerHTML = `
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Next Round / Finals</p>
-                    <p class="mt-1 text-xs text-slate-600">Winners from Round 1 automatically advance into the next bracket round.</p>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Championship / Finals (Win vs Win)</p>
+                    <p class="mt-1 text-xs text-slate-600">Winner of Match 1 vs Winner of Match 2 automatically advance here for Gold &amp; Silver.</p>
                     ${nextTime}
                 `;
                 preview.appendChild(nextCard);
@@ -265,7 +298,7 @@
         }
     }
 
-    [venueSelect, startInput, durationInput, breakInput].forEach(el => {
+    [venueSelect, startInput, durationInput, breakInput, consolationInput].forEach(el => {
         if (el) el.addEventListener('change', renderPreview);
         if (el) el.addEventListener('input', renderPreview);
     });
