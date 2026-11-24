@@ -50,7 +50,6 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SAFES',
         'team_name': 'BULLS',
-        'color_theme': '#dc2626',
         'description': 'School of Agriculture, Forestry and Environmental Studies official delegation',
         'username': 'safes_manager',
         'password': 'SafesManager2026!',
@@ -77,7 +76,6 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'STE',
         'team_name': 'PHOENIX',
-        'color_theme': '#d97706',
         'description': 'School of Teacher Education official delegation',
         'username': 'ste_manager',
         'password': 'SteManager2026!',
@@ -104,7 +102,6 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SOCJE',
         'team_name': 'DRAGON',
-        'color_theme': '#2563eb',
         'description': 'School of Criminal Justice Education official delegation',
         'username': 'socje_manager',
         'password': 'SocjeManager2026!',
@@ -131,7 +128,6 @@ DEPARTMENT_TEAMS = [
     {
         'department': 'SCS',
         'team_name': 'KITSUNE',
-        'color_theme': '#15803d',
         'description': 'School of Computing Studies official delegation',
         'username': 'scs_manager',
         'password': 'ScsManager2026!',
@@ -230,7 +226,6 @@ class Command(BaseCommand):
                     name=item['team_name'],
                     department=item['department'],
                     category=Team.Category.SPORTS,
-                    color_theme=item['color_theme'],
                     description=item['description'],
                     status=Team.Status.APPROVED,
                     created_by=mgr,
@@ -242,9 +237,8 @@ class Command(BaseCommand):
             else:
                 if not team.department:
                     team.department = item['department']
-                team.color_theme = item['color_theme']
                 team.status = Team.Status.APPROVED
-                team.save(update_fields=['department', 'color_theme', 'status', 'updated_at'])
+                team.save(update_fields=['department', 'status', 'updated_at'])
 
             team.sports_categories.set(all_sports)
 

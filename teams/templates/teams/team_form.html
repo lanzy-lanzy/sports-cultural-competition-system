@@ -33,6 +33,8 @@
                     {% if field.name == 'color_theme' %}
                     <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5" data-color-theme-picker>
                         {{ field }}
+                        <input type="color" data-color-wheel value="{{ field.value|default:'#116b3b' }}" aria-label="Choose custom team color"
+                               class="h-11 w-14 cursor-pointer rounded-lg border border-slate-200 bg-white p-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" data-color-swatch="#dc2626" title="Crimson Red" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#dc2626"></button>
                             <button type="button" data-color-swatch="#2563eb" title="Royal Blue" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#2563eb"></button>
@@ -43,7 +45,10 @@
                             <button type="button" data-color-swatch="#ea580c" title="Blaze Orange" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#ea580c"></button>
                             <button type="button" data-color-swatch="#1e293b" title="Midnight Slate" class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow ring-1 ring-slate-300 transition hover:scale-110" style="background:#1e293b"></button>
                         </div>
-                        <span data-color-hex class="ml-auto rounded-md bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-600 ring-1 ring-slate-200">{{ field.value|default:'#116b3b' }}</span>
+                        <div class="ml-auto flex items-center gap-2">
+                            <span data-color-hex class="rounded-md bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-600 ring-1 ring-slate-200">{{ field.value|default:'Not selected' }}</span>
+                            <button type="button" data-color-clear class="cursor-pointer rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100">Clear</button>
+                        </div>
                     </div>
                     {% else %}
                     {{ field }}
@@ -79,17 +84,21 @@
 <script src="{% static_v 'js/team-management.js' %}" defer></script>
 <script>
 document.querySelectorAll('[data-color-theme-picker]').forEach(function (picker) {
-    var input = picker.querySelector('input[type="color"]');
+    var hiddenInput = picker.querySelector('input[type="hidden"]');
+    var wheel = picker.querySelector('[data-color-wheel]');
     var hex = picker.querySelector('[data-color-hex]');
-    if (!input) return;
+    var clearBtn = picker.querySelector('[data-color-clear]');
+    if (!hiddenInput) return;
     function sync(val) {
-        input.value = val;
-        if (hex) hex.textContent = val;
+        hiddenInput.value = val;
+        if (wheel && val) wheel.value = val;
+        if (hex) hex.textContent = val || 'Not selected';
     }
     picker.querySelectorAll('[data-color-swatch]').forEach(function (btn) {
         btn.addEventListener('click', function () { sync(btn.dataset.colorSwatch); });
     });
-    input.addEventListener('input', function () { if (hex) hex.textContent = input.value; });
+    if (wheel) wheel.addEventListener('input', function () { sync(wheel.value); });
+    if (clearBtn) clearBtn.addEventListener('click', function () { sync(''); });
 });
 </script>
 {% endblock %}

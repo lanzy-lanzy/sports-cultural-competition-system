@@ -66,8 +66,8 @@ class Team(models.Model):
     color_theme = models.CharField(
         max_length=20,
         blank=True,
-        default='#116b3b',
-        help_text='Designated team color theme (hex code) used to identify the team across workspaces and tallies.',
+        default='',
+        help_text='Designated team color theme (hex code) selected by the team.',
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     roster_submitted = models.BooleanField(default=False)

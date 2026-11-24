@@ -69,7 +69,7 @@ class TeamForm(forms.ModelForm):
         fields = ('department', 'name', 'category', 'color_theme', 'description', 'logo', 'status', 'sports_categories')
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
-            'color_theme': forms.TextInput(attrs={'type': 'color', 'class': 'h-12 w-16 cursor-pointer rounded-xl border border-slate-200 bg-white p-1'}),
+            'color_theme': forms.HiddenInput(),
             'sports_categories': forms.CheckboxSelectMultiple,
         }
 
@@ -127,7 +127,7 @@ class TeamForm(forms.ModelForm):
         import re
         color = (self.cleaned_data.get('color_theme') or '').strip()
         if not color:
-            return '#116b3b'
+            return ''
         if not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
             raise forms.ValidationError('Select a valid hex color (e.g. #dc2626).')
         return color.lower()
