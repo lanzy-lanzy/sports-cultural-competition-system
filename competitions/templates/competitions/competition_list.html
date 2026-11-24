@@ -64,23 +64,45 @@
             </a>
         </div>
 
-        <!-- Search across the whole list -->
-        <form method="get" action="{% url 'competition_list' %}" class="relative w-full sm:max-w-sm" role="search">
+        <!-- Search & filters across the list -->
+        <form method="get" action="{% url 'competition_list' %}" class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1 sm:justify-end" role="search">
             <input type="hidden" name="category" value="{{ category }}">
             {% if selected_sub %}<input type="hidden" name="sub" value="{{ selected_sub }}">{% endif %}
-            <label for="comp-search" class="sr-only">Search competitions</label>
-            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6 -6" />
-            </svg>
-            <input type="search" id="comp-search" name="q" value="{{ query }}" autocomplete="off"
-                   placeholder="{% if category == 'cultural' %}Search name or description{% else %}Search name, sport or venue{% endif %}"
-                   class="w-full rounded-md border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-9 text-sm text-slate-800 placeholder-slate-400 transition focus:border-pine/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-moss">
-            <button type="submit" class="sr-only ui-button ui-button--secondary">Search</button>
-            {% if query %}
-            <a href="{% querystring q=None page=None %}" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear search">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12" /></svg>
-            </a>
+            <div class="relative min-w-[200px] flex-1 sm:max-w-xs">
+                <label for="comp-search" class="sr-only">Search competitions</label>
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6 -6" />
+                </svg>
+                <input type="search" id="comp-search" name="q" value="{{ query }}" autocomplete="off"
+                       placeholder="{% if category == 'cultural' %}Search name or description{% else %}Search name, sport, or venue{% endif %}"
+                       class="w-full rounded-md border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-8 text-sm text-slate-800 placeholder-slate-400 transition focus:border-pine/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-moss">
+                {% if query %}
+                <a href="{% querystring q=None page=None %}" class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear search">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6l-12 12" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12" /></svg>
+                </a>
+                {% endif %}
+            </div>
+            <select name="year" aria-label="Filter by year" onchange="this.form.submit()" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                <option value="">All years</option>
+                {% for yr in available_years %}
+                <option value="{{ yr }}" {% if selected_year == yr|stringformat:'s' %}selected{% endif %}>{{ yr }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" aria-label="Filter by status" onchange="this.form.submit()" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                <option value="">All statuses</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            {% if category != 'cultural' %}
+            <select name="fmt" aria-label="Filter by tournament format" onchange="this.form.submit()" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                <option value="">All formats</option>
+                {% for val, label in tournament_formats %}
+                <option value="{{ val }}" {% if selected_format == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
             {% endif %}
+            <button type="submit" class="sr-only ui-button ui-button--secondary">Search</button>
         </form>
     </div>
 
@@ -102,7 +124,7 @@
 
         <div class="ml-auto flex items-center gap-3">
             {% if is_filtered %}
-            <a href="{% querystring sub=None q=None page=None %}" class="text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset filters</a>
+            <a href="{% querystring sub=None q=None year=None status=None fmt=None page=None %}" class="text-xs font-semibold text-slate-400 transition hover:text-pine-deep">Reset filters</a>
             {% endif %}
             {% if category == 'cultural' and can_manage %}
             <a href="{% url 'socio_cultural_management' %}" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-pine/40 hover:text-pine-deep ui-button ui-button--secondary ui-button--small">

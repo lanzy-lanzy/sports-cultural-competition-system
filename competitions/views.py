@@ -219,6 +219,29 @@ def competition_list(request):
     else:
         competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
 
+    available_years = sorted(
+        {dt.year for dt in competitions.values_list('start_date', flat=True) if dt},
+        reverse=True,
+    )
+    selected_year = (request.GET.get('year') or '').strip()
+    if selected_year.isdigit() and int(selected_year) in available_years:
+        competitions = competitions.filter(start_date__year=int(selected_year))
+    else:
+        selected_year = ''
+
+    valid_statuses = [choice[0] for choice in Competition.STATUS_CHOICES]
+    selected_status = (request.GET.get('status') or '').strip().upper()
+    if selected_status in valid_statuses:
+        competitions = competitions.filter(status=selected_status)
+    else:
+        selected_status = ''
+
+    selected_format = (request.GET.get('fmt') or '').strip().upper()
+    if not is_cultural and selected_format in Competition.TournamentFormat.values:
+        competitions = competitions.filter(tournament_format=selected_format)
+    else:
+        selected_format = ''
+
     # The search is applied before the chips are counted so every counter
     # describes what the user would actually get when clicking it.
     query = (request.GET.get('q') or '').strip()
@@ -269,9 +292,14 @@ def competition_list(request):
             (item['label'] for item in subcategories if item['value'] == selected_sub), ''
         ),
         'query': query,
+        'available_years': available_years,
+        'selected_year': selected_year,
+        'status_choices': Competition.STATUS_CHOICES,
+        'selected_status': selected_status,
+        'selected_format': selected_format,
         'all_count': all_count,
         'result_count': page_obj.paginator.count,
-        'is_filtered': bool(query) or bool(selected_sub),
+        'is_filtered': bool(query or selected_sub or selected_year or selected_status or selected_format),
         'subtype_groups': cultural_subtype_groups(),
         'can_manage_subtypes': get_user_role(request.user) in MANAGEMENT_ROLES,
     })
