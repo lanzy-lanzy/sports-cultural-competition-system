@@ -495,6 +495,24 @@ def update_team_status(request, team_id):
     return redirect('team_detail', team_id=team.id)
 
 
+@team_editor_required
+@require_POST
+def update_team_color(request, team_id):
+    import re
+    _require_team_manager(request.user)
+    team = _get_accessible_team(request.user, team_id)
+    color = (request.POST.get('color_theme') or '').strip().lower()
+    if color and not re.fullmatch(r'#[0-9a-f]{6}', color):
+        messages.error(request, 'Select a valid hex color.')
+    else:
+        team.color_theme = color
+        team.save(update_fields=['color_theme', 'updated_at'])
+        messages.success(request, f'Team color updated for {team.name}.' if color else f'Team color cleared for {team.name}.')
+    if request.POST.get('next') == 'team_manager_dashboard':
+        return redirect('team_manager_dashboard')
+    return redirect('team_detail', team_id=team.id)
+
+
 @management_required
 def department_manage(request):
     form = DepartmentForm(request.POST or None)

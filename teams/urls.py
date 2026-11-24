@@ -12,6 +12,7 @@ urlpatterns = [
     path('teams/bulk-delete/', views.bulk_delete_teams, name='bulk_delete_teams'),
     path('teams/<int:team_id>/', views.team_detail, name='team_detail'),
     path('teams/<int:team_id>/edit/', views.edit_team, name='edit_team'),
+    path('teams/<int:team_id>/color/', views.update_team_color, name='update_team_color'),
     path('teams/<int:team_id>/players/register/', views.register_team_player, name='register_team_player'),
     path('teams/<int:team_id>/roster/submit/', views.submit_team_roster, name='submit_team_roster'),
     path('teams/<int:team_id>/members/add/', views.add_team_member, name='add_team_member'),
