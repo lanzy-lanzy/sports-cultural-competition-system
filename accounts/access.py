@@ -15,9 +15,7 @@ MANAGEMENT_ROLES = {
 
 PUBLIC_REGISTRATION_ROLES = {
     UserProfile.Role.TEAM_MANAGER,
-    UserProfile.Role.PARTICIPANT,
     UserProfile.Role.JUDGE,
-    UserProfile.Role.SPECTATOR,
 }
 
 

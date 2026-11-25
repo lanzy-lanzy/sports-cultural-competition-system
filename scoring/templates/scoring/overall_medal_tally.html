@@ -27,7 +27,7 @@
                     </span>
                     {% endif %}
                 </div>
-                <h1 class="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">Overall medal tally</h1>
+                <h1 class="mt-2 font-display text-3xl font-semibold text-white sm:text-4xl">Overall medal tally{% if selected_year %} {{ selected_year }}{% endif %}</h1>
                 <p class="records-description mt-2.5 text-sm leading-relaxed">
                     Comprehensive delegation standings, medal totals, and verified win&ndash;loss match records across Sports and Socio Cultural competitions.
                 </p>
@@ -62,24 +62,33 @@
                     <option value="cultural" {% if category == 'cultural' %}selected{% endif %}>Socio Cultural</option>
                 </select>
             </div>
+            {% if available_years %}
+            <div class="w-full sm:w-44">
+                <label class="mb-1.5 block text-xs font-semibold text-slate-600" for="tally-year">Year</label>
+                <select id="tally-year" name="year" class="h-11 w-full rounded-lg border border-slate-200 bg-paper/60 px-3 text-sm font-medium text-ink outline-none transition focus:border-pine focus:bg-white focus:ring-2 focus:ring-pine/15" onchange="this.form.submit()">
+                    <option value="">All years</option>
+                    {% for yr in available_years %}
+                    <option value="{{ yr }}" {% if selected_year == yr|stringformat:'s' %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
             <noscript><button type="submit" class="h-11 rounded-lg bg-pine px-5 text-sm font-semibold text-white shadow ui-button ui-button--primary">Apply</button></noscript>
-            <p class="flex-1 text-xs leading-5 text-slate-500">
-                {% if category == 'cultural' %}Showing Socio Cultural competitions only.{% elif category == 'sports' %}Showing Sports competitions only.{% else %}Showing every category together &mdash; pick one to narrow the tally, win&ndash;loss records, and bar graph.{% endif %}
-            </p>
-            {% if category %}
+            {% if category or selected_year %}
             <a href="{% url 'overall_medal_tally' %}" class="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-pine transition hover:bg-moss ui-button ui-button--secondary ui-button--small">Clear filter</a>
             {% endif %}
         </div>
     </form>
 
-    {% if tally.sports_matrix.columns and tally.sports_matrix.rows %}
-    <!-- ===== Overall Sports-by-Sports Tally Matrix ===== -->
-    <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="sports-matrix-title">
+    {% for yt in yearly_tallies %}
+    {% if yt.tally.sports_matrix.columns and yt.tally.sports_matrix.rows %}
+    <!-- ===== Overall Tally {{ yt.year }} ===== -->
+    <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="sports-matrix-title-{{ yt.year }}">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="sports-matrix-title" class="font-display text-xl font-semibold text-ink">Overall Sports Tally</h2>
-                    <span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">{{ tally.sports_matrix.columns|length }} Sports</span>
+                    <h2 id="sports-matrix-title-{{ yt.year }}" class="font-display text-xl font-semibold text-ink">Overall Tally {{ yt.year }}</h2>
+                    <span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pine-deep">{{ yt.tally.sports_matrix.columns|length }} Sports</span>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-500">
@@ -89,12 +98,12 @@
             </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full border-collapse text-left text-xs sm:text-sm" aria-labelledby="sports-matrix-title">
+            <table class="w-full border-collapse text-left text-xs sm:text-sm" aria-labelledby="sports-matrix-title-{{ yt.year }}">
                 <thead>
                     <tr class="border-b border-slate-200 bg-paper/90 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                         <th class="sticky left-0 z-20 w-14 border-r border-slate-200/80 bg-paper px-3 py-3.5 text-center">#</th>
                         <th class="sticky left-14 z-20 min-w-[165px] border-r border-slate-200 bg-paper px-4 py-3.5">Team / Dept</th>
-                        {% for col in tally.sports_matrix.columns %}
+                        {% for col in yt.tally.sports_matrix.columns %}
                         <th class="min-w-[96px] whitespace-nowrap border-r border-slate-100 px-3 py-3.5 text-center">{{ col.name }}</th>
                         {% endfor %}
                         <th class="border-l border-slate-200 bg-amber-50/60 px-3 py-3.5 text-center text-amber-700">G</th>
@@ -104,7 +113,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    {% for row in tally.sports_matrix.rows %}
+                    {% for row in yt.tally.sports_matrix.rows %}
                     <tr class="{% if row.rank == 1 and row.points %}bg-amber-50/30{% endif %} transition-colors hover:bg-paper/70">
                         <td class="sticky left-0 z-10 border-r border-slate-200/80 bg-white px-3 py-3 text-center font-display text-sm font-bold tabular-nums text-ink">{{ row.rank }}</td>
                         <td class="sticky left-14 z-10 border-r border-slate-200 bg-white px-4 py-3">
@@ -153,7 +162,7 @@
                     <tr class="border-t-2 border-slate-200 bg-paper/90 text-xs font-bold text-ink">
                         <td class="sticky left-0 z-10 border-r border-slate-200/80 bg-paper px-3 py-3 text-center">&Sigma;</td>
                         <td class="sticky left-14 z-10 border-r border-slate-200 bg-paper px-4 py-3 uppercase tracking-wider text-slate-600">Totals</td>
-                        {% for col_tot in tally.sports_matrix.column_totals %}
+                        {% for col_tot in yt.tally.sports_matrix.column_totals %}
                         <td class="border-r border-slate-100 px-2.5 py-3 text-center tabular-nums">
                             {% if col_tot.points %}
                                 <span>{{ col_tot.points|floatformat:"-1" }} pts</span>
@@ -164,16 +173,49 @@
                             {% endif %}
                         </td>
                         {% endfor %}
-                        <td class="border-l border-slate-200 bg-amber-50/60 px-3 py-3 text-center tabular-nums text-amber-800">{{ tally.sports_matrix.grand_totals.gold }}</td>
-                        <td class="bg-slate-100/80 px-3 py-3 text-center tabular-nums text-slate-700">{{ tally.sports_matrix.grand_totals.silver }}</td>
-                        <td class="bg-orange-50/60 px-3 py-3 text-center tabular-nums text-orange-800">{{ tally.sports_matrix.grand_totals.bronze }}</td>
-                        <td class="sticky right-0 z-10 border-l-2 border-pine/25 bg-[#e6f3ea] px-4 py-3 text-center font-display text-sm font-bold tabular-nums text-pine-deep shadow-[-6px_0_12px_-6px_rgba(15,23,42,0.14)]">{{ tally.sports_matrix.grand_totals.points|floatformat:"-1" }}</td>
+                        <td class="border-l border-slate-200 bg-amber-50/60 px-3 py-3 text-center tabular-nums text-amber-800">{{ yt.tally.sports_matrix.grand_totals.gold }}</td>
+                        <td class="bg-slate-100/80 px-3 py-3 text-center tabular-nums text-slate-700">{{ yt.tally.sports_matrix.grand_totals.silver }}</td>
+                        <td class="bg-orange-50/60 px-3 py-3 text-center tabular-nums text-orange-800">{{ yt.tally.sports_matrix.grand_totals.bronze }}</td>
+                        <td class="sticky right-0 z-10 border-l-2 border-pine/25 bg-[#e6f3ea] px-4 py-3 text-center font-display text-sm font-bold tabular-nums text-pine-deep shadow-[-6px_0_12px_-6px_rgba(15,23,42,0.14)]">{{ yt.tally.sports_matrix.grand_totals.points|floatformat:"-1" }}</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </section>
+    {% elif yt.tally.rows %}
+    <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="yearly-tally-title-{{ yt.year }}">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
+            <h2 id="yearly-tally-title-{{ yt.year }}" class="font-display text-xl font-semibold text-ink">Overall Tally {{ yt.year }}</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-paper/90 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        <th class="px-4 py-3 text-center">#</th>
+                        <th class="px-4 py-3">Team / Contestant</th>
+                        <th class="px-3 py-3 text-center text-amber-700">G</th>
+                        <th class="px-3 py-3 text-center text-slate-600">S</th>
+                        <th class="px-3 py-3 text-center text-orange-700">B</th>
+                        <th class="sticky right-0 z-10 border-l-2 border-pine/25 bg-[#e6f3ea] px-4 py-3 text-center text-pine-deep">Total Pts</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in yt.tally.rows %}
+                    <tr class="hover:bg-paper/70">
+                        <td class="px-4 py-3 text-center font-display font-bold text-ink">{{ row.rank }}</td>
+                        <td class="px-4 py-3 font-semibold text-ink">{{ row.name }}</td>
+                        <td class="px-3 py-3 text-center font-bold text-amber-700">{{ row.gold }}</td>
+                        <td class="px-3 py-3 text-center font-bold text-slate-600">{{ row.silver }}</td>
+                        <td class="px-3 py-3 text-center font-bold text-orange-700">{{ row.bronze }}</td>
+                        <td class="sticky right-0 z-10 border-l-2 border-pine/25 bg-[#f2f8f4] px-4 py-3 text-center font-display font-bold text-pine-deep">{{ row.points|floatformat:"-1" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
     {% endif %}
+    {% endfor %}
 
     {% if tally.rows %}
     <!-- ===== Official / Provisional Medal Tally KPI Grid ===== -->

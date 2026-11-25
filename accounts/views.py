@@ -135,9 +135,14 @@ def guest_viewer(request):
     year_raw = (request.GET.get('year') or '').strip()
     selected_year = int(year_raw) if year_raw.isdigit() else None
 
+    def _comp_year(dt):
+        if not dt:
+            return None
+        return timezone.localtime(dt).year if timezone.is_aware(dt) else dt.year
+
     base_comps = Competition.objects.exclude(status__in=['DRAFT', 'CANCELLED'])
     available_years = sorted(
-        {dt.year for dt in base_comps.values_list('start_date', flat=True) if dt is not None},
+        {yr for yr in (_comp_year(dt) for dt in base_comps.values_list('start_date', flat=True)) if yr is not None},
         reverse=True,
     )
 
@@ -178,6 +183,16 @@ def guest_viewer(request):
     ]
 
     tally = compute_overall_medal_tally(competitions_qs)
+    target_years = [selected_year] if selected_year else sorted(available_years)
+    yearly_tallies = []
+    for yr in target_years:
+        yr_ids = [c.id for c in competitions if _comp_year(c.start_date) == yr]
+        if not yr_ids:
+            continue
+        yr_tally = compute_overall_medal_tally(competitions_qs.filter(id__in=yr_ids))
+        if (yr_tally['sports_matrix']['columns'] and yr_tally['sports_matrix']['rows']) or yr_tally['rows']:
+            yearly_tallies.append({'year': yr, 'tally': yr_tally})
+
     announcements_qs = Announcement.objects.filter(is_published=True).select_related('competition')
     if selected_year or category != 'all':
         announcements_qs = announcements_qs.filter(Q(competition__isnull=True) | Q(competition_id__in=comp_ids))
@@ -194,6 +209,7 @@ def guest_viewer(request):
         'upcoming_matches': upcoming_matches,
         'recent_results': recent_results,
         'tally': tally,
+        'yearly_tallies': yearly_tallies,
         'announcements': announcements,
         'scorecard': landing_scorecard(),
     })
@@ -536,6 +552,10 @@ def user_management(request):
         'query': q,
         'role_filter': role_filter,
         'role_choices': UserProfile.Role.choices,
+        'create_role_choices': [
+            choice for choice in UserProfile.Role.choices
+            if choice[0] not in (UserProfile.Role.PARTICIPANT, UserProfile.Role.SPECTATOR)
+        ],
         'management_roles': MANAGEMENT_ROLES,
         'sport_events': sport_events,
     })
@@ -563,7 +583,7 @@ def admin_create_user(request):
     if User.objects.filter(username__iexact=username).exists():
         messages.error(request, f'Username "{username}" is already taken.')
         return redirect('user_management')
-    if role not in UserProfile.Role.values:
+    if role not in UserProfile.Role.values or role in (UserProfile.Role.PARTICIPANT, UserProfile.Role.SPECTATOR):
         messages.error(request, 'Select a valid access role.')
         return redirect('user_management')
 

@@ -263,7 +263,7 @@
                 <div>
                     <label for="cu-role" class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-600">Access Role *</label>
                     <select id="cu-role" name="role" onchange="toggleEventBox('cu-role', 'cu-events-wrap')" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-ink">
-                        {% for role_value, role_label in role_choices %}
+                        {% for role_value, role_label in create_role_choices %}
                         <option value="{{ role_value }}" {% if role_value == 'TOURNAMENT_MANAGER' %}selected{% endif %}>{{ role_label }}</option>
                         {% endfor %}
                     </select>

@@ -980,6 +980,45 @@ class OverallMedalTallyTest(TestCase):
         self.assertContains(response, reverse('overall_medal_tally'))
         self.assertNotContains(response, reverse('export_medal_tally_csv'))
 
+    def test_overall_tally_groups_and_labels_by_year(self):
+        self._add_sports_podium()
+        comp_2027 = Competition.objects.create(
+            name='Volleyball 2027',
+            description='2027 season',
+            kind=Competition.Kind.SPORTS,
+            start_date='2027-03-01',
+            end_date='2027-03-05',
+            status='COMPLETED',
+            created_by=self.admin,
+        )
+        from sports.models import EventEntry, SportType, SportsEvent
+        from sports.services import generate_bracket, record_match_result
+        from sports.workflow import confirm_awards
+        from teams.models import Team
+        t1 = Team.objects.create(name='Bulls 2027', status=Team.Status.APPROVED, created_by=self.admin)
+        t2 = Team.objects.create(name='Phoenix 2027', status=Team.Status.APPROVED, created_by=self.admin)
+        st = SportType.objects.create(name='Volleyball', team_based=True)
+        ev_2027 = SportsEvent.objects.create(
+            competition=comp_2027, sport_type=st, name='Volleyball Men', team_based=True,
+            format=SportsEvent.Format.SINGLE_ELIMINATION, status=SportsEvent.Status.ONGOING,
+        )
+        EventEntry.objects.create(event=ev_2027, team=t1, status='CONFIRMED')
+        EventEntry.objects.create(event=ev_2027, team=t2, status='CONFIRMED')
+        generate_bracket(ev_2027)
+        for m in ev_2027.matches.all():
+            record_match_result(m, {1: 25, 2: 18})
+        confirm_awards(ev_2027, self.admin)
+
+        resp_all = self.client.get(reverse('overall_medal_tally'))
+        self.assertEqual(resp_all.status_code, 200)
+        self.assertContains(resp_all, 'Overall Tally 2026')
+        self.assertContains(resp_all, 'Overall Tally 2027')
+
+        resp_2027 = self.client.get(reverse('overall_medal_tally'), {'year': '2027'})
+        self.assertEqual(resp_2027.status_code, 200)
+        self.assertContains(resp_2027, 'Overall Tally 2027')
+        self.assertNotContains(resp_2027, 'Overall Tally 2026')
+
     def test_per_competition_page_links_to_overall(self):
         response = self.client.get(reverse('medal_tally', args=[self.judged.id]))
         self.assertEqual(response.status_code, 200)

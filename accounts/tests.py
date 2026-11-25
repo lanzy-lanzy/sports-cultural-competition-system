@@ -46,6 +46,30 @@ class AccountTest(TestCase):
         self.assertFalse(User.objects.filter(username='organizer').exists())
         self.assertContains(resp, 'Select a valid choice')
 
+    def test_create_account_excludes_participant_and_spectator_roles(self):
+        reg_resp = self.client.get(reverse('register'))
+        self.assertEqual(reg_resp.status_code, 200)
+        role_values = [val for val, _ in reg_resp.context['form'].fields['role'].choices]
+        self.assertNotIn(UserProfile.Role.PARTICIPANT, role_values)
+        self.assertNotIn(UserProfile.Role.SPECTATOR, role_values)
+        self.assertIn(UserProfile.Role.TEAM_MANAGER, role_values)
+        self.assertIn(UserProfile.Role.JUDGE, role_values)
+
+        self.client.force_login(self.admin)
+        um_resp = self.client.get(reverse('user_management'))
+        create_values = [val for val, _ in um_resp.context['create_role_choices']]
+        self.assertNotIn(UserProfile.Role.PARTICIPANT, create_values)
+        self.assertNotIn(UserProfile.Role.SPECTATOR, create_values)
+
+        for blocked_role in (UserProfile.Role.PARTICIPANT, UserProfile.Role.SPECTATOR):
+            self.client.post(reverse('admin_create_user'), {
+                'username': f'blocked_{blocked_role.lower()}',
+                'password': 'password123',
+                'role': blocked_role,
+                'is_active': 'on',
+            })
+            self.assertFalse(User.objects.filter(username=f'blocked_{blocked_role.lower()}').exists())
+
     def test_landing_page_has_institutional_branding_and_primary_actions(self):
         resp = self.client.get(reverse('landing_page'))
 

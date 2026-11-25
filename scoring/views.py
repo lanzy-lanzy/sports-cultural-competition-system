@@ -1334,15 +1334,19 @@ def medal_tally(request, competition_id):
     })
 
 
+def _competition_year(comp):
+    from django.utils import timezone as dj_timezone
+    if not comp.start_date:
+        return None
+    dt = comp.start_date
+    if dj_timezone.is_aware(dt):
+        dt = dj_timezone.localtime(dt)
+    return dt.year
+
+
 @role_required(*MANAGEMENT_ROLES, UserProfile.Role.TEAM_MANAGER, UserProfile.Role.TOURNAMENT_MANAGER)
 def overall_medal_tally(request):
-    """One medal table across every competition, sports and judged alike.
-
-    ?category=sports or cultural narrows the tally, the bar charts and the
-    breakdown to one competition category; anything else shows all of them.
-    Socio Cultural is kind == CULTURAL, every other kind counts as Sports,
-    which is the same rule the match board and the cultural hub use.
-    """
+    """One medal table across every competition, sports and judged alike, grouped by year."""
     category = request.GET.get('category', '')
     competitions = Competition.objects.all()
     if category == 'cultural':
@@ -1351,18 +1355,40 @@ def overall_medal_tally(request):
         competitions = competitions.exclude(kind=Competition.Kind.CULTURAL)
     else:
         category = ''
-    tally = compute_overall_medal_tally(competitions)
+
+    comp_list = list(competitions)
+    available_years = sorted({yr for yr in (_competition_year(c) for c in comp_list) if yr is not None})
+    year_raw = (request.GET.get('year') or '').strip()
+    selected_year = int(year_raw) if year_raw.isdigit() else None
+
+    filtered_list = [c for c in comp_list if _competition_year(c) == selected_year] if selected_year else comp_list
+    filtered_competitions = competitions.filter(id__in=[c.id for c in filtered_list])
+    tally = compute_overall_medal_tally(filtered_competitions)
+
+    target_years = [selected_year] if selected_year else available_years
+    yearly_tallies = []
+    for yr in target_years:
+        yr_ids = [c.id for c in comp_list if _competition_year(c) == yr]
+        if not yr_ids:
+            continue
+        yr_tally = compute_overall_medal_tally(competitions.filter(id__in=yr_ids))
+        if (yr_tally['sports_matrix']['columns'] and yr_tally['sports_matrix']['rows']) or yr_tally['rows']:
+            yearly_tallies.append({'year': yr, 'tally': yr_tally})
+
     # When nothing has been tallied yet, show which competitions are still
     # waiting to complete instead of a bare empty state.
     pending = []
     if not tally['rows']:
         pending = list(
-            competitions.exclude(status='COMPLETED')
+            filtered_competitions.exclude(status='COMPLETED')
             .select_related()
             .order_by('start_date')[:20]
         )
     return render(request, 'scoring/overall_medal_tally.html', {
         'tally': tally,
+        'yearly_tallies': yearly_tallies,
+        'available_years': available_years,
+        'selected_year': str(selected_year) if selected_year else '',
         'category': category,
         'pending': pending,
     })
