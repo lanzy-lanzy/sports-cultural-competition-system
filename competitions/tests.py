@@ -919,3 +919,34 @@ class CompetitionBulkDeleteTest(TestCase):
             resp = self.client.get(f"{reverse('competition_list')}?category={cat}")
             self.assertContains(resp, 'id="bulk-delete-comps-form"')
             self.assertContains(resp, 'Delete Selected')
+
+    def test_delete_and_bulk_delete_succeed_when_event_awards_exist(self):
+        from sports.models import EventAward, EventEntry, SportType, SportsEvent
+        from teams.models import Team
+
+        sport_type = SportType.objects.create(name='Basketball', team_based=True)
+        team = Team.objects.create(name='Bulls', status=Team.Status.APPROVED, created_by=self.admin)
+
+        ev1 = SportsEvent.objects.create(
+            competition=self.sport_1, sport_type=sport_type, name='Basketball Men', team_based=True,
+        )
+        entry1 = EventEntry.objects.create(event=ev1, team=team)
+        EventAward.objects.create(event=ev1, entry=entry1, medal='gold')
+
+        ev2 = SportsEvent.objects.create(
+            competition=self.sport_2, sport_type=sport_type, name='Volleyball Men', team_based=True,
+        )
+        entry2 = EventEntry.objects.create(event=ev2, team=team)
+        EventAward.objects.create(event=ev2, entry=entry2, medal='silver')
+
+        self.client.force_login(self.admin)
+        resp_single = self.client.post(reverse('delete_competition', args=[self.sport_1.id]))
+        self.assertRedirects(resp_single, reverse('competition_list'))
+        self.assertFalse(Competition.objects.filter(id=self.sport_1.id).exists())
+
+        resp_bulk = self.client.post(reverse('bulk_delete_competitions'), {
+            'category': 'sports',
+            'competition_ids': [self.sport_2.id],
+        })
+        self.assertRedirects(resp_bulk, reverse('competition_list'))
+        self.assertFalse(Competition.objects.filter(id=self.sport_2.id).exists())

@@ -773,12 +773,20 @@ def delete_cultural_main_type(request):
     return JsonResponse({'deleted': True, 'id': int(main_id)})
 
 
+def _delete_competition_safely(competition):
+    """Remove protected sports EventAward rows before cascading Competition deletion."""
+    from sports.models import EventAward
+    EventAward.objects.filter(event__competition=competition).delete()
+    competition.delete()
+
+
 @management_required
 def delete_competition(request, competition_id):
     if request.method == 'POST':
         competition = get_object_or_404(Competition, id=competition_id)
         category = competition.kind
-        competition.delete()
+        with transaction.atomic():
+            _delete_competition_safely(competition)
         messages.success(request, 'Competition deleted successfully.')
         return redirect(_competition_list_url(category))
     return redirect('competition_list')
@@ -804,7 +812,7 @@ def bulk_delete_competitions(request):
     with transaction.atomic():
         for comp in competitions:
             comp_name = comp.name
-            comp.delete()
+            _delete_competition_safely(comp)
             record_action_from_request(
                 request,
                 'COMPETITION_DELETED',
