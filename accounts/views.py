@@ -122,6 +122,135 @@ def landing_page(request):
     return render(request, 'accounts/landing_page.html', {'scorecard': landing_scorecard()})
 
 
+def guest_viewer(request):
+    """Full-page read-only spectator/guest viewer with no sidebar."""
+    from announcements.models import Announcement
+    from scoring.services import compute_overall_medal_tally
+    from sports.models import Match
+
+    category = (request.GET.get('category') or 'all').strip().lower()
+    if category not in ('all', 'sports', 'cultural'):
+        category = 'all'
+
+    year_raw = (request.GET.get('year') or '').strip()
+    selected_year = int(year_raw) if year_raw.isdigit() else None
+
+    base_comps = Competition.objects.exclude(status__in=['DRAFT', 'CANCELLED'])
+    available_years = sorted(
+        {dt.year for dt in base_comps.values_list('start_date', flat=True) if dt is not None},
+        reverse=True,
+    )
+
+    competitions_qs = base_comps
+    if selected_year:
+        competitions_qs = competitions_qs.filter(start_date__year=selected_year)
+    if category == 'sports':
+        competitions_qs = competitions_qs.exclude(kind=Competition.Kind.CULTURAL)
+    elif category == 'cultural':
+        competitions_qs = competitions_qs.filter(kind=Competition.Kind.CULTURAL)
+
+    status_rank = {'ACTIVE': 0, 'PENDING': 1, 'COMPLETED': 2}
+    competitions = sorted(
+        competitions_qs.prefetch_related('sport_events').annotate(
+            event_count=Count('sport_events', distinct=True),
+            match_count=Count('sport_events__matches', distinct=True),
+        ),
+        key=lambda c: (status_rank.get(c.status, 9), -(c.start_date.toordinal() if c.start_date else 0), -c.id),
+    )
+
+    comp_ids = [c.id for c in competitions]
+    match_base = (
+        Match.objects.filter(event__competition_id__in=comp_ids)
+        .select_related('event', 'event__competition', 'event__sport_type', 'venue')
+        .prefetch_related('entries__team', 'entries__participant')
+    )
+    live_matches = list(match_base.filter(status=Match.Status.ONGOING).order_by('scheduled_start', 'id')[:12])
+    upcoming_matches = list(
+        match_base.filter(status=Match.Status.SCHEDULED).order_by('scheduled_start', 'id')[:24]
+    )
+    recent_results = list(
+        match_base.filter(status=Match.Status.COMPLETED).order_by('-updated_at', '-id')[:12]
+    )
+
+    scoreboard_competitions = [
+        c for c in competitions
+        if c.kind != Competition.Kind.CULTURAL and (c.status == 'ACTIVE' or c.show_results)
+    ]
+
+    tally = compute_overall_medal_tally(competitions_qs)
+    announcements_qs = Announcement.objects.filter(is_published=True).select_related('competition')
+    if selected_year or category != 'all':
+        announcements_qs = announcements_qs.filter(Q(competition__isnull=True) | Q(competition_id__in=comp_ids))
+    announcements = list(announcements_qs.order_by('-published_at', '-created_at')[:8])
+
+    return render(request, 'accounts/guest_viewer.html', {
+        'guest_mode': True,
+        'category': category,
+        'available_years': available_years,
+        'selected_year': str(selected_year) if selected_year else '',
+        'competitions': competitions,
+        'scoreboard_competitions': scoreboard_competitions,
+        'live_matches': live_matches,
+        'upcoming_matches': upcoming_matches,
+        'recent_results': recent_results,
+        'tally': tally,
+        'announcements': announcements,
+        'scorecard': landing_scorecard(),
+    })
+
+
+def _strip_bracket_edit_urls(payload):
+    """Ensure guest bracket JSON never exposes score-recording endpoints."""
+    if not payload:
+        return payload
+    for rnd in payload.get('rounds', []):
+        for match in rnd.get('matches', []):
+            match.pop('recordUrl', None)
+    for key in ('extra_matches', 'group_matches'):
+        for match in payload.get(key, []):
+            match.pop('recordUrl', None)
+    payload.pop('schedule', None)
+    if isinstance(payload.get('event'), dict):
+        payload['event'] = {
+            'id': payload['event'].get('id'),
+            'name': payload['event'].get('name'),
+            'format': payload['event'].get('format'),
+            'competition': payload['event'].get('competition'),
+        }
+    return payload
+
+
+def guest_bracket(request, event_id):
+    """Full-page read-only tournament bracket viewer for guests (no sidebar)."""
+    from django.http import JsonResponse
+    from sports.models import SportsEvent
+    from sports.views import bracket_payload
+
+    event = get_object_or_404(
+        SportsEvent.objects.select_related('competition', 'sport_type', 'venue')
+        .exclude(competition__status__in=['DRAFT', 'CANCELLED']),
+        id=event_id,
+    )
+    bracket = _strip_bracket_edit_urls(bracket_payload(event))
+    if request.GET.get('format') == 'json':
+        response = JsonResponse(bracket or {'rounds': [], 'champion': None})
+        response['Cache-Control'] = 'no-store'
+        return response
+
+    sibling_events = list(
+        SportsEvent.objects.filter(competition__status__in=['ACTIVE', 'PENDING', 'COMPLETED'])
+        .exclude(competition__kind=Competition.Kind.CULTURAL)
+        .select_related('competition')
+        .order_by('-competition__start_date', 'competition__name', 'name')
+    )
+    return render(request, 'accounts/guest_bracket.html', {
+        'guest_mode': True,
+        'event': event,
+        'bracket': bracket,
+        'sibling_events': sibling_events,
+    })
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(redirect_name_for_user(request.user))

@@ -463,3 +463,155 @@ class UserAccessDeleteTest(TestCase):
         self.assertEqual(self.client.post(reverse('delete_user', args=[self.u2.id])).status_code, 403)
         self.assertEqual(self.client.post(reverse('bulk_delete_users'), {'user_ids': [self.u2.id]}).status_code, 403)
         self.assertTrue(User.objects.filter(id=self.u2.id).exists())
+
+
+class GuestViewerTest(TestCase):
+    def setUp(self):
+        from announcements.models import Announcement
+        from competitions.models import Competition
+        from sports.models import Match, MatchEntry, SportType, SportsEvent, Venue
+        from teams.models import Team
+
+        self.admin = User.objects.create_superuser('guestadmin', 'ga@example.com', 'pass')
+        self.sport_comp = Competition.objects.create(
+            name='BASKETBALL 2026',
+            description='Intramurals Basketball',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-03-10',
+            end_date='2026-03-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        self.draft_comp = Competition.objects.create(
+            name='HIDDEN DRAFT COMP',
+            description='Should not appear',
+            kind=Competition.Kind.SPORTS,
+            tournament_format=Competition.TournamentFormat.SINGLE_ELIMINATION,
+            start_date='2026-03-10',
+            end_date='2026-03-12',
+            status='DRAFT',
+            created_by=self.admin,
+        )
+        self.cultural_comp = Competition.objects.create(
+            name='SINGING 2027',
+            description='Cultural Singing',
+            kind=Competition.Kind.CULTURAL,
+            cultural_event_type=Competition.CulturalEventType.SINGING,
+            start_date='2027-03-10',
+            end_date='2027-03-12',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        sport_type = SportType.objects.create(name='Basketball', team_based=True)
+        venue = Venue.objects.create(name='Main Court')
+        self.event = SportsEvent.objects.create(
+            competition=self.sport_comp,
+            sport_type=sport_type,
+            name='Basketball Men',
+            team_based=True,
+            format=SportsEvent.Format.SINGLE_ELIMINATION,
+            status=SportsEvent.Status.ONGOING,
+            venue=venue,
+        )
+        team_a = Team.objects.create(name='Bulls', status=Team.Status.APPROVED, created_by=self.admin, color_theme='#1d4ed8')
+        team_b = Team.objects.create(name='Phoenix', status=Team.Status.APPROVED, created_by=self.admin, color_theme='#dc2626')
+        self.upcoming_match = Match.objects.create(
+            event=self.event,
+            name='Semifinal 1',
+            status=Match.Status.SCHEDULED,
+            venue=venue,
+        )
+        MatchEntry.objects.create(match=self.upcoming_match, team=team_a, side=1)
+        MatchEntry.objects.create(match=self.upcoming_match, team=team_b, side=2)
+
+        self.live_match = Match.objects.create(
+            event=self.event,
+            name='Opening Game',
+            status=Match.Status.ONGOING,
+            venue=venue,
+        )
+        MatchEntry.objects.create(match=self.live_match, team=team_a, side=1, score=42)
+        MatchEntry.objects.create(match=self.live_match, team=team_b, side=2, score=38)
+
+        Announcement.objects.create(
+            title='Opening Ceremony Notice',
+            body='Starts at 8:00 AM',
+            competition=self.sport_comp,
+            is_published=True,
+            created_by=self.admin,
+        )
+        Announcement.objects.create(
+            title='Draft Secret Notice',
+            body='Not published',
+            competition=self.sport_comp,
+            is_published=False,
+            created_by=self.admin,
+        )
+
+    def test_guest_viewer_renders_full_page_without_sidebar(self):
+        resp = self.client.get(reverse('guest_viewer'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'id="app-sidebar"')
+        self.assertNotContains(resp, 'lg:pl-72')
+        self.assertContains(resp, 'Live Now')
+        self.assertContains(resp, 'Opening Game')
+        self.assertContains(resp, 'Semifinal 1')
+        self.assertContains(resp, 'BASKETBALL 2026')
+        self.assertContains(resp, 'Opening Ceremony Notice')
+        self.assertNotContains(resp, 'HIDDEN DRAFT COMP')
+        self.assertNotContains(resp, 'Draft Secret Notice')
+        self.assertContains(resp, reverse('scoreboard', args=[self.sport_comp.id]))
+
+    def test_guest_viewer_filters_by_category_and_year(self):
+        resp = self.client.get(f"{reverse('guest_viewer')}?category=cultural&year=2027")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'SINGING 2027')
+        self.assertNotContains(resp, 'BASKETBALL 2026')
+
+    def test_public_scoreboard_has_no_sidebar_for_guest(self):
+        resp = self.client.get(reverse('scoreboard', args=[self.sport_comp.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'id="app-sidebar"')
+        self.assertNotContains(resp, 'lg:pl-72')
+        self.assertContains(resp, reverse('guest_viewer'))
+
+    def test_landing_and_login_expose_view_as_guest_link(self):
+        landing_resp = self.client.get(reverse('landing_page'))
+        login_resp = self.client.get(reverse('login'))
+        self.assertContains(landing_resp, reverse('guest_viewer'))
+        self.assertContains(login_resp, reverse('guest_viewer'))
+
+    def test_authenticated_user_in_guest_view_sees_no_sidebar_and_exit_link(self):
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('guest_viewer'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'id="app-sidebar"')
+        self.assertContains(resp, 'Exit Guest View')
+
+    def test_guest_bracket_viewer_is_full_page_read_only_and_hides_drafts(self):
+        resp = self.client.get(reverse('guest_bracket', args=[self.event.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'id="app-sidebar"')
+        self.assertNotContains(resp, 'lg:pl-72')
+        self.assertContains(resp, 'Basketball Men')
+        self.assertNotContains(resp, 'recordUrl')
+        self.assertNotContains(resp, 'result-modal')
+
+        json_resp = self.client.get(f"{reverse('guest_bracket', args=[self.event.id])}?format=json")
+        self.assertEqual(json_resp.status_code, 200)
+        payload = json_resp.json()
+        self.assertTrue(payload['rounds'])
+        for rnd in payload['rounds']:
+            for m in rnd['matches']:
+                self.assertNotIn('recordUrl', m)
+
+        from sports.models import SportType, SportsEvent
+        draft_event = SportsEvent.objects.create(
+            competition=self.draft_comp,
+            sport_type=SportType.objects.first(),
+            name='Draft Secret Event',
+            team_based=True,
+            format=SportsEvent.Format.SINGLE_ELIMINATION,
+        )
+        self.assertEqual(self.client.get(reverse('guest_bracket', args=[draft_event.id])).status_code, 404)

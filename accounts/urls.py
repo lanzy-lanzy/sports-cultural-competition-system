@@ -6,6 +6,8 @@ from . import views
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
+    path('guest/', views.guest_viewer, name='guest_viewer'),
+    path('guest/bracket/<int:event_id>/', views.guest_bracket, name='guest_bracket'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),

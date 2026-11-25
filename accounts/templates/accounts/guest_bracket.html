@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}Bracket - {{ event.name }} - Competrack{% endblock %}
+{% block header_title %}Tournament Bracket{% endblock %}
+
+{% block extra_head %}
+<style>
+    .bracket-card { height: 126px; overflow: hidden; }
+    #bracket-lines { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    #bracket-lines path { fill: none; stroke: #cbd5e1; stroke-width: 2; }
+    #bracket-lines .bracket-line--won { stroke: #116B3B; }
+    #bracket-lines .bracket-line--live { stroke: #f59e0b; stroke-dasharray: 7 5; }
+    #bracket-lines .bracket-line--lost { stroke: #d49a45; stroke-dasharray: 5 4; }
+    .bracket-search-hit { outline: 3px solid #60a87a; outline-offset: 3px; }
+    .bracket-col { position: relative; z-index: 10; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Header & Event Switcher -->
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.15em] text-pine">{{ event.competition.name|title }} &middot; {{ event.get_format_display }}</p>
+                <h1 class="mt-1 font-display text-2xl font-semibold text-ink sm:text-3xl">{{ event.name }}</h1>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5">
+                {% if sibling_events %}
+                <select aria-label="Switch sport event bracket"
+                        onchange="if (this.value) window.location.href = this.value;"
+                        class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                    {% for item in sibling_events %}
+                    <option value="{% url 'guest_bracket' item.id %}" {% if item.id == event.id %}selected{% endif %}>
+                        {{ item.competition.name }} &mdash; {{ item.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                {% if event.competition.status == 'ACTIVE' or event.competition.show_results %}
+                <a href="{% url 'scoreboard' event.competition_id %}" class="inline-flex items-center rounded-md bg-pine px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-pine-deep">Live Scoreboard</a>
+                {% endif %}
+                <a href="{% url 'guest_viewer' %}" class="inline-flex items-center rounded-md border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-pine/40 hover:bg-moss/50 hover:text-pine-deep">&larr; Guest Viewer</a>
+            </div>
+        </div>
+    </section>
+
+    {% if bracket %}
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                <span>Find team</span>
+                <input id="bracket-search" type="search" placeholder="Team or match name" class="rounded-md border border-slate-200 px-3 py-2 text-sm text-ink">
+            </label>
+            <div class="flex items-center gap-2" role="group" aria-label="Bracket zoom">
+                <button type="button" id="bracket-zoom-out" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label="Zoom out">&minus;</button>
+                <span id="bracket-zoom-level" class="min-w-[44px] text-center text-xs font-semibold text-slate-600">100%</span>
+                <button type="button" id="bracket-zoom-in" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" aria-label="Zoom in">+</button>
+                <button type="button" id="bracket-reset" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Reset</button>
+            </div>
+        </div>
+
+        <div id="bracket-standings" class="mb-4 overflow-x-auto"></div>
+        <p id="bracket-search-count" class="mb-2 text-xs font-semibold text-pine" aria-live="polite"></p>
+        <div class="overflow-x-auto app-scrollbar" tabindex="0" role="region" aria-label="Tournament bracket">
+            <div id="bracket-stage" class="relative flex min-w-max gap-x-14 px-2 py-2"></div>
+        </div>
+    </div>
+
+    <div id="bracket-extra" class="space-y-4"></div>
+    {{ bracket|json_script:"guest-bracket-data" }}
+
+    <script>
+    (function () {
+        var stage = document.getElementById('bracket-stage');
+        var dataEl = document.getElementById('guest-bracket-data');
+        if (!stage || !dataEl) return;
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'bracket-lines';
+        stage.appendChild(svg);
+
+        var data = JSON.parse(dataEl.textContent);
+        var zoom = 1;
+        var search = document.getElementById('bracket-search');
+        var payloadSignature = JSON.stringify(data);
+
+        function el(tag, cls, text) {
+            var node = document.createElement(tag);
+            if (cls) node.className = cls;
+            if (text !== undefined && text !== null) node.textContent = text;
+            return node;
+        }
+
+        function chipColor(status) {
+            if (status === 'COMPLETED') return 'bg-emerald-100 text-emerald-700';
+            if (status === 'ONGOING') return 'bg-sky-100 text-sky-700';
+            if (status === 'POSTPONED') return 'bg-amber-100 text-amber-700';
+            if (status === 'CANCELLED') return 'bg-rose-100 text-rose-700';
+            return 'bg-slate-100 text-slate-500';
+        }
+
+        function buildCard(match) {
+            var card = el('div', 'bracket-card rounded-md border bg-white shadow-sm');
+            card.dataset.match = match.id;
+            card.dataset.search = (match.label + ' ' + match.entries.map(function (e) { return e.name; }).join(' ') + ' ' + (match.placeholder_names || []).join(' ')).toLocaleLowerCase();
+            card.classList.add(match.status === 'COMPLETED' ? 'border-emerald-200' : 'border-slate-200');
+
+            var head = el('div', 'flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5');
+            head.appendChild(el('span', 'truncate text-[10px] font-bold uppercase tracking-wider text-slate-400', match.label));
+            head.appendChild(el('span', 'shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ' + chipColor(match.status), match.statusDisplay));
+            card.appendChild(head);
+
+            var bySide = { 1: null, 2: null };
+            match.entries.forEach(function (entry) { bySide[entry.side] = entry; });
+
+            [1, 2].forEach(function (side) {
+                var entry = bySide[side];
+                var row = el('div', 'flex items-center gap-2 px-3 py-[7px]');
+                if (entry && entry.winner) row.classList.add('bg-emerald-50/70');
+
+                var markCls = 'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold ';
+                var markText = '·';
+                if (entry && entry.winner) { markCls += 'bg-emerald-500 text-white'; markText = 'W'; }
+                else if (entry && entry.draw) { markCls += 'bg-amber-400 text-white'; markText = 'D'; }
+                else if (entry && match.status === 'COMPLETED') { markCls += 'bg-slate-200 text-slate-500'; markText = 'L'; }
+                else { markCls += 'bg-slate-100 text-slate-400'; }
+                row.appendChild(el('span', markCls, markText));
+
+                row.appendChild(el(
+                    'span',
+                    'flex-1 truncate text-sm ' + (entry && entry.winner ? 'font-bold text-emerald-800'
+                        : (entry && match.status === 'COMPLETED' ? 'text-slate-400'
+                            : (entry ? 'text-slate-700' : 'italic text-slate-400'))),
+                    entry ? entry.name : (match.placeholder_names ? match.placeholder_names[side - 1] : 'Awaiting winner')
+                ));
+
+                if (entry && entry.score !== null) {
+                    row.appendChild(el(
+                        'span',
+                        'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold ' + (entry.winner ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'),
+                        String(entry.score)
+                    ));
+                }
+                card.appendChild(row);
+            });
+
+            card.appendChild(el(
+                'div',
+                'truncate border-t border-slate-100 px-3 py-1 text-[9px] text-slate-400',
+                (match.venue || 'Venue TBA') + ' · ' + (match.start || 'Time TBA')
+            ));
+            return card;
+        }
+
+        function buildChampionCard() {
+            var card = el('div', 'bracket-card flex flex-col items-center justify-center gap-1 rounded-md border border-amber-200 bg-gradient-to-b from-amber-50 to-white px-4 text-center shadow-sm');
+            card.dataset.match = 'champion';
+            card.appendChild(el('span', 'text-[10px] font-bold uppercase tracking-[0.15em] text-amber-600', data.champion ? 'Champion' : 'To be decided'));
+            card.appendChild(el('span', 'font-display text-sm font-bold text-ink', data.champion || 'Winner of the final'));
+            return card;
+        }
+
+        function drawLines() {
+            svg.innerHTML = '';
+            if (data.mode !== 'elimination' && data.mode !== 'double') return;
+            var stageRect = stage.getBoundingClientRect();
+            svg.setAttribute('width', stage.scrollWidth);
+            svg.setAttribute('height', stage.scrollHeight);
+
+            var allMatches = [];
+            (data.rounds || []).forEach(function (r) { allMatches = allMatches.concat(r.matches || []); });
+
+            function connect(srcId, dstId, cls) {
+                var a = stage.querySelector('[data-match="' + srcId + '"]');
+                var b = stage.querySelector('[data-match="' + dstId + '"]');
+                if (!a || !b) return;
+                var ar = a.getBoundingClientRect();
+                var br = b.getBoundingClientRect();
+                var x1 = (ar.right - stageRect.left) / zoom;
+                var y1 = (ar.top + ar.height / 2 - stageRect.top) / zoom;
+                var x2 = (br.left - stageRect.left) / zoom;
+                var y2 = (br.top + br.height / 2 - stageRect.top) / zoom;
+                var mx = (x1 + x2) / 2;
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' H ' + mx + ' V ' + y2 + ' H ' + x2);
+                if (cls) path.setAttribute('class', cls);
+                svg.appendChild(path);
+            }
+
+            allMatches.forEach(function (m) {
+                var cls = m.status === 'COMPLETED' ? 'bracket-line--won' : (m.status === 'ONGOING' ? 'bracket-line--live' : '');
+                if (m.next) connect(m.id, m.next, cls);
+                if (m.loserNext) connect(m.id, m.loserNext, 'bracket-line--lost');
+            });
+
+            var rounds = data.rounds || [];
+            if (rounds.length) {
+                var lastRound = rounds[rounds.length - 1];
+                if (lastRound.matches && lastRound.matches.length === 1) {
+                    var finalMatch = lastRound.matches[0];
+                    connect(finalMatch.id, 'champion', finalMatch.status === 'COMPLETED' ? 'bracket-line--won' : '');
+                }
+            }
+        }
+
+        function applySearch() {
+            var q = (search && search.value || '').trim().toLocaleLowerCase();
+            var cards = Array.prototype.slice.call(stage.querySelectorAll('[data-match]'));
+            var hits = 0;
+            cards.forEach(function (card) {
+                var matched = q && (card.dataset.search || '').indexOf(q) !== -1;
+                card.classList.toggle('bracket-search-hit', !!matched);
+                if (matched) hits++;
+            });
+            var countEl = document.getElementById('bracket-search-count');
+            if (countEl) countEl.textContent = q ? (hits + ' matching match' + (hits === 1 ? '' : 'es')) : '';
+        }
+
+        function render() {
+            Array.prototype.slice.call(stage.children).forEach(function (node) {
+                if (node !== svg) node.remove();
+            });
+
+            var standingsEl = document.getElementById('bracket-standings');
+            if (standingsEl) {
+                standingsEl.innerHTML = '';
+                if (data.standings && data.standings.length) {
+                    var tbl = el('table', 'w-full text-left text-xs sm:text-sm border border-slate-200 rounded-md overflow-hidden');
+                    tbl.innerHTML = '<thead class="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-2">#</th><th class="px-3 py-2">Team</th><th class="px-3 py-2 text-center">P</th><th class="px-3 py-2 text-center">W</th><th class="px-3 py-2 text-center">D</th><th class="px-3 py-2 text-center">L</th><th class="px-3 py-2 text-right">Pts</th></tr></thead>';
+                    var tb = document.createElement('tbody');
+                    tb.className = 'divide-y divide-slate-100';
+                    data.standings.forEach(function (row) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td class="px-3 py-2 font-bold text-ink">' + row.rank + '</td><td class="px-3 py-2 font-semibold text-ink"></td><td class="px-3 py-2 text-center">' + row.played + '</td><td class="px-3 py-2 text-center">' + row.wins + '</td><td class="px-3 py-2 text-center">' + row.draws + '</td><td class="px-3 py-2 text-center">' + row.losses + '</td><td class="px-3 py-2 text-right font-bold text-pine-deep">' + row.total_points + '</td>';
+                        tr.children[1].textContent = row.name;
+                        tb.appendChild(tr);
+                    });
+                    tbl.appendChild(tb);
+                    standingsEl.appendChild(tbl);
+                }
+            }
+
+            (data.rounds || []).forEach(function (round) {
+                var col = el('div', 'bracket-col flex w-64 shrink-0 flex-col gap-3');
+                var head = el('div', 'mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500');
+                head.appendChild(el('span', '', round.label));
+                head.appendChild(el('span', 'rounded-full bg-slate-100 px-2 py-0.5 text-[10px]', round.done + '/' + round.total));
+                col.appendChild(head);
+                var body = el('div', 'flex flex-1 flex-col justify-around gap-4');
+                (round.matches || []).forEach(function (m) { body.appendChild(buildCard(m)); });
+                col.appendChild(body);
+                stage.appendChild(col);
+            });
+
+            if (data.mode === 'elimination' || data.mode === 'double') {
+                var champCol = el('div', 'bracket-col flex w-56 shrink-0 flex-col gap-3');
+                champCol.appendChild(el('div', 'mb-1 text-xs font-bold uppercase tracking-wider text-amber-600', 'Champion'));
+                var champBody = el('div', 'flex flex-1 flex-col justify-center');
+                champBody.appendChild(buildChampionCard());
+                champCol.appendChild(champBody);
+                stage.appendChild(champCol);
+            }
+
+            var extraEl = document.getElementById('bracket-extra');
+            if (extraEl) {
+                extraEl.innerHTML = '';
+                if (data.extra_matches && data.extra_matches.length) {
+                    var box = el('div', 'rounded-xl border border-slate-200 bg-white p-5 shadow-sm');
+                    box.appendChild(el('h2', 'mb-3 font-display text-base font-semibold text-ink', 'Consolation / Bronze Match'));
+                    var grid = el('div', 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3');
+                    data.extra_matches.forEach(function (m) { grid.appendChild(buildCard(m)); });
+                    box.appendChild(grid);
+                    extraEl.appendChild(box);
+                }
+            }
+
+            stage.style.transform = 'scale(' + zoom + ')';
+            stage.style.transformOrigin = 'top left';
+            var level = document.getElementById('bracket-zoom-level');
+            if (level) level.textContent = Math.round(zoom * 100) + '%';
+            requestAnimationFrame(drawLines);
+            applySearch();
+        }
+
+        if (search) search.addEventListener('input', applySearch);
+        var zoomIn = document.getElementById('bracket-zoom-in');
+        var zoomOut = document.getElementById('bracket-zoom-out');
+        var resetBtn = document.getElementById('bracket-reset');
+        if (zoomIn) zoomIn.addEventListener('click', function () { zoom = Math.min(1.4, +(zoom + 0.1).toFixed(2)); render(); });
+        if (zoomOut) zoomOut.addEventListener('click', function () { zoom = Math.max(0.6, +(zoom - 0.1).toFixed(2)); render(); });
+        if (resetBtn) resetBtn.addEventListener('click', function () { zoom = 1; if (search) search.value = ''; render(); });
+
+        window.addEventListener('resize', function () { setTimeout(drawLines, 100); });
+
+        setInterval(function () {
+            fetch(window.location.pathname + '?format=json', { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (fresh) {
+                    if (!fresh || !fresh.rounds || !fresh.rounds.length) return;
+                    var sig = JSON.stringify(fresh);
+                    if (sig !== payloadSignature) {
+                        data = fresh;
+                        payloadSignature = sig;
+                        render();
+                    }
+                })
+                .catch(function () {});
+        }, 10000);
+
+        render();
+    })();
+    </script>
+    {% else %}
+    <div class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+        <p class="font-display text-lg font-semibold text-ink">No bracket generated yet</p>
+        <a href="{% url 'guest_viewer' %}" class="mt-4 inline-flex items-center rounded-md bg-pine px-4 py-2 text-xs font-semibold text-white hover:bg-pine-deep">Back to Guest Viewer</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
