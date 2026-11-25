@@ -38,11 +38,13 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-2.5">
+                {% if can_manage %}
                 <a href="{% url 'export_medal_tally_csv' %}{% if category %}?category={{ category }}{% endif %}" class="records-hero-link">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m-4-4l4 4 4-4M5 16v4h14v-4"/></svg>
                     Export CSV
                 </a>
                 <a href="{% url 'match_board' %}" class="records-hero-link">Match Board</a>
+                {% endif %}
                 <a href="{% url 'competition_list' %}" class="records-hero-link">Competitions <span aria-hidden="true">&rarr;</span></a>
             </div>
         </div>

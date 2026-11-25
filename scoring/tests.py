@@ -968,6 +968,18 @@ class OverallMedalTallyTest(TestCase):
         response = self.client.get(reverse('overall_medal_tally'))
         self.assertEqual(response.status_code, 403)
 
+    def test_team_manager_can_view_overall_medal_tally(self):
+        manager = User.objects.create_user('tally_tm', 'tm@t.com', 'pass')
+        profile, _ = UserProfile.objects.get_or_create(user=manager)
+        profile.role = UserProfile.Role.TEAM_MANAGER
+        profile.save()
+        self.client.force_login(manager)
+        response = self.client.get(reverse('overall_medal_tally'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Overall medal tally')
+        self.assertContains(response, reverse('overall_medal_tally'))
+        self.assertNotContains(response, reverse('export_medal_tally_csv'))
+
     def test_per_competition_page_links_to_overall(self):
         response = self.client.get(reverse('medal_tally', args=[self.judged.id]))
         self.assertEqual(response.status_code, 200)

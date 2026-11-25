@@ -130,6 +130,9 @@
                         <svg class="h-5 w-5 shrink-0 text-slate-400 group-hover:text-pine" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></svg><span>Results</span>
                     </a></li>
                     {% if account_role == 'TEAM_MANAGER' %}
+                    <li><a href="{% url 'overall_medal_tally' %}" {% if active_nav == 'medal_tally' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors {% if active_nav == 'medal_tally' %}bg-moss font-semibold text-pine-deep{% else %}text-slate-600 hover:bg-moss/50 hover:text-ink{% endif %}">
+                        <svg class="h-5 w-5 shrink-0 {% if active_nav == 'medal_tally' %}text-pine-deep{% else %}text-slate-400 group-hover:text-pine{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 4v3m-4 -3v6m8 -6v6" /><path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5z" /></svg><span>Medal Tally</span>{% if active_nav == 'medal_tally' %}<span class="ml-auto h-1.5 w-1.5 rounded-full bg-pine"></span>{% endif %}
+                    </a></li>
                     <li><a href="{% url 'submit_protest' %}" {% if active_nav == 'protests' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-moss/50 hover:text-ink">
                         <svg class="h-5 w-5 shrink-0 text-slate-400 group-hover:text-pine" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg><span>Submit Protest</span>
                     </a></li>

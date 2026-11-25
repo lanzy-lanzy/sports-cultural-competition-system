@@ -28,7 +28,7 @@ from competitions.models import Competition, Round, Criterion
 from participants.models import Participant
 from judges.models import Judge, JudgeAssignment
 from teams.models import Team
-from accounts.access import MANAGEMENT_ROLES, get_user_role, judge_required, management_required
+from accounts.access import MANAGEMENT_ROLES, get_user_role, judge_required, management_required, role_required
 from accounts.models import UserProfile
 from .models import Score, CompetitionResult, Award, AwardRecipient, ScoreChangeLog
 from .forms import AwardForm, AwardRecipientForm
@@ -1334,7 +1334,7 @@ def medal_tally(request, competition_id):
     })
 
 
-@management_required
+@role_required(*MANAGEMENT_ROLES, UserProfile.Role.TEAM_MANAGER, UserProfile.Role.TOURNAMENT_MANAGER)
 def overall_medal_tally(request):
     """One medal table across every competition, sports and judged alike.
 
