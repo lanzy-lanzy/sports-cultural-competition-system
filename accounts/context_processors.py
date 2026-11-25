@@ -61,8 +61,9 @@ NAV_GROUPS = {
         'notification_list', 'mark_notification_read',
         'mark_all_notifications_read',
     ],
+    'register_for_event': ['register_for_event'],
     'registrations': [
-        'registration_list', 'create_registration', 'my_registrations', 'register_for_event',
+        'registration_list', 'create_registration', 'my_registrations',
         'registration_review', 'registration_review_queue',
     ],
     'protests': [

@@ -148,7 +148,7 @@
 
 {% if can_manage %}
 <form id="bulk-delete-comps-form" method="post" action="{% url 'bulk_delete_competitions' %}"
-      class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+      class="mb-4 flex flex-wrap items-center justify-start gap-3 rounded-md border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
     {% csrf_token %}
     <input type="hidden" name="category" value="{{ category }}">
     <div id="bulk-comp-hidden-inputs"></div>

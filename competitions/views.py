@@ -101,7 +101,7 @@ def _subtype_form_context(kind, selected):
     return {
         'tournament_formats': Competition.TournamentFormat.choices,
         'sport_type_choices': _static_sport_choices(),
-        'static_sports_events': PALARO_STATIC_EVENTS,
+        'static_sports_events': sorted(PALARO_STATIC_EVENTS, key=lambda item: item['name'].lower()),
         'subtype_groups': cultural_subtype_groups(),
         'selected_subtype': selected or '',
         'is_cultural': kind == Competition.Kind.CULTURAL,
@@ -282,7 +282,7 @@ def competition_list(request):
     return render(request, 'competitions/competition_list.html', {
         'tournament_formats': Competition.TournamentFormat.choices,
         'sport_type_choices': _static_sport_choices(),
-        'static_sports_events': PALARO_STATIC_EVENTS,
+        'static_sports_events': sorted(PALARO_STATIC_EVENTS, key=lambda item: item['name'].lower()),
         'page_obj': page_obj,
         'category': category,
         'sports_count': counts['sports'] or 0,
