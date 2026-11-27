@@ -93,29 +93,37 @@
     </form>
 
     <div data-tally-overview class="space-y-6">
-    {% if yearly_tallies %}
-    {% with tab_class="shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-moss focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white" %}
-    <div hidden data-tally-tabs aria-label="Overall tally views" class="min-w-0 rounded-xl border border-slate-200 bg-white p-2 shadow-soft">
-        <div class="flex gap-1 overflow-x-auto">
-            {% if tally.rows or tally.partial_rows %}
-            <button type="button" id="tally-overview-tab" aria-controls="tally-overview" class="{{ tab_class }}">Overview</button>
-            {% endif %}
-            {% if not selected_year %}
-            {% for yt in yearly_tallies %}
-            <button type="button" id="tally-year-tab-{{ yt.year }}" aria-controls="tally-year-{{ yt.year }}" class="{{ tab_class }}">{{ yt.year }}</button>
-            {% endfor %}
+    {% if tally.champion %}
+    <section class="relative overflow-hidden rounded-xl border border-amber-200/90 border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50/80 via-white to-white p-6 shadow-soft sm:p-7">
+        <svg class="pointer-events-none absolute right-6 top-6 h-20 w-20 text-amber-200/60" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v8a5 5 0 01-10 0V4zM7 6H4v3a4 4 0 004 4m9-7h3v3a4 4 0 01-4 4"/></svg>
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-700">Overall Champion</p>
+        <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
+            {% if tally.champion.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.champion.color_theme }};" title="Team color"></span>{% endif %}
+            <span>{{ tally.champion.name }}</span>
+        </h2>
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 tabular-nums">
+            <span><strong class="text-amber-600">{{ tally.champion.gold }}</strong> Gold</span>
+            <span class="text-slate-300">&middot;</span>
+            <span><strong class="text-slate-600">{{ tally.champion.silver }}</strong> Silver</span>
+            <span class="text-slate-300">&middot;</span>
+            <span><strong class="text-orange-600">{{ tally.champion.bronze }}</strong> Bronze</span>
+            <span class="text-slate-300">&middot;</span>
+            <span class="font-display text-base font-bold text-ink">{{ tally.champion.points }} points</span>
+            {% if tally.champion.played %}
+            <span class="text-slate-300">&middot;</span>
+            <span class="rounded-md bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                Record: <span class="text-emerald-700">{{ tally.champion.wins }}W</span>-<span class="text-rose-600">{{ tally.champion.losses }}L</span>{% if tally.champion.draws %}-<span class="text-slate-500">{{ tally.champion.draws }}D</span>{% endif %}
+            </span>
             {% endif %}
         </div>
-    </div>
-    {% endwith %}
-    {% endif %}
-
-    {% if selected_year and tally.rows or selected_year and tally.partial_rows %}
-    <div id="tally-overview" class="space-y-6">
+        {% if tally.champion.provisional %}
+        <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-800">Provisional &mdash; a counted competition is still running, so the podium may change.</p>
+        {% endif %}
+    </section>
     {% endif %}
 
     {% for yt in yearly_tallies %}
-    <div id="tally-year-{{ yt.year }}">
+    <div {% if not selected_year %}hidden{% endif %}>
     {% if yt.tally.sports_matrix.columns and yt.tally.sports_matrix.rows %}
     <!-- ===== Overall Tally {{ yt.year }} ===== -->
     <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="sports-matrix-title-{{ yt.year }}">
@@ -258,12 +266,6 @@
     </div>
     {% endfor %}
 
-    {% if not selected_year %}
-    {% if tally.rows or tally.partial_rows %}
-    <div id="tally-overview" class="space-y-6">
-    {% endif %}
-    {% endif %}
-
     {% if tally.rows %}
     <!-- ===== Delegation Rankings Table ===== -->
     <section class="records-panel overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="tally-rankings-title">
@@ -349,35 +351,6 @@
             <p class="mt-1 text-xs text-slate-500">Awards and final standings</p>
         </div>
     </div>
-
-    {% if tally.champion %}
-    <section class="relative overflow-hidden rounded-xl border border-amber-200/90 border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50/80 via-white to-white p-6 shadow-soft sm:p-7">
-        <svg class="pointer-events-none absolute right-6 top-6 h-20 w-20 text-amber-200/60" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v8a5 5 0 01-10 0V4zM7 6H4v3a4 4 0 004 4m9-7h3v3a4 4 0 01-4 4"/></svg>
-        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-700">Overall Champion</p>
-        <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
-            {% if tally.champion.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.champion.color_theme }};" title="Team color"></span>{% endif %}
-            <span>{{ tally.champion.name }}</span>
-        </h2>
-        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 tabular-nums">
-            <span><strong class="text-amber-600">{{ tally.champion.gold }}</strong> Gold</span>
-            <span class="text-slate-300">&middot;</span>
-            <span><strong class="text-slate-600">{{ tally.champion.silver }}</strong> Silver</span>
-            <span class="text-slate-300">&middot;</span>
-            <span><strong class="text-orange-600">{{ tally.champion.bronze }}</strong> Bronze</span>
-            <span class="text-slate-300">&middot;</span>
-            <span class="font-display text-base font-bold text-ink">{{ tally.champion.points }} points</span>
-            {% if tally.champion.played %}
-            <span class="text-slate-300">&middot;</span>
-            <span class="rounded-md bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                Record: <span class="text-emerald-700">{{ tally.champion.wins }}W</span>-<span class="text-rose-600">{{ tally.champion.losses }}L</span>{% if tally.champion.draws %}-<span class="text-slate-500">{{ tally.champion.draws }}D</span>{% endif %}
-            </span>
-            {% endif %}
-        </div>
-        {% if tally.champion.provisional %}
-        <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold text-amber-800">Provisional &mdash; a counted competition is still running, so the podium may change.</p>
-        {% endif %}
-    </section>
-    {% endif %}
 
     <!-- ===== Performance Bar Graph ===== -->
     <section class="records-panel rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft sm:p-7">
@@ -641,9 +614,6 @@
 
     {% endif %}
 
-    {% if tally.rows or tally.partial_rows %}
-    </div>
-    {% endif %}
     </div>
 
     {% if tally.rows or tally.partial_rows %}
@@ -767,7 +737,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static_v 'js/overall-medal-tally-tabs.js' %}"></script>
+<script src="{% static_v 'js/overall-medal-tally.js' %}"></script>
 {% if tally.rows %}
 <script src="{% static_v 'vendor/chartjs/chart.umd.js' %}"></script>
 <script src="{% static_v 'js/medal-tally-chart.js' %}"></script>
