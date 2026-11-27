@@ -270,12 +270,12 @@
             wrap.querySelectorAll('select, input, button').forEach(el => { el.disabled = kind === 'SPORTS'; });
         });
         scope.querySelectorAll('.manual-comp-name-wrap').forEach(function (wrap) {
-            const isSports = kind === 'SPORTS';
-            wrap.classList.toggle('hidden', isSports);
-            wrap.querySelectorAll('input').forEach(el => { el.required = !isSports; });
+            const hideManual = kind === 'SPORTS' || kind === 'CULTURAL';
+            wrap.classList.toggle('hidden', hideManual);
+            wrap.querySelectorAll('input').forEach(el => { el.required = !hideManual; });
         });
         scope.querySelectorAll('.comp-status-wrap').forEach(function (wrap) {
-            wrap.classList.toggle('md:col-span-2', kind === 'SPORTS');
+            wrap.classList.toggle('md:col-span-2', kind === 'SPORTS' || kind === 'CULTURAL');
         });
 
 

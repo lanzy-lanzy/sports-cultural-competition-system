@@ -118,33 +118,136 @@ class CulturalSubType(models.Model):
         return self.name
 
 
+STATIC_CULTURAL_CATALOG = (
+    ('VISUAL ARTS', (
+        ('ON_THE_SPOT_POSTER_MAKING', 'On the Spot Poster Making'),
+        ('PENCIL_DRAWING', 'Pencil Drawing'),
+        ('CHARCOAL_RENDERING', 'Charcoal Rendering'),
+        ('PAINTING', 'Painting'),
+        ('PHOTO_CONTEST', 'Photo Contest'),
+    )),
+    ('MUSIC', (
+        ('SONGWRITING', 'Songwriting'),
+        ('PIANO', 'Piano'),
+        ('VIOLIN', 'Violin'),
+        ('CLASSICAL_GUITAR', 'Classical Guitar'),
+        ('BANDURIA', 'Banduria'),
+        ('LIVE_BAND_COMPETITION', 'Live Band Competition'),
+        ('VOCAL_SOLO_KUNDIMAN', 'Vocal Solo (Kundiman)'),
+        ('VOCAL_DUET', 'Vocal Duet'),
+        ('POP_SOLO_QUARTET', 'Pop Solo Quartet'),
+        ('STANDARD_CHORALE_CONTEST', 'Standard Chorale Contest'),
+        ('SHOW_CHOIR', 'Show Choir'),
+    )),
+    ('DANCE', (
+        ('FOLK_DANCE', 'Folk Dance'),
+        ('INDIGENOUS_DANCE', 'Indigenous Dance'),
+        ('CONTEMPORARY_DUO', 'Contemporary Duo'),
+        ('CONTEMPORARY_DANCE', 'Contemporary Dance'),
+        ('STREET_DANCE', 'Street Dance'),
+        ('MASS_POWER_DANCE', 'Mass Power Dance'),
+        ('LATIN_AMERICAN_DANCE', 'Latin American Dance'),
+        ('MODERN_STANDARD_DANCE', 'Modern Standard Dance'),
+    )),
+    ('DRAMATIC ARTS', (
+        ('SHORT_SWEET_PLAYS_DIALOGUE', 'Short and Sweet Plays (Dialogue)'),
+        ('SHORT_SWEET_PLAY_MUSICAL', 'Short and Sweet Play (Musical)'),
+        ('RADIO_DRAMA', 'Radio Drama'),
+        ('DUO_ACTING', 'Duo Acting'),
+        ('PANDALAWAHANG_PAG_ARTE', 'Pandalawahang Pag-arte (Duo Acting)'),
+    )),
+    ('LITERARY ARTS', (
+        ('PAGSULAT_NG_SANAYSAY', 'Pagsulat ng Sanaysay'),
+        ('DAGLIANG_TALUMPATI', 'Dagliang Talumpati'),
+        ('PAGKUKUWENTO', 'Pagkukuwento'),
+        ('ESSAY_WRITING', 'Essay Writing'),
+        ('EXTEMPORANEOUS_SPEECH', 'Extemporaneous Speech'),
+        ('STORY_TELLING', 'Story Telling'),
+        ('DECLAMATION', 'Declamation'),
+        ('DEKLAMASYON', 'Deklamasyon'),
+        ('DRAMATIC_MONOLOGUE', 'Dramatic Monologue'),
+        ('DRAMATIC_MONOLOGUE_FILIPINO', 'Dramatic Monologue (Filipino)'),
+        ('ORAL_INTERPRETATION_POETRY', 'Oral Interpretation of Poetry'),
+        ('PERSUASIVE_ORATORY', 'Persuasive Oratory'),
+        ('ORATORIO', 'Oratorio'),
+    )),
+    ('SPECIAL CATEGORY', (
+        ('MR_PAGEANT', 'Mr.'),
+        ('MS_PAGEANT', 'Ms.'),
+        ('FESTIVAL_DANCE_COMPETITION', 'Festival Dance Competition'),
+    )),
+)
+
+STATIC_CULTURAL_LABELS = {
+    slug: name
+    for _main, items in STATIC_CULTURAL_CATALOG
+    for slug, name in items
+}
+
+
+def ensure_static_cultural_catalog():
+    """Ensure all static Socio Cultural main groups and sub-types exist in the DB."""
+    existing_mains = {m.name: m for m in CulturalMainType.objects.all()}
+    existing_slugs = set(CulturalSubType.objects.values_list('slug', flat=True))
+    for main_name, items in STATIC_CULTURAL_CATALOG:
+        main = existing_mains.get(main_name)
+        if main is None:
+            main, _ = CulturalMainType.objects.get_or_create(name=main_name)
+            existing_mains[main_name] = main
+        for slug, sub_name in items:
+            if slug not in existing_slugs:
+                CulturalSubType.objects.get_or_create(
+                    slug=slug,
+                    defaults={'main_type': main, 'name': sub_name},
+                )
+                existing_slugs.add(slug)
+
+
 def cultural_subtype_labels():
-    """Slug → display name; the legacy enum stays as a fallback for old data."""
+    """Slug -> display name; includes static catalog and legacy enum fallbacks."""
     labels = dict(Competition.CulturalEventType.choices)
+    labels.update(STATIC_CULTURAL_LABELS)
     labels.update(CulturalSubType.objects.values_list('slug', 'name'))
     return labels
 
 
 def cultural_subtype_groups():
-    """Main groups with their sub-types (and how many competitions use each),
-    in creation order, for the form select and manage panel."""
+    """Static main groups with their sub-types (plus any custom DB groups),
+    for the Socio Cultural event dropdown."""
+    ensure_static_cultural_catalog()
     usage = dict(
         Competition.objects
         .exclude(cultural_event_type='')
         .values_list('cultural_event_type')
         .annotate(n=Count('id'))
     )
-    return [
-        {
+    static_main_names = [main_name for main_name, _ in STATIC_CULTURAL_CATALOG]
+    static_order = {name: idx for idx, name in enumerate(static_main_names)}
+    mains = list(CulturalMainType.objects.prefetch_related('subtypes'))
+    mains.sort(key=lambda m: (0, static_order[m.name]) if m.name in static_order else (1, m.id))
+
+    groups = []
+    for main in mains:
+        if main.name in static_order:
+            static_slugs = [slug for slug, _ in dict(STATIC_CULTURAL_CATALOG)[main.name]]
+            slug_order = {s: i for i, s in enumerate(static_slugs)}
+            subs = sorted(
+                main.subtypes.all(),
+                key=lambda s: (0, slug_order[s.slug]) if s.slug in slug_order else (1, s.name.lower()),
+            )
+        else:
+            subs = list(main.subtypes.all())
+        if not subs:
+            continue
+        groups.append({
             'id': main.id,
             'name': main.name,
             'subtypes': [
                 {'id': sub.id, 'slug': sub.slug, 'name': sub.name, 'usage': usage.get(sub.slug, 0)}
-                for sub in main.subtypes.all()
+                for sub in subs
             ],
-        }
-        for main in CulturalMainType.objects.prefetch_related('subtypes')
-    ]
+        })
+    return groups
 
 
 class Round(models.Model):

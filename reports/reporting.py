@@ -41,10 +41,88 @@ class ReportData:
     competition: Competition | None = None
     filename: str = ''
     generated_at: datetime = field(default_factory=timezone.now)
+    signatories: list[tuple[str, str, str]] = field(default_factory=list)
 
     @property
     def record_count(self) -> int:
         return sum(len(section.rows) for section in self.sections)
+
+    @property
+    def resolved_signatories(self) -> list[tuple[str, str, str]]:
+        if self.signatories:
+            return self.signatories
+        return [
+            ('Prepared by', '', 'Competition Management Office'),
+            ('Certified correct by', '', 'Competition Chairperson'),
+        ]
+
+
+def _coordinator_name(role: str) -> str:
+    from accounts.models import UserProfile
+    profile = (
+        UserProfile.objects.filter(role=role, user__is_active=True)
+        .select_related('user')
+        .order_by('id')
+        .first()
+    )
+    return _user_name(profile.user) if profile else ''
+
+
+def _sports_report_signatories(competition: Competition | None = None) -> list[tuple[str, str, str]]:
+    from accounts.models import UserProfile
+
+    sports_coord = _coordinator_name(UserProfile.Role.SPORTS_COORDINATOR)
+    signatories: list[tuple[str, str, str]] = []
+    if competition is not None:
+        events = list(
+            competition.sport_events.select_related('sport_type', 'tournament_manager').order_by('id')
+        )
+        sport_names = list(dict.fromkeys(e.sport_type.name for e in events if e.sport_type_id))
+        sport_label = ', '.join(sport_names[:3]) if sport_names else competition.name
+        tm_names = list(dict.fromkeys(_user_name(e.tournament_manager) for e in events if e.tournament_manager_id))
+        tm_display = ' / '.join(tm_names[:2]) if tm_names else ''
+        signatories.append(('Prepared by', tm_display, f'Tournament Manager · {sport_label}'))
+    else:
+        signatories.append(('Prepared by', '', 'Tournament Manager · Sports'))
+    signatories.append(('Noted by', sports_coord, 'Sports Coordinator'))
+    signatories.append(('Certified correct by', '', 'Competition Chairperson'))
+    return signatories
+
+
+def _cultural_report_signatories() -> list[tuple[str, str, str]]:
+    from accounts.models import UserProfile
+
+    cultural_coord = _coordinator_name(UserProfile.Role.CULTURAL_COORDINATOR)
+    return [
+        ('Prepared by', '', 'Competition Management Office'),
+        ('Noted by', cultural_coord, 'Socio-Cultural Coordinator'),
+        ('Certified correct by', '', 'Competition Chairperson'),
+    ]
+
+
+def _medal_tally_signatories(category: str = '') -> list[tuple[str, str, str]]:
+    from accounts.models import UserProfile
+
+    sports_coord = _coordinator_name(UserProfile.Role.SPORTS_COORDINATOR)
+    cultural_coord = _coordinator_name(UserProfile.Role.CULTURAL_COORDINATOR)
+    if category == 'sports':
+        return [
+            ('Prepared by', '', 'Competition Management Office'),
+            ('Reviewed by', sports_coord, 'Sports Coordinator'),
+            ('Certified correct by', '', 'Competition Chairperson'),
+        ]
+    if category == 'cultural':
+        return [
+            ('Prepared by', '', 'Competition Management Office'),
+            ('Reviewed by', cultural_coord, 'Socio-Cultural Coordinator'),
+            ('Certified correct by', '', 'Competition Chairperson'),
+        ]
+    return [
+        ('Prepared by', '', 'Competition Management Office'),
+        ('Reviewed by', sports_coord, 'Sports Coordinator'),
+        ('Reviewed by', cultural_coord, 'Socio-Cultural Coordinator'),
+        ('Certified correct by', '', 'Competition Chairperson'),
+    ]
 
 
 def _text(value) -> str:
@@ -299,6 +377,7 @@ def schedule_report() -> ReportData:
             ('Venues used', str(len(venues))),
         ],
         filename='match-schedule',
+        signatories=_sports_report_signatories(),
     )
 
 
@@ -369,6 +448,7 @@ def medal_tally_report(category: str = '') -> ReportData:
             ('Bronze medals', _number(totals['bronze'])),
         ],
         filename='medal-tally',
+        signatories=_medal_tally_signatories(category),
     )
 
 
@@ -423,6 +503,7 @@ def judge_scores_report(competition: Competition) -> ReportData:
         ],
         competition=competition,
         filename=f'judge-score-sheet-{competition.id}',
+        signatories=_cultural_report_signatories(),
     )
 
 
@@ -483,6 +564,11 @@ def standings_report(competition: Competition) -> ReportData:
         ],
         competition=competition,
         filename=f'competition-standings-{competition.id}',
+        signatories=(
+            _sports_report_signatories(competition)
+            if competition.kind == Competition.Kind.SPORTS
+            else _cultural_report_signatories()
+        ),
     )
 
 

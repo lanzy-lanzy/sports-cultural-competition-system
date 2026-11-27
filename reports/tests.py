@@ -219,3 +219,60 @@ class ReportExportTests(ReportsTestBase):
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_medal_tally_and_sports_reports_include_expected_signatories(self):
+        from accounts.models import UserProfile
+        from sports.models import SportType, SportsEvent
+
+        sports_coord = User.objects.create_user('sc_user', 'sc@example.com', 'pass', first_name='Juan', last_name='Dela Cruz')
+        sports_coord.account_profile.role = UserProfile.Role.SPORTS_COORDINATOR
+        sports_coord.account_profile.save()
+
+        cultural_coord = User.objects.create_user('cc_user', 'cc@example.com', 'pass', first_name='Maria', last_name='Clara')
+        cultural_coord.account_profile.role = UserProfile.Role.CULTURAL_COORDINATOR
+        cultural_coord.account_profile.save()
+
+        tm_user = User.objects.create_user('tm_bball', 'tm@example.com', 'pass', first_name='Nicaster', last_name='Ambalong')
+        tm_user.account_profile.role = UserProfile.Role.TOURNAMENT_MANAGER
+        tm_user.account_profile.save()
+
+        sport_comp = Competition.objects.create(
+            name='BASKETBALL 2026',
+            description='Basketball tournament',
+            kind=Competition.Kind.SPORTS,
+            start_date='2026-03-01',
+            end_date='2026-03-05',
+            status='ACTIVE',
+            created_by=self.admin,
+        )
+        st, _ = SportType.objects.get_or_create(name='Basketball', defaults={'team_based': True})
+        SportsEvent.objects.create(
+            competition=sport_comp,
+            sport_type=st,
+            name='Basketball 5x5 - Men',
+            team_based=True,
+            tournament_manager=tm_user,
+        )
+
+        # Medal tally print & PDF include both Sports Coordinator and Socio-Cultural Coordinator
+        mt_print = self.client.get(reverse('print_medal_tally'))
+        self.assertEqual(mt_print.status_code, 200)
+        self.assertContains(mt_print, 'Sports Coordinator')
+        self.assertContains(mt_print, 'Socio-Cultural Coordinator')
+        self.assertContains(mt_print, 'Juan Dela Cruz')
+        self.assertContains(mt_print, 'Maria Clara')
+
+        mt_pdf = self.client.get(reverse('export_medal_tally_pdf'))
+        self.assertEqual(mt_pdf.status_code, 200)
+        self.assertEqual(mt_pdf['Content-Type'], 'application/pdf')
+
+        # Sports standings print & PDF include the sport's Tournament Manager & sport name + Sports Coordinator
+        sp_print = self.client.get(reverse('print_standings', args=[sport_comp.id]))
+        self.assertEqual(sp_print.status_code, 200)
+        self.assertContains(sp_print, 'Tournament Manager · Basketball')
+        self.assertContains(sp_print, 'Nicaster Ambalong')
+        self.assertContains(sp_print, 'Sports Coordinator')
+
+        sp_pdf = self.client.get(reverse('export_standings_pdf', args=[sport_comp.id]))
+        self.assertEqual(sp_pdf.status_code, 200)
+        self.assertEqual(sp_pdf['Content-Type'], 'application/pdf')

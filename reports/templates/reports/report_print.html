@@ -245,15 +245,14 @@
         {% endfor %}
 
         <section class="print-avoid mt-10 border-t border-line pt-6">
-            <div class="grid gap-10 sm:grid-cols-2">
+            <div class="grid gap-8 sm:grid-cols-2 {% if report.resolved_signatories|length >= 4 %}lg:grid-cols-4{% elif report.resolved_signatories|length == 3 %}lg:grid-cols-3{% endif %}">
+                {% for label, name, caption in report.resolved_signatories %}
                 <div>
-                    <p class="border-b border-slate-400 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate">Prepared by</p>
-                    <p class="mt-1 text-[10px] text-muted">Competition Management Office</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate">{{ label }}</p>
+                    <p class="mt-5 min-h-[1.25rem] border-b border-slate-400 pb-1 text-xs font-semibold text-ink">{{ name }}</p>
+                    <p class="mt-1 text-[10px] text-muted">{{ caption }}</p>
                 </div>
-                <div>
-                    <p class="border-b border-slate-400 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate">Certified correct by</p>
-                    <p class="mt-1 text-[10px] text-muted">Competition Chairperson</p>
-                </div>
+                {% endfor %}
             </div>
             <p class="mt-8 text-center text-[10px] uppercase tracking-[0.2em] text-muted">End of report</p>
             <p class="mt-1 text-center text-[10px] text-muted">Generated electronically by Competrack from live competition records · J.H. Cerilles State College</p>

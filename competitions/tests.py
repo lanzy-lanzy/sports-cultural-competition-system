@@ -950,3 +950,47 @@ class CompetitionBulkDeleteTest(TestCase):
         })
         self.assertRedirects(resp_bulk, reverse('competition_list'))
         self.assertFalse(Competition.objects.filter(id=self.sport_2.id).exists())
+
+
+class StaticCulturalCatalogTest(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('cultadmin', 'ca@example.com', 'pass')
+        self.client.force_login(self.admin)
+
+    def test_static_cultural_catalog_groups_and_auto_named_creation_without_automatch(self):
+        resp = self.client.get(reverse('create_competition'))
+        self.assertEqual(resp.status_code, 200)
+        for main_group in (
+            'VISUAL ARTS', 'MUSIC', 'DANCE', 'DRAMATIC ARTS', 'LITERARY ARTS', 'SPECIAL CATEGORY',
+        ):
+            self.assertContains(resp, main_group)
+        for subtype_label in (
+            'On the Spot Poster Making',
+            'Vocal Solo (Kundiman)',
+            'Latin American Dance',
+            'Pandalawahang Pag-arte (Duo Acting)',
+            'Dagliang Talumpati',
+            'Festival Dance Competition',
+        ):
+            self.assertContains(resp, subtype_label)
+
+        post_resp = self.client.post(reverse('create_competition'), {
+            'kind': Competition.Kind.CULTURAL,
+            'cultural_event_type': 'VOCAL_SOLO_KUNDIMAN',
+            'name': '',
+            'description': 'Annual Kundiman vocal contest',
+            'start_date': '2026-04-01',
+            'end_date': '2026-04-02',
+            'status': 'ACTIVE',
+            'round_names[]': ['Final'],
+            'round_orders[]': ['1'],
+            'round_weights[]': ['100'],
+            'round_statuses[]': ['PENDING'],
+            'criterion_names_1[]': ['Voice Quality'],
+            'criterion_max_scores_1[]': ['100'],
+        })
+        self.assertEqual(post_resp.status_code, 302)
+        comp = Competition.objects.get(cultural_event_type='VOCAL_SOLO_KUNDIMAN')
+        self.assertEqual(comp.name, 'VOCAL SOLO (KUNDIMAN)')
+        self.assertEqual(comp.sport_events.count(), 0)
+        self.assertEqual(comp.rounds.count(), 1)

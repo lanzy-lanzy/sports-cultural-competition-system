@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from .models import (
     Competition, Round, Criterion, CulturalMainType, CulturalSubType,
-    cultural_subtype_groups, cultural_subtype_labels,
+    STATIC_CULTURAL_LABELS, cultural_subtype_groups, cultural_subtype_labels,
 )
 from scoring.services import calculate_rankings
 from django.db.models import Count, Exists, OuterRef, Q
@@ -82,10 +82,11 @@ def _validate_category_fields(post):
     elif kind == Competition.Kind.CULTURAL:
         if (
             event_type not in Competition.CulturalEventType.values
+            and event_type not in STATIC_CULTURAL_LABELS
             and not CulturalSubType.objects.filter(slug=event_type).exists()
         ):
             errors.append(
-                'Select a Socio Cultural sub-type (for example dancing, singing, or literary arts).'
+                'Select a Socio Cultural event.'
             )
     else:
         # Sports (and legacy Mixed) competitions never carry a cultural sub-type.
@@ -404,6 +405,8 @@ def create_competition(request):
                 raw_name = (request.POST.get('name') or '').strip()
                 if not raw_name and static_spec:
                     raw_name = static_spec['name']
+                elif not raw_name and kind == Competition.Kind.CULTURAL and event_type:
+                    raw_name = cultural_subtype_labels().get(event_type, event_type)
 
                 competition = Competition.objects.create(
                     name=raw_name.upper(),

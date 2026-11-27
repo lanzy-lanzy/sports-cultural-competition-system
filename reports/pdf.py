@@ -308,39 +308,44 @@ def _data_table(section: ReportSection, styles, available):
     return table
 
 
-def _sign_off(styles, width):
+def _sign_off(report: ReportData, styles, width):
+    sigs = report.resolved_signatories
+    count = max(len(sigs), 1)
+    col_w = width / count
+    name_style = ParagraphStyle(
+        'SignName', parent=styles['meta_value'], fontSize=8, leading=10, textColor=INK,
+    )
+    label_row = [Paragraph(escape(label), styles['sign_label']) for label, _, _ in sigs]
+    name_row = [Paragraph(escape(name), name_style) if name else '' for _, name, _ in sigs]
+    caption_row = [Paragraph(escape(caption), styles['sign_caption']) for _, _, caption in sigs]
+
     signatures = Table(
-        [
-            [Paragraph('Prepared by', styles['sign_label']),
-             Paragraph('Certified correct by', styles['sign_label'])],
-            ['', ''],
-        ],
-        colWidths=[width / 2, width / 2],
+        [label_row, name_row],
+        colWidths=[col_w] * count,
         rowHeights=[None, 26],
     )
-    signatures.setStyle(TableStyle([
-        ('LINEBELOW', (0, 1), (0, 1), 0.8, SLATE),
-        ('LINEBELOW', (1, 1), (1, 1), 0.8, SLATE),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    style_cmds = [
+        ('VALIGN', (0, 0), (-1, 0), 'TOP'),
+        ('VALIGN', (0, 1), (-1, 1), 'BOTTOM'),
         ('TOPPADDING', (0, 0), (-1, 0), 0),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 2),
         ('TOPPADDING', (0, 1), (-1, 1), 0),
-        ('BOTTOMPADDING', (0, 1), (-1, 1), 0),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 2),
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (0, -1), 20),
-        ('RIGHTPADDING', (1, 0), (1, -1), 0),
-    ]))
-    captions = Table(
-        [[Paragraph('Competition Management Office', styles['sign_caption']),
-          Paragraph('Competition Chairperson', styles['sign_caption'])]],
-        colWidths=[width / 2, width / 2],
-    )
-    captions.setStyle(TableStyle([
+    ]
+    for idx in range(count):
+        style_cmds.append(('LINEBELOW', (idx, 1), (idx, 1), 0.8, SLATE))
+        style_cmds.append(('RIGHTPADDING', (idx, 0), (idx, -1), 16 if idx < count - 1 else 0))
+    signatures.setStyle(TableStyle(style_cmds))
+
+    captions = Table([caption_row], colWidths=[col_w] * count)
+    cap_cmds = [
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (0, 0), 20),
-        ('RIGHTPADDING', (1, 0), (1, 0), 0),
         ('TOPPADDING', (0, 0), (-1, -1), 2),
-    ]))
+    ]
+    for idx in range(count):
+        cap_cmds.append(('RIGHTPADDING', (idx, 0), (idx, 0), 16 if idx < count - 1 else 0))
+    captions.setStyle(TableStyle(cap_cmds))
     return [signatures, captions]
 
 
@@ -420,7 +425,7 @@ def build_report_pdf(report: ReportData) -> bytes:
             fontSize=7, leading=9, spaceAfter=2,
         )),
     ]
-    sign_off.extend(_sign_off(styles, available))
+    sign_off.extend(_sign_off(report, styles, available))
     story.extend(sign_off)
 
     doc.build(
