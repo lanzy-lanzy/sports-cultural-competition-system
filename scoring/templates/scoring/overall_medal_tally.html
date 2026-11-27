@@ -77,13 +77,25 @@
                 </select>
             </label>
             {% endif %}
+            {% if tally.breakdown and tally.rows or tally.breakdown and tally.partial_rows %}
+            <label hidden class="min-w-0 basis-full text-xs font-semibold text-slate-600 sm:flex-1">
+                Competition
+                <select data-tally-competition-select class="mt-1 block h-11 w-full rounded-lg border border-pine bg-pine px-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">
+                    <option value="" class="bg-white text-ink">Overview</option>
+                    {% for entry in tally.breakdown %}
+                    <option value="tally-competition-{{ entry.competition.id }}" class="bg-white text-ink">{{ entry.competition.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% endif %}
             <noscript><button type="submit" class="h-11 rounded-lg bg-pine px-4 text-sm font-semibold text-white">Apply filters</button></noscript>
         </div>
     </form>
 
-    {% if yearly_tallies or tally.rows or tally.partial_rows %}
+    <div data-tally-overview class="space-y-6">
+    {% if yearly_tallies %}
     {% with tab_class="shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-moss focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white" %}
-    <div hidden data-tally-tabs aria-label="Overall tally and Breakdown by competition" class="min-w-0 rounded-xl border border-slate-200 bg-white p-2 shadow-soft">
+    <div hidden data-tally-tabs aria-label="Overall tally views" class="min-w-0 rounded-xl border border-slate-200 bg-white p-2 shadow-soft">
         <div class="flex gap-1 overflow-x-auto">
             {% if tally.rows or tally.partial_rows %}
             <button type="button" id="tally-overview-tab" aria-controls="tally-overview" class="{{ tab_class }}">Overview</button>
@@ -91,11 +103,6 @@
             {% if not selected_year %}
             {% for yt in yearly_tallies %}
             <button type="button" id="tally-year-tab-{{ yt.year }}" aria-controls="tally-year-{{ yt.year }}" class="{{ tab_class }}">{{ yt.year }}</button>
-            {% endfor %}
-            {% endif %}
-            {% if tally.rows or tally.partial_rows %}
-            {% for entry in tally.breakdown %}
-            <button type="button" id="tally-competition-tab-{{ entry.competition.id }}" aria-controls="tally-competition-{{ entry.competition.id }}" class="{{ tab_class }}">{{ entry.competition.name }}</button>
             {% endfor %}
             {% endif %}
         </div>
@@ -635,10 +642,14 @@
 
     {% if tally.rows or tally.partial_rows %}
     </div>
+    {% endif %}
+    </div>
+
+    {% if tally.rows or tally.partial_rows %}
     <!-- ===== Breakdown by Competition ===== -->
             {% for entry in tally.breakdown %}
-            <div id="tally-competition-{{ entry.competition.id }}">
-            <article class="records-panel flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft">
+            <div id="tally-competition-{{ entry.competition.id }}" data-tally-competition-panel>
+            <article aria-label="Breakdown by competition" class="records-panel flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft">
                 <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 bg-paper/70 p-5">
                     <div class="min-w-0">
                         <h2 class="truncate font-display text-base font-bold text-ink">{{ entry.competition.name }}</h2>
