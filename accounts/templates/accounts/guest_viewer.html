@@ -316,7 +316,12 @@
                             {% for row in yt.tally.rows %}
                             <tr class="hover:bg-slate-50/60">
                                 <td class="px-5 py-3 font-display font-bold text-ink">{{ row.rank }}</td>
-                                <td class="px-5 py-3 font-semibold text-ink">{{ row.name }}</td>
+                                <td class="px-5 py-3 font-semibold text-ink">
+                                    <span class="inline-flex items-center gap-2">
+                                        {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                        <span>{{ row.name }}</span>
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 text-center font-semibold text-amber-700">{{ row.gold }}</td>
                                 <td class="px-4 py-3 text-center font-semibold text-slate-600">{{ row.silver }}</td>
                                 <td class="px-4 py-3 text-center font-semibold text-orange-700">{{ row.bronze }}</td>

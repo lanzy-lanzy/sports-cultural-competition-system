@@ -203,7 +203,12 @@
                     {% for row in yt.tally.rows %}
                     <tr class="hover:bg-paper/70">
                         <td class="px-4 py-3 text-center font-display font-bold text-ink">{{ row.rank }}</td>
-                        <td class="px-4 py-3 font-semibold text-ink">{{ row.name }}</td>
+                        <td class="px-4 py-3 font-semibold text-ink">
+                            <span class="inline-flex items-center gap-2">
+                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span>{{ row.name }}</span>
+                            </span>
+                        </td>
                         <td class="px-3 py-3 text-center font-bold text-amber-700">{{ row.gold }}</td>
                         <td class="px-3 py-3 text-center font-bold text-slate-600">{{ row.silver }}</td>
                         <td class="px-3 py-3 text-center font-bold text-orange-700">{{ row.bronze }}</td>
@@ -246,7 +251,10 @@
     <section class="relative overflow-hidden rounded-xl border border-amber-200/90 border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50/80 via-white to-white p-6 shadow-soft sm:p-7">
         <svg class="pointer-events-none absolute right-6 top-6 h-20 w-20 text-amber-200/60" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v8a5 5 0 01-10 0V4zM7 6H4v3a4 4 0 004 4m9-7h3v3a4 4 0 01-4 4"/></svg>
         <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-700">Overall Champion</p>
-        <h2 class="mt-1.5 font-display text-2xl font-semibold text-ink sm:text-3xl">{{ tally.champion.name }}</h2>
+        <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
+            {% if tally.champion.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.champion.color_theme }};" title="Team color"></span>{% endif %}
+            <span>{{ tally.champion.name }}</span>
+        </h2>
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 tabular-nums">
             <span><strong class="text-amber-600">{{ tally.champion.gold }}</strong> Gold</span>
             <span class="text-slate-300">&middot;</span>
@@ -313,7 +321,10 @@
                     <tr class="{% if row.rank == 1 %}bg-amber-50/40{% endif %} transition-colors hover:bg-paper/70">
                         <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
                         <td class="px-5 py-3.5 font-semibold text-ink">
-                            {{ row.name }}
+                            <span class="inline-flex items-center gap-2">
+                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span>{{ row.name }}</span>
+                            </span>
                             {% if row.provisional %}<span class="ml-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800" title="The competition is still running; these medals may change.">PROV</span>{% endif %}
                         </td>
                         <td class="px-5 py-3.5 text-center">
@@ -377,7 +388,10 @@
                     <tr class="transition-colors hover:bg-paper/70">
                         <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
                         <td class="px-5 py-3.5">
-                            <span class="font-semibold text-ink">{{ row.name }}</span>
+                            <span class="inline-flex items-center gap-2">
+                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span class="font-semibold text-ink">{{ row.name }}</span>
+                            </span>
                             <span class="ml-1.5 text-[11px] text-slate-400">{{ row.kind }}</span>
                         </td>
                         <td class="px-4 py-3.5 text-center font-semibold tabular-nums text-slate-600">{{ row.played }}</td>
@@ -457,7 +471,10 @@
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-pine">Current Pace Leader (Partial)</p>
-                <h2 class="mt-1.5 font-display text-2xl font-semibold text-ink sm:text-3xl">{{ tally.partial_totals.leader.name }}</h2>
+                <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
+                    {% if tally.partial_totals.leader.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.partial_totals.leader.color_theme }};" title="Team color"></span>{% endif %}
+                    <span>{{ tally.partial_totals.leader.name }}</span>
+                </h2>
                 <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600 tabular-nums">
                     <span><strong class="text-emerald-700">{{ tally.partial_totals.leader.wins }}</strong> Win{{ tally.partial_totals.leader.wins|pluralize }}</span>
                     <span class="text-slate-300">&middot;</span>
@@ -502,7 +519,10 @@
                     <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if row.rank == 1 %}bg-pine text-white{% else %}bg-paper text-ink ring-1 ring-slate-200{% endif %} font-display text-sm font-bold tabular-nums">{{ row.rank }}</span>
                         <div class="min-w-0">
-                            <p class="truncate font-semibold text-ink">{{ row.name }}</p>
+                            <p class="flex items-center gap-1.5 truncate font-semibold text-ink">
+                                {% if row.color_theme %}<span class="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span class="truncate">{{ row.name }}</span>
+                            </p>
                             <p class="text-[11px] text-slate-400">{{ row.kind }} &middot; {{ row.events_count }} event{{ row.events_count|pluralize }}</p>
                         </div>
                     </div>
@@ -543,7 +563,10 @@
                     <tr class="{% if row.rank == 1 %}bg-moss/25{% endif %} transition-colors hover:bg-paper/70">
                         <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
                         <td class="px-5 py-3.5">
-                            <p class="font-semibold text-ink">{{ row.name }}</p>
+                            <p class="flex items-center gap-2 font-semibold text-ink">
+                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span>{{ row.name }}</span>
+                            </p>
                             <p class="text-[11px] text-slate-400">{{ row.kind }} &middot; {{ row.events_count }} event{{ row.events_count|pluralize }}</p>
                         </td>
                         <td class="px-4 py-3.5 text-center">
@@ -606,6 +629,7 @@
                     <li class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3">
                         <div class="flex min-w-0 items-center gap-3">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper font-display text-xs font-bold text-ink ring-1 ring-slate-200">{{ row.rank }}</span>
+                            {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
                             <span class="truncate text-sm font-semibold text-ink">{{ row.name }}</span>
                             {% if row.status_display %}<span class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-50 text-emerald-700{% elif row.status == 'PENDING' %}bg-amber-50 text-amber-800{% else %}bg-rose-50 text-rose-700{% endif %}">{{ row.status_display|upper }}</span>{% endif %}
                         </div>
@@ -628,6 +652,7 @@
                     <li class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3">
                         <div class="flex min-w-0 items-center gap-3">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper font-display text-xs font-bold text-ink ring-1 ring-slate-200">{{ row.rank }}</span>
+                            {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
                             <span class="truncate text-sm font-semibold text-ink">{{ row.name }}</span>
                         </div>
                         <div class="flex shrink-0 items-center gap-2.5 text-xs tabular-nums">

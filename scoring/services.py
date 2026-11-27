@@ -345,7 +345,15 @@ def attach_team_records(rows, competition=None):
         row['key'][1] for row in rows
         if isinstance(row.get('key'), tuple) and row['key'][0] == 'team'
     }
-    statuses = dict(Team.objects.filter(id__in=team_ids).values_list('id', 'status'))
+    team_meta = {
+        t.id: (t.status, t.color_theme)
+        for t in Team.objects.filter(id__in=team_ids).only('id', 'status', 'color_theme')
+    }
+    team_colors_by_name = {
+        t.name.strip().lower(): t.color_theme
+        for t in Team.objects.only('name', 'color_theme')
+        if t.color_theme
+    }
     status_labels = dict(Team.Status.choices)
 
     for row in rows:
@@ -353,15 +361,17 @@ def attach_team_records(rows, competition=None):
         if not (isinstance(key, tuple) and key[0] == 'team'):
             row.update({
                 'status': '', 'status_display': '',
+                'color_theme': team_colors_by_name.get((row.get('name') or '').strip().lower(), ''),
                 'wins': 0, 'losses': 0, 'draws': 0, 'played': 0, 'win_pct': None,
             })
             continue
         record = records.get(key[1], {'wins': 0, 'losses': 0, 'draws': 0})
         played = record['wins'] + record['losses'] + record['draws']
-        status = statuses.get(key[1], '')
+        status, color_theme = team_meta.get(key[1], ('', ''))
         row.update({
             'status': status,
             'status_display': status_labels.get(status, ''),
+            'color_theme': color_theme,
             'wins': record['wins'],
             'losses': record['losses'],
             'draws': record['draws'],
@@ -450,12 +460,14 @@ def compute_partial_match_tally(competitions=None, medal_lookup=None):
             kind = 'Team'
             status = entry.team.status
             status_display = status_labels.get(status, '')
+            color_theme = entry.team.color_theme or ''
         elif entry.participant_id:
             key = ('participant', entry.participant_id)
             name = entry.participant.name
             kind = 'Individual'
             status = ''
             status_display = ''
+            color_theme = ''
         else:
             continue
 
@@ -465,6 +477,7 @@ def compute_partial_match_tally(competitions=None, medal_lookup=None):
             'kind': kind,
             'status': status,
             'status_display': status_display,
+            'color_theme': color_theme,
             'wins': 0,
             'losses': 0,
             'draws': 0,
@@ -496,6 +509,7 @@ def compute_partial_match_tally(competitions=None, medal_lookup=None):
             'kind': bucket['kind'],
             'status': bucket['status'],
             'status_display': bucket['status_display'],
+            'color_theme': bucket.get('color_theme', ''),
             'wins': bucket['wins'],
             'losses': bucket['losses'],
             'draws': bucket['draws'],
