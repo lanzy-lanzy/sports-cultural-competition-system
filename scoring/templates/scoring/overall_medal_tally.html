@@ -80,7 +80,24 @@
         </div>
     </form>
 
+    {% if yearly_tallies or tally.rows or tally.partial_rows %}
+    <div hidden data-tally-tabs aria-label="Medal tally views" class="rounded-xl border border-slate-200 bg-white p-2 shadow-soft">
+        <div class="flex flex-wrap gap-1">
+            {% if tally.rows or tally.partial_rows %}
+            <button type="button" id="tally-overview-tab" aria-controls="tally-overview" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white">Overview</button>
+            {% endif %}
+            {% for yt in yearly_tallies %}
+            <button type="button" id="tally-year-tab-{{ yt.year }}" aria-controls="tally-year-{{ yt.year }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white">{{ yt.year }}</button>
+            {% endfor %}
+            {% if tally.breakdown and tally.rows or tally.breakdown and tally.partial_rows %}
+            <button type="button" id="tally-breakdown-tab" aria-controls="tally-breakdown" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white">By competition</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     {% for yt in yearly_tallies %}
+    <div id="tally-year-{{ yt.year }}">
     {% if yt.tally.sports_matrix.columns and yt.tally.sports_matrix.rows %}
     <!-- ===== Overall Tally {{ yt.year }} ===== -->
     <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="sports-matrix-title-{{ yt.year }}">
@@ -220,8 +237,12 @@
         </div>
     </section>
     {% endif %}
+    </div>
     {% endfor %}
 
+    {% if tally.rows or tally.partial_rows %}
+    <div id="tally-overview" class="space-y-6">
+    {% endif %}
     {% if tally.rows %}
     <!-- ===== Official / Provisional Medal Tally KPI Grid ===== -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -599,14 +620,26 @@
     {% endif %}
 
     {% if tally.rows or tally.partial_rows %}
+    </div>
     <!-- ===== Breakdown by Competition ===== -->
-    <section class="space-y-3.5">
+    {% if tally.breakdown %}
+    <section id="tally-breakdown" class="space-y-3.5">
         <div class="flex items-center justify-between">
             <h2 class="font-display text-xl font-semibold text-ink">Breakdown by competition</h2>
             <span class="text-xs font-medium text-slate-400">{{ tally.breakdown|length }} competition{{ tally.breakdown|length|pluralize }}</span>
         </div>
-        <div class="grid gap-5 lg:grid-cols-2">
+        {% if tally.breakdown|length > 1 %}
+        <div hidden data-tally-tabs aria-label="Select a competition" class="rounded-xl border border-slate-200 bg-white p-2 shadow-soft">
+            <div class="flex flex-wrap gap-1">
+                {% for entry in tally.breakdown %}
+                <button type="button" id="tally-competition-tab-{{ entry.competition.id }}" aria-controls="tally-competition-{{ entry.competition.id }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-pine aria-selected:bg-pine aria-selected:text-white">{{ entry.competition.name }}</button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <div class="space-y-5">
             {% for entry in tally.breakdown %}
+            <div id="tally-competition-{{ entry.competition.id }}">
             <article class="records-panel flex flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft">
                 <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 bg-paper/70 p-5">
                     <div class="min-w-0">
@@ -670,13 +703,15 @@
                     <a href="{% url 'medal_tally' entry.competition.id %}" class="text-xs font-semibold text-pine hover:underline">Open full medal tally &rarr;</a>
                 </div>
             </article>
+            </div>
             {% endfor %}
         </div>
     </section>
+    {% endif %}
 
     <!-- ===== Methodology Note ===== -->
-    <div class="rounded-xl border border-pine/15 bg-moss/50 p-5">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-pine">How standings are calculated</p>
+    <details class="rounded-xl border border-pine/15 bg-moss/50 p-5">
+        <summary class="cursor-pointer text-[11px] font-bold uppercase tracking-wider text-pine">How standings are calculated</summary>
         <ul class="mt-2.5 space-y-1.5 text-sm text-slate-600">
             <li><span class="font-semibold text-ink">Sport</span> &mdash; podium derived from completed matches: gold for the champion, silver for the runner-up, bronze for the third-placed team or participant.</li>
             <li><span class="font-semibold text-ink">Partial Tally</span> &mdash; live win&ndash;loss&ndash;draw standings derived from completed matches before final event placements are confirmed.</li>
@@ -684,7 +719,7 @@
             <li><span class="font-semibold text-ink">Award</span> &mdash; gold, silver, and bronze awards assigned through the awards page always take precedence.</li>
             <li>Rows marked <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">PROV</span> come from a competition that is still running; they become final once its status is set to Completed. Draft and cancelled competitions never count.</li>
         </ul>
-    </div>
+    </details>
 
     {% else %}
     <!-- ===== Formal Empty State ===== -->
@@ -725,6 +760,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{% static_v 'js/overall-medal-tally-tabs.js' %}"></script>
 {% if tally.rows %}
 <script src="{% static_v 'vendor/chartjs/chart.umd.js' %}"></script>
 <script src="{% static_v 'js/medal-tally-chart.js' %}"></script>
