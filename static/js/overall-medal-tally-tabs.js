@@ -1,5 +1,6 @@
 document.querySelectorAll('[data-tally-filter-tabs]').forEach((row) => {
-    const selected = row.querySelector('[aria-current="true"]');
+    const selected = row.querySelector('[data-tally-selected-year]') ||
+        row.querySelector('[aria-current="true"]');
     if (!selected) return;
 
     const overflow = selected.getBoundingClientRect().right - row.getBoundingClientRect().right;
