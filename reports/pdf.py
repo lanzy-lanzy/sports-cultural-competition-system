@@ -276,10 +276,12 @@ def _data_table(section: ReportSection, styles, available):
         for index, column in enumerate(section.columns)
     ]
     data = [header]
-    for row in section.rows:
+    for row, row_color in section.rows_with_colors:
         rendered = []
         for index, value in enumerate(row):
             text = escape(str(value)) if value not in (None, '') else '&mdash;'
+            if row_color and index == section.color_column and str(row_color).startswith('#'):
+                text = f'<font color="{escape(row_color)}">&#9679;</font>&nbsp;{text}'
             style = styles['cell_right'] if index in section.numeric_columns else styles['cell']
             rendered.append(Paragraph(text, style))
         data.append(rendered)

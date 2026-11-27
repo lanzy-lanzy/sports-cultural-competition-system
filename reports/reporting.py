@@ -27,6 +27,15 @@ class ReportSection:
     title: str = ''
     numeric_columns: tuple[int, ...] = ()
     empty_message: str = 'No records are available for this section.'
+    row_colors: list[str] = field(default_factory=list)
+    color_column: int = -1
+
+    @property
+    def rows_with_colors(self) -> list[tuple[list[str], str]]:
+        return [
+            (row, self.row_colors[idx] if idx < len(self.row_colors) else '')
+            for idx, row in enumerate(self.rows)
+        ]
 
 
 @dataclass
@@ -105,23 +114,9 @@ def _medal_tally_signatories(category: str = '') -> list[tuple[str, str, str]]:
 
     sports_coord = _coordinator_name(UserProfile.Role.SPORTS_COORDINATOR)
     cultural_coord = _coordinator_name(UserProfile.Role.CULTURAL_COORDINATOR)
-    if category == 'sports':
-        return [
-            ('Prepared by', '', 'Competition Management Office'),
-            ('Reviewed by', sports_coord, 'Sports Coordinator'),
-            ('Certified correct by', '', 'Competition Chairperson'),
-        ]
-    if category == 'cultural':
-        return [
-            ('Prepared by', '', 'Competition Management Office'),
-            ('Reviewed by', cultural_coord, 'Socio-Cultural Coordinator'),
-            ('Certified correct by', '', 'Competition Chairperson'),
-        ]
     return [
-        ('Prepared by', '', 'Competition Management Office'),
-        ('Reviewed by', sports_coord, 'Sports Coordinator'),
-        ('Reviewed by', cultural_coord, 'Socio-Cultural Coordinator'),
-        ('Certified correct by', '', 'Competition Chairperson'),
+        ('Certified by', sports_coord, 'Sports Coordinator'),
+        ('Certified by', cultural_coord, 'Socio-Cultural Coordinator'),
     ]
 
 
@@ -400,6 +395,19 @@ def medal_tally_report(category: str = '') -> ReportData:
     ]
     numeric = (0, 3, 4, 5, 6, 7, 8, 9)
 
+    team_color_by_id = {}
+    team_color_by_name = {}
+    for team in Team.objects.only('id', 'name', 'color_theme'):
+        if team.color_theme:
+            team_color_by_id[team.id] = team.color_theme
+            team_color_by_name[team.name.strip().lower()] = team.color_theme
+
+    def color_for(row):
+        key = row.get('key')
+        if isinstance(key, tuple) and len(key) == 2 and key[0] == 'team' and key[1] in team_color_by_id:
+            return team_color_by_id[key[1]]
+        return row.get('color_theme') or team_color_by_name.get((row.get('name') or '').strip().lower(), '')
+
     def rows_for(source_rows):
         return [[
             _number(row['rank']),
@@ -420,6 +428,8 @@ def medal_tally_report(category: str = '') -> ReportData:
         rows=rows_for(overall['rows']),
         numeric_columns=numeric,
         empty_message='No medals have been awarded yet.',
+        row_colors=[color_for(row) for row in overall['rows']],
+        color_column=1,
     )]
     for entry in overall['breakdown']:
         if not entry['rows']:
@@ -430,6 +440,8 @@ def medal_tally_report(category: str = '') -> ReportData:
             rows=rows_for(entry['rows']),
             numeric_columns=numeric,
             empty_message='No medals have been awarded for this competition.',
+            row_colors=[color_for(row) for row in entry['rows']],
+            color_column=1,
         ))
 
     totals = overall['totals']

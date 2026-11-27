@@ -80,10 +80,10 @@ def participant_list(request):
         if selected_group is not None:
             participants = Participant.objects.filter(
                 id__in=selected_group['participant_ids'],
-            ).order_by('-registration_date')
+            ).select_related('team_membership__team').order_by('-registration_date')
             page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
     elif show_all:
-        participants = Participant.objects.all().order_by('-registration_date')
+        participants = Participant.objects.select_related('team_membership__team').order_by('-registration_date')
         page_obj = Paginator(participants, 9).get_page(request.GET.get('page'))
 
     return render(request, 'participants/participant_list.html', {

@@ -254,13 +254,15 @@ class ReportExportTests(ReportsTestBase):
             tournament_manager=tm_user,
         )
 
-        # Medal tally print & PDF include both Sports Coordinator and Socio-Cultural Coordinator
+        # Medal tally print & PDF include ONLY Sports Coordinator and Socio-Cultural Coordinator
         mt_print = self.client.get(reverse('print_medal_tally'))
         self.assertEqual(mt_print.status_code, 200)
         self.assertContains(mt_print, 'Sports Coordinator')
         self.assertContains(mt_print, 'Socio-Cultural Coordinator')
         self.assertContains(mt_print, 'Juan Dela Cruz')
         self.assertContains(mt_print, 'Maria Clara')
+        self.assertNotContains(mt_print, 'Competition Management Office')
+        self.assertNotContains(mt_print, 'Competition Chairperson')
 
         mt_pdf = self.client.get(reverse('export_medal_tally_pdf'))
         self.assertEqual(mt_pdf.status_code, 200)

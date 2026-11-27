@@ -54,17 +54,24 @@
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {% for group in team_groups %}
         <a href="{% url 'participant_list' %}?team={{ group.key|urlencode }}"
+           {% if group.team and group.team.color_theme %}style="border-top: 4px solid {{ group.team.color_theme }};"{% endif %}
            class="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-6 shadow-soft transition-all duration-150 hover:-translate-y-0.5 hover:border-pine/40 hover:shadow-md">
             <div class="flex items-start gap-4">
                 {% if group.team and group.team.logo %}
                 <img src="{{ group.team.logo.url }}" alt="{{ group.name }}" class="h-14 w-14 shrink-0 rounded-xl border border-slate-200 object-cover">
                 {% else %}
-                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl {% if group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-xl font-bold">
+                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl {% if group.team and group.team.color_theme %}text-white{% elif group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-xl font-bold"
+                     {% if group.team and group.team.color_theme %}style="background: {{ group.team.color_theme }};"{% endif %}>
                     {{ group.name|make_list|first|upper }}
                 </div>
                 {% endif %}
                 <div class="min-w-0 flex-1">
-                    <h2 class="truncate font-display text-lg font-semibold text-ink transition-colors group-hover:text-pine">{{ group.name }}</h2>
+                    <h2 class="flex items-center gap-2 truncate font-display text-lg font-semibold text-ink transition-colors group-hover:text-pine">
+                        {% if group.team and group.team.color_theme %}
+                        <span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ group.team.color_theme }};" title="Team color"></span>
+                        {% endif %}
+                        <span class="truncate">{{ group.name }}</span>
+                    </h2>
                     <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                         {% if group.team %}
                         <span class="rounded-full bg-paper px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80">{{ group.team.get_category_display }}</span>
@@ -131,7 +138,9 @@
 <!-- ===== Grid / Cards view ===== -->
 <div id="grid-view" class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     {% for participant in page_obj %}
-    <div data-participant-card="{{ participant.id }}" class="group relative rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div data-participant-card="{{ participant.id }}"
+         {% if participant.team_membership and participant.team_membership.team.color_theme %}style="border-top: 4px solid {{ participant.team_membership.team.color_theme }};"{% endif %}
+         class="group relative rounded-md border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm transition-all duration-150 hover:shadow-xl hover:shadow-cyan-500/10">
         <label class="absolute top-4 right-4 z-[2] inline-flex cursor-pointer items-center rounded p-1 hover:bg-slate-100/80" title="Select {{ participant.name }}">
             <input type="checkbox"
                    value="{{ participant.id }}"
@@ -143,11 +152,20 @@
             {% if participant.profile_image %}
             <img src="{{ participant.profile_image.url }}" alt="{{ participant.name }}" class="h-14 w-14 rounded-full border-2 border-cyan-100 object-cover">
             {% else %}
-            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-xl font-bold text-white">{{ participant.name|make_list|first }}</div>
+            <div class="flex h-14 w-14 items-center justify-center rounded-full {% if not participant.team_membership or not participant.team_membership.team.color_theme %}bg-cyan-500{% endif %} text-xl font-bold text-white"
+                 {% if participant.team_membership and participant.team_membership.team.color_theme %}style="background: {{ participant.team_membership.team.color_theme }};"{% endif %}>{{ participant.name|make_list|first }}</div>
             {% endif %}
             <div class="min-w-0">
                 <h3 class="truncate font-display text-lg font-semibold text-slate-900"><a href="{% url 'participant_detail' participant.id %}" class="transition-colors hover:text-cyan-700 after:absolute after:inset-0 after:content-['']" aria-label="View {{ participant.name }} profile">{{ participant.name }}</a></h3>
                 <p class="text-sm text-slate-500">{{ participant.participant_id }}</p>
+                {% if participant.team_membership %}
+                <p class="mt-1 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                    {% if participant.team_membership.team.color_theme %}
+                    <span class="h-2.5 w-2.5 rounded-full ring-1 ring-black/10" style="background: {{ participant.team_membership.team.color_theme }};"></span>
+                    {% endif %}
+                    <span>{{ participant.team_membership.team.name }}</span>
+                </p>
+                {% endif %}
             </div>
         </div>
 

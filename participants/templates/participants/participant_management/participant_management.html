@@ -34,17 +34,24 @@
     <div class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3 sm:px-8">
         {% for group in team_groups %}
         <a href="{% url 'participant_list' %}?team={{ group.key|urlencode }}"
+           {% if group.team and group.team.color_theme %}style="border-left: 4px solid {{ group.team.color_theme }};"{% endif %}
            class="group flex items-center justify-between gap-3 rounded-lg border border-slate-200/90 bg-paper/50 p-4 transition-all hover:border-pine/40 hover:bg-white hover:shadow-sm">
             <div class="flex min-w-0 items-center gap-3">
                 {% if group.team and group.team.logo %}
                 <img src="{{ group.team.logo.url }}" alt="{{ group.name }}" class="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover">
                 {% else %}
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg {% if group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-base font-bold">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg {% if group.team and group.team.color_theme %}text-white{% elif group.key == 'unassigned' %}bg-slate-100 text-slate-600{% else %}bg-moss text-pine-deep{% endif %} font-display text-base font-bold"
+                      {% if group.team and group.team.color_theme %}style="background: {{ group.team.color_theme }};"{% endif %}>
                     {{ group.name|make_list|first|upper }}
                 </span>
                 {% endif %}
                 <div class="min-w-0">
-                    <p class="truncate font-semibold text-ink group-hover:text-pine">{{ group.name }}</p>
+                    <p class="flex items-center gap-1.5 truncate font-semibold text-ink group-hover:text-pine">
+                        {% if group.team and group.team.color_theme %}
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ group.team.color_theme }};" title="Team color"></span>
+                        {% endif %}
+                        <span class="truncate">{{ group.name }}</span>
+                    </p>
                     <p class="mt-0.5 text-xs text-slate-500">{{ group.count }} participant{{ group.count|pluralize }}</p>
                 </div>
             </div>

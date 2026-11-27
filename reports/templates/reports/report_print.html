@@ -225,11 +225,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for row in section.rows %}
+                        {% for row, row_color in section.rows_with_colors %}
                         <tr>
                             {% for cell in row %}
                             <td class="{% if forloop.counter0 in section.numeric_columns %}is-numeric{% endif %}">
-                                {% if cell %}{{ cell }}{% else %}&mdash;{% endif %}
+                                {% if row_color and forloop.counter0 == section.color_column %}<span style="display:inline-block;width:9px;height:9px;border-radius:9999px;background:{{ row_color }};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.15);" title="Team color"></span>{% endif %}{% if cell %}{{ cell }}{% else %}&mdash;{% endif %}
                             </td>
                             {% endfor %}
                         </tr>
