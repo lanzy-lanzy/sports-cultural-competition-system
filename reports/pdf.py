@@ -315,16 +315,19 @@ def _sign_off(report: ReportData, styles, width):
     count = max(len(sigs), 1)
     col_w = width / count
     name_style = ParagraphStyle(
-        'SignName', parent=styles['meta_value'], fontSize=8, leading=10, textColor=INK,
+        'SignName', parent=styles['meta_value'], fontName='Helvetica-Bold', fontSize=8.5, leading=10.5, textColor=INK,
     )
-    label_row = [Paragraph(escape(label), styles['sign_label']) for label, _, _ in sigs]
-    name_row = [Paragraph(escape(name), name_style) if name else '' for _, name, _ in sigs]
-    caption_row = [Paragraph(escape(caption), styles['sign_caption']) for _, _, caption in sigs]
+    caption_style = ParagraphStyle(
+        'SignCaptionBold', parent=styles['sign_caption'], fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=INK,
+    )
+    label_row = [Paragraph(escape(label.upper()), styles['sign_label']) for label, _, _ in sigs]
+    name_row = [Paragraph(escape(name.upper()), name_style) if name else '' for _, name, _ in sigs]
+    caption_row = [Paragraph(escape(caption), caption_style) for _, _, caption in sigs]
 
     signatures = Table(
         [label_row, name_row],
         colWidths=[col_w] * count,
-        rowHeights=[None, 26],
+        rowHeights=[None, 28],
     )
     style_cmds = [
         ('VALIGN', (0, 0), (-1, 0), 'TOP'),
@@ -332,21 +335,21 @@ def _sign_off(report: ReportData, styles, width):
         ('TOPPADDING', (0, 0), (-1, 0), 0),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 2),
         ('TOPPADDING', (0, 1), (-1, 1), 0),
-        ('BOTTOMPADDING', (0, 1), (-1, 1), 2),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 3),
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
     ]
     for idx in range(count):
-        style_cmds.append(('LINEBELOW', (idx, 1), (idx, 1), 0.8, SLATE))
-        style_cmds.append(('RIGHTPADDING', (idx, 0), (idx, -1), 16 if idx < count - 1 else 0))
+        style_cmds.append(('LINEBELOW', (idx, 1), (idx, 1), 1.5, INK))
+        style_cmds.append(('RIGHTPADDING', (idx, 0), (idx, -1), 20 if idx < count - 1 else 0))
     signatures.setStyle(TableStyle(style_cmds))
 
     captions = Table([caption_row], colWidths=[col_w] * count)
     cap_cmds = [
         ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
     ]
     for idx in range(count):
-        cap_cmds.append(('RIGHTPADDING', (idx, 0), (idx, 0), 16 if idx < count - 1 else 0))
+        cap_cmds.append(('RIGHTPADDING', (idx, 0), (idx, 0), 20 if idx < count - 1 else 0))
     captions.setStyle(TableStyle(cap_cmds))
     return [signatures, captions]
 
