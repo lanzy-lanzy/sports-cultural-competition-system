@@ -1,12 +1,3 @@
-document.querySelectorAll('[data-tally-filter-tabs]').forEach((row) => {
-    const selected = row.querySelector('[data-tally-selected-year]') ||
-        row.querySelector('[aria-current="true"]');
-    if (!selected) return;
-
-    const overflow = selected.getBoundingClientRect().right - row.getBoundingClientRect().right;
-    if (overflow > 0) row.scrollLeft += Math.ceil(overflow);
-});
-
 document.querySelectorAll('[data-tally-tabs]').forEach((tabList) => {
     const tabs = Array.from(tabList.querySelectorAll('button[aria-controls]'));
     if (tabs.length < 2) return;
