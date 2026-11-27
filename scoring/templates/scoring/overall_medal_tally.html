@@ -265,6 +265,67 @@
     {% endif %}
 
     {% if tally.rows %}
+    <!-- ===== Delegation Rankings Table ===== -->
+    <section class="records-panel overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="tally-rankings-title">
+        <div class="border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
+            <h2 id="tally-rankings-title" class="font-display text-xl font-semibold text-ink">Overall Tally</h2>
+            <p class="mt-0.5 text-xs text-slate-500">Official medal totals, points, and match win&ndash;loss records side by side.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="records-table min-w-[860px] w-full text-left text-sm" aria-labelledby="tally-rankings-title">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="px-5 py-3.5">Rank</th>
+                        <th class="px-5 py-3.5">Team / Delegation</th>
+                        <th class="px-5 py-3.5 text-center">Status</th>
+                        <th class="px-5 py-3.5 text-center">Record (W-L-D)</th>
+                        <th class="px-5 py-3.5 text-center">Gold</th>
+                        <th class="px-5 py-3.5 text-center">Silver</th>
+                        <th class="px-5 py-3.5 text-center">Bronze</th>
+                        <th class="px-5 py-3.5 text-center">Points</th>
+                        <th class="px-5 py-3.5 text-center">Source</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in tally.rows %}
+                    <tr class="{% if row.rank == 1 %}bg-amber-50/40{% endif %} transition-colors hover:bg-paper/70">
+                        <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-ink">
+                            <span class="inline-flex items-center gap-2">
+                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
+                                <span>{{ row.name }}</span>
+                            </span>
+                            {% if row.provisional %}<span class="ml-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800" title="The competition is still running; these medals may change.">PROV</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-center">
+                            {% if row.status_display %}
+                            <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif row.status == 'PENDING' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% endif %}">{{ row.status_display|upper }}</span>
+                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-5 py-3.5 text-center tabular-nums">
+                            {% if row.played %}
+                            <span class="font-bold text-emerald-700">{{ row.wins }}</span>-<span class="font-bold text-rose-600">{{ row.losses }}</span>-<span class="font-bold text-slate-400">{{ row.draws }}</span>
+                            <span class="ml-1 text-[11px] text-slate-400">({{ row.played }} GP)</span>
+                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-amber-600">{{ row.gold }}</td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-slate-500">{{ row.silver }}</td>
+                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-orange-600">{{ row.bronze }}</td>
+                        <td class="px-5 py-3.5 text-center font-display text-base font-bold tabular-nums text-ink">{{ row.points }}</td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex flex-wrap justify-center gap-1.5">
+                                {% if row.sports %}<span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold text-pine-deep">{{ row.sports }} sport</span>{% endif %}
+                                {% if row.award %}<span class="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">{{ row.award }} award</span>{% endif %}
+                                {% if row.standings %}<span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">{{ row.standings }} judged</span>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <!-- ===== Official / Provisional Medal Tally KPI Grid ===== -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="records-panel records-metric rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
@@ -334,67 +395,6 @@
         <div>
             <h3 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">Teams &amp; Delegations</h3>
             {% include 'scoring/partials/medal_bar_chart.html' with series=tally.team_chart chart_id='team-medal-chart' chart_max=tally.chart_max_medals empty_note='No team or delegation medals yet.' %}
-        </div>
-    </section>
-
-    <!-- ===== Delegation Rankings Table ===== -->
-    <section class="records-panel overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="tally-rankings-title">
-        <div class="border-b border-slate-200/80 bg-paper/60 px-5 py-4 sm:px-6">
-            <h2 id="tally-rankings-title" class="font-display text-xl font-semibold text-ink">Delegation Rankings</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Official medal totals, points, and match win&ndash;loss records side by side.</p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="records-table min-w-[860px] w-full text-left text-sm" aria-labelledby="tally-rankings-title">
-                <thead>
-                    <tr class="border-b border-slate-200 bg-paper/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                        <th class="px-5 py-3.5">Rank</th>
-                        <th class="px-5 py-3.5">Team / Delegation</th>
-                        <th class="px-5 py-3.5 text-center">Status</th>
-                        <th class="px-5 py-3.5 text-center">Record (W-L-D)</th>
-                        <th class="px-5 py-3.5 text-center">Gold</th>
-                        <th class="px-5 py-3.5 text-center">Silver</th>
-                        <th class="px-5 py-3.5 text-center">Bronze</th>
-                        <th class="px-5 py-3.5 text-center">Points</th>
-                        <th class="px-5 py-3.5 text-center">Source</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for row in tally.rows %}
-                    <tr class="{% if row.rank == 1 %}bg-amber-50/40{% endif %} transition-colors hover:bg-paper/70">
-                        <td class="px-5 py-3.5 font-display text-base font-bold tabular-nums text-ink">{{ row.rank }}</td>
-                        <td class="px-5 py-3.5 font-semibold text-ink">
-                            <span class="inline-flex items-center gap-2">
-                                {% if row.color_theme %}<span class="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style="background: {{ row.color_theme }};" title="Team color"></span>{% endif %}
-                                <span>{{ row.name }}</span>
-                            </span>
-                            {% if row.provisional %}<span class="ml-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800" title="The competition is still running; these medals may change.">PROV</span>{% endif %}
-                        </td>
-                        <td class="px-5 py-3.5 text-center">
-                            {% if row.status_display %}
-                            <span class="rounded-full px-2.5 py-1 text-[10px] font-bold {% if row.status == 'APPROVED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200{% elif row.status == 'PENDING' %}bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200{% else %}bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200{% endif %}">{{ row.status_display|upper }}</span>
-                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
-                        </td>
-                        <td class="whitespace-nowrap px-5 py-3.5 text-center tabular-nums">
-                            {% if row.played %}
-                            <span class="font-bold text-emerald-700">{{ row.wins }}</span>-<span class="font-bold text-rose-600">{{ row.losses }}</span>-<span class="font-bold text-slate-400">{{ row.draws }}</span>
-                            <span class="ml-1 text-[11px] text-slate-400">({{ row.played }} GP)</span>
-                            {% else %}<span class="text-slate-300">&mdash;</span>{% endif %}
-                        </td>
-                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-amber-600">{{ row.gold }}</td>
-                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-slate-500">{{ row.silver }}</td>
-                        <td class="px-5 py-3.5 text-center font-bold tabular-nums text-orange-600">{{ row.bronze }}</td>
-                        <td class="px-5 py-3.5 text-center font-display text-base font-bold tabular-nums text-ink">{{ row.points }}</td>
-                        <td class="px-5 py-3.5">
-                            <div class="flex flex-wrap justify-center gap-1.5">
-                                {% if row.sports %}<span class="rounded-full bg-moss px-2.5 py-0.5 text-[10px] font-bold text-pine-deep">{{ row.sports }} sport</span>{% endif %}
-                                {% if row.award %}<span class="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 ring-1 ring-sky-200">{{ row.award }} award</span>{% endif %}
-                                {% if row.standings %}<span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">{{ row.standings }} judged</span>{% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </section>
 
@@ -476,72 +476,6 @@
         </div>
         <span class="inline-flex shrink-0 self-start rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 sm:self-center">In Progress</span>
     </div>
-
-    <!-- Partial KPI Grid -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Contestants</p>
-            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-ink">{{ tally.partial_totals.contestants }}</p>
-            <p class="mt-1 text-xs text-slate-500">With recorded match outcomes</p>
-        </div>
-        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Completed Matches</p>
-            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-pine">{{ tally.partial_totals.matches_completed }}</p>
-            <p class="mt-1 text-xs text-slate-500">Verified results counted</p>
-        </div>
-        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Win / Loss / Draw</p>
-            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-ink">
-                <span class="text-emerald-700">{{ tally.partial_totals.wins }}</span>
-                <span class="text-slate-300">/</span>
-                <span class="text-rose-600">{{ tally.partial_totals.losses }}</span>
-                <span class="text-slate-300">/</span>
-                <span class="text-slate-400">{{ tally.partial_totals.draws }}</span>
-            </p>
-            <p class="mt-1 text-xs text-slate-500">Total recorded outcomes</p>
-        </div>
-        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pending Finals</p>
-            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-amber-700">{{ pending|length }}</p>
-            <p class="mt-1 text-xs text-slate-500">Competitions awaiting final podiums</p>
-        </div>
-    </div>
-
-    {% if tally.partial_totals.leader %}
-    <!-- Partial Leader Spotlight -->
-    <section class="relative overflow-hidden rounded-xl border border-pine/20 border-l-4 border-l-pine bg-gradient-to-r from-moss/70 via-white to-white p-6 shadow-soft sm:p-7">
-        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-pine">Current Pace Leader (Partial)</p>
-                <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
-                    {% if tally.partial_totals.leader.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.partial_totals.leader.color_theme }};" title="Team color"></span>{% endif %}
-                    <span>{{ tally.partial_totals.leader.name }}</span>
-                </h2>
-                <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600 tabular-nums">
-                    <span><strong class="text-emerald-700">{{ tally.partial_totals.leader.wins }}</strong> Win{{ tally.partial_totals.leader.wins|pluralize }}</span>
-                    <span class="text-slate-300">&middot;</span>
-                    <span><strong class="text-rose-600">{{ tally.partial_totals.leader.losses }}</strong> Loss{{ tally.partial_totals.leader.losses|pluralize:'es' }}</span>
-                    {% if tally.partial_totals.leader.draws %}
-                    <span class="text-slate-300">&middot;</span>
-                    <span><strong class="text-slate-600">{{ tally.partial_totals.leader.draws }}</strong> Draw{{ tally.partial_totals.leader.draws|pluralize }}</span>
-                    {% endif %}
-                    <span class="text-slate-300">&middot;</span>
-                    <span class="font-semibold text-ink">{{ tally.partial_totals.leader.win_pct|floatformat:0 }}% win rate</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="rounded-xl border border-pine/15 bg-white px-4 py-3 text-center shadow-sm">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Games Played</p>
-                    <p class="mt-0.5 font-display text-2xl font-bold tabular-nums text-ink">{{ tally.partial_totals.leader.played }}</p>
-                </div>
-                <div class="rounded-xl border border-pine/15 bg-white px-4 py-3 text-center shadow-sm">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score Total</p>
-                    <p class="mt-0.5 font-display text-2xl font-bold tabular-nums text-pine">{{ tally.partial_totals.leader.points_for|floatformat:"-2" }}</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endif %}
 
     <!-- Comprehensive Partial Standings (Responsive Cards + Desktop Table) -->
     <section class="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-soft" aria-labelledby="partial-tally-table-title">
@@ -638,6 +572,73 @@
             </table>
         </div>
     </section>
+
+    <!-- Partial KPI Grid -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Contestants</p>
+            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-ink">{{ tally.partial_totals.contestants }}</p>
+            <p class="mt-1 text-xs text-slate-500">With recorded match outcomes</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Completed Matches</p>
+            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-pine">{{ tally.partial_totals.matches_completed }}</p>
+            <p class="mt-1 text-xs text-slate-500">Verified results counted</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Win / Loss / Draw</p>
+            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-ink">
+                <span class="text-emerald-700">{{ tally.partial_totals.wins }}</span>
+                <span class="text-slate-300">/</span>
+                <span class="text-rose-600">{{ tally.partial_totals.losses }}</span>
+                <span class="text-slate-300">/</span>
+                <span class="text-slate-400">{{ tally.partial_totals.draws }}</span>
+            </p>
+            <p class="mt-1 text-xs text-slate-500">Total recorded outcomes</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/90 bg-white p-5 shadow-soft">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pending Finals</p>
+            <p class="mt-1.5 font-display text-2xl font-semibold tabular-nums text-amber-700">{{ pending|length }}</p>
+            <p class="mt-1 text-xs text-slate-500">Competitions awaiting final podiums</p>
+        </div>
+    </div>
+
+    {% if tally.partial_totals.leader %}
+    <!-- Partial Leader Spotlight -->
+    <section class="relative overflow-hidden rounded-xl border border-pine/20 border-l-4 border-l-pine bg-gradient-to-r from-moss/70 via-white to-white p-6 shadow-soft sm:p-7">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-pine">Current Pace Leader (Partial)</p>
+                <h2 class="mt-1.5 flex items-center gap-2.5 font-display text-2xl font-semibold text-ink sm:text-3xl">
+                    {% if tally.partial_totals.leader.color_theme %}<span class="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/15" style="background: {{ tally.partial_totals.leader.color_theme }};" title="Team color"></span>{% endif %}
+                    <span>{{ tally.partial_totals.leader.name }}</span>
+                </h2>
+                <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600 tabular-nums">
+                    <span><strong class="text-emerald-700">{{ tally.partial_totals.leader.wins }}</strong> Win{{ tally.partial_totals.leader.wins|pluralize }}</span>
+                    <span class="text-slate-300">&middot;</span>
+                    <span><strong class="text-rose-600">{{ tally.partial_totals.leader.losses }}</strong> Loss{{ tally.partial_totals.leader.losses|pluralize:'es' }}</span>
+                    {% if tally.partial_totals.leader.draws %}
+                    <span class="text-slate-300">&middot;</span>
+                    <span><strong class="text-slate-600">{{ tally.partial_totals.leader.draws }}</strong> Draw{{ tally.partial_totals.leader.draws|pluralize }}</span>
+                    {% endif %}
+                    <span class="text-slate-300">&middot;</span>
+                    <span class="font-semibold text-ink">{{ tally.partial_totals.leader.win_pct|floatformat:0 }}% win rate</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="rounded-xl border border-pine/15 bg-white px-4 py-3 text-center shadow-sm">
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Games Played</p>
+                    <p class="mt-0.5 font-display text-2xl font-bold tabular-nums text-ink">{{ tally.partial_totals.leader.played }}</p>
+                </div>
+                <div class="rounded-xl border border-pine/15 bg-white px-4 py-3 text-center shadow-sm">
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score Total</p>
+                    <p class="mt-0.5 font-display text-2xl font-bold tabular-nums text-pine">{{ tally.partial_totals.leader.points_for|floatformat:"-2" }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     {% endif %}
 
     {% if tally.rows or tally.partial_rows %}
