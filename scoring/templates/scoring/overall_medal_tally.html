@@ -60,7 +60,7 @@
         <div class="flex flex-wrap items-end gap-3">
             <label class="min-w-0 flex-1 text-xs font-semibold text-slate-600 sm:flex-none">
                 Category
-                <select name="category" class="mt-1 block h-11 w-full rounded-lg border border-slate-200 bg-paper px-3 text-sm text-ink focus:border-pine sm:w-52" onchange="this.form.submit()">
+                <select name="category" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-paper px-3 text-sm text-ink focus:border-pine sm:w-48" onchange="this.form.submit()">
                     <option value="">All categories</option>
                     <option value="sports" {% if category == 'sports' %}selected{% endif %}>Sports</option>
                     <option value="cultural" {% if category == 'cultural' %}selected{% endif %}>Socio Cultural</option>
@@ -69,7 +69,7 @@
             {% if available_years %}
             <label class="min-w-0 flex-1 text-xs font-semibold text-slate-600 sm:flex-none">
                 Year
-                <select name="year" class="mt-1 block h-11 w-full rounded-lg border border-slate-200 bg-paper px-3 text-sm text-ink focus:border-pine sm:w-36" onchange="this.form.submit()">
+                <select name="year" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-paper px-3 text-sm text-ink focus:border-pine sm:w-36" onchange="this.form.submit()">
                     <option value="">All years</option>
                     {% for yr in available_years %}
                     <option value="{{ yr }}" {% if selected_year == yr|stringformat:'s' %}selected{% endif %}>{{ yr }}</option>
@@ -78,17 +78,17 @@
             </label>
             {% endif %}
             {% if tally.breakdown and tally.rows or tally.breakdown and tally.partial_rows %}
-            <label hidden class="min-w-0 basis-full text-xs font-semibold text-slate-600 sm:flex-1">
+            <label hidden class="min-w-0 flex-1 text-xs font-semibold text-slate-600 sm:flex-none">
                 Competition
-                <select data-tally-competition-select class="mt-1 block h-11 w-full rounded-lg border border-pine bg-pine px-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">
+                <select data-tally-competition-select class="mt-1 block h-10 w-full truncate rounded-lg border border-pine bg-pine px-3 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine sm:w-56">
                     <option value="" class="bg-white text-ink">Overview</option>
                     {% for entry in tally.breakdown %}
-                    <option value="tally-competition-{{ entry.competition.id }}" class="bg-white text-ink">{{ entry.competition.name }}</option>
+                    <option value="tally-competition-{{ entry.competition.id }}" title="{{ entry.competition.name }}" class="bg-white text-ink">{{ entry.competition.name|truncatechars:34 }}</option>
                     {% endfor %}
                 </select>
             </label>
             {% endif %}
-            <noscript><button type="submit" class="h-11 rounded-lg bg-pine px-4 text-sm font-semibold text-white">Apply filters</button></noscript>
+            <noscript><button type="submit" class="h-10 rounded-lg bg-pine px-4 text-sm font-semibold text-white">Apply filters</button></noscript>
         </div>
     </form>
 
