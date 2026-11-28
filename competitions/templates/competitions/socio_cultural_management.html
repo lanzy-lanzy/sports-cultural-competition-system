@@ -48,9 +48,9 @@
 {% if type_counts %}
 <div class="mb-6 flex flex-wrap items-center gap-2">
     <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filter by event type</span>
-    <a href="{% url 'socio_cultural_management' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not selected_type %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">All types</a>
+    <a href="{% url 'socio_cultural_management' %}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if not selected_type %}border-ink bg-ink text-white shadow-sm ui-button--primary{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus ui-button--secondary{% endif %} ui-button ui-button--small">All types</a>
     {% for type in type_counts %}
-    <a href="?type={{ type.value }}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if selected_type == type.value %}border-ink bg-ink text-white shadow-sm{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus{% endif %} ui-button ui-button--primary ui-button--small">{{ type.label }} <span class="text-[10px] {% if selected_type == type.value %}text-white/70{% else %}text-slate-400{% endif %}">{{ type.count }}</span></a>
+    <a href="?type={{ type.value }}" class="rounded-md border px-3 py-1.5 text-xs font-bold transition {% if selected_type == type.value %}border-ink bg-ink text-white shadow-sm ui-button--primary{% else %}border-slate-300 bg-white text-slate-600 hover:border-teal-300 hover:text-campus ui-button--secondary{% endif %} ui-button ui-button--small">{{ type.label }} <span class="text-[10px] {% if selected_type == type.value %}text-white/70{% else %}text-slate-400{% endif %}">{{ type.count }}</span></a>
     {% endfor %}
 </div>
 {% endif %}

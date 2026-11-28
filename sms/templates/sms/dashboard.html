@@ -58,12 +58,12 @@
     <div class="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
         <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Competition</span>
         <a href="{% querystring competition=None page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_competition %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_competition %}border-transparent bg-pine text-white shadow-sm ui-button--primary{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep ui-button--secondary{% endif %} ui-button ui-button--small">
             All
         </a>
         {% for option in competition_options %}
         <a href="{% querystring competition=option.id page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_competition == option.id %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_competition == option.id %}border-transparent bg-pine text-white shadow-sm ui-button--primary{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep ui-button--secondary{% endif %} ui-button ui-button--small">
             <span class="h-1.5 w-1.5 rounded-full {% if selected_competition == option.id %}bg-white/80{% elif option.kind == 'CULTURAL' %}bg-amber-400{% else %}bg-emerald-500{% endif %}"
                   title="{% if option.kind == 'CULTURAL' %}Socio-cultural{% else %}Sports{% endif %}"></span>
             {{ option.label|title }} <span class="{% if selected_competition == option.id %}text-white/80{% else %}text-slate-400{% endif %}">{{ option.count }}</span>

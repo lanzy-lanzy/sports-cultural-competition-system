@@ -110,12 +110,12 @@
     <div class="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
         <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{% if category == 'cultural' %}Event type{% else %}Discipline{% endif %}</span>
         <a href="{% querystring sub=None page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_sub %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if not selected_sub %}border-transparent bg-pine text-white shadow-sm ui-button--primary{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep ui-button--secondary{% endif %} ui-button ui-button--small">
             All <span class="{% if not selected_sub %}text-white/80{% else %}text-slate-400{% endif %}">{{ all_count }}</span>
         </a>
         {% for item in subcategories %}
         <a href="{% querystring sub=item.value page=None %}"
-           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_sub == item.value %}border-transparent bg-pine text-white shadow-sm{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep{% endif %} ui-button ui-button--primary ui-button--small">
+           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition {% if selected_sub == item.value %}border-transparent bg-pine text-white shadow-sm ui-button--primary{% else %}border-slate-200 bg-white text-slate-600 hover:border-pine/40 hover:bg-moss/60 hover:text-pine-deep ui-button--secondary{% endif %} ui-button ui-button--small">
             {{ item.label }} <span class="{% if selected_sub == item.value %}text-white/80{% else %}text-slate-400{% endif %}">{{ item.count }}</span>
         </a>
         {% empty %}
