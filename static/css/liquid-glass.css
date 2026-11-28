@@ -114,10 +114,11 @@
    glass pills. Scoped to `.lg-sidebar` and `body.app-canvas` so nothing
    leaks into the rest of the app. */
 body.app-canvas {
+    background-color: #eaf4ee;
     background-image:
-        radial-gradient(900px 500px at -140px 28%, rgba(17, 107, 59, 0.16), transparent 62%),
-        radial-gradient(760px 460px at -180px 86%, rgba(46, 156, 92, 0.10), transparent 58%),
-        radial-gradient(1200px 640px at 112% 8%, rgba(17, 107, 59, 0.05), transparent 62%);
+        radial-gradient(960px 540px at -80px 18%, rgba(16, 185, 129, 0.16), transparent 64%),
+        radial-gradient(820px 520px at 108% 12%, rgba(5, 150, 105, 0.14), transparent 62%),
+        radial-gradient(900px 560px at 52% 96%, rgba(52, 211, 153, 0.12), transparent 64%);
     background-attachment: fixed;
 }
 .lg-sidebar {
@@ -290,21 +291,30 @@ body.app-canvas {
 }
 .records-hero .records-hero-link:hover { background: rgba(255, 255, 255, .15); }
 .records-page .records-panel {
-    border-radius: .875rem;
-    border-color: #dce6de;
-    box-shadow: 0 6px 22px -18px rgba(11, 58, 32, .35);
+    border-radius: 1rem;
+    border: 1px solid rgba(16, 185, 129, 0.24);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.78) 54%, rgba(209, 250, 229, 0.72) 100%);
+    backdrop-filter: blur(18px) saturate(165%);
+    -webkit-backdrop-filter: blur(18px) saturate(165%);
+    box-shadow:
+        0 12px 32px -16px rgba(6, 78, 59, 0.22),
+        0 2px 6px -2px rgba(6, 78, 59, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88),
+        inset 0 -1px 0 rgba(16, 185, 129, 0.10);
 }
-.records-page .records-metric { border-top: 3px solid #93cba9; }
+.records-page .records-metric { border-top: 3px solid #10b981; }
 .records-page .results-card { display: flex; flex-direction: column; }
-.records-page .results-card:hover { border-color: #93cba9; }
-.records-page .results-card-header { background: linear-gradient(110deg, #0c5330, #116b3b); }
-.records-page .records-empty { background: linear-gradient(135deg, #ffffff, #f2f8f4); }
+.records-page .results-card:hover { border-color: rgba(5, 150, 105, 0.44); }
+.records-page .results-card-header { background: linear-gradient(110deg, #065f46, #059669); }
+.records-page .records-empty { background: linear-gradient(145deg, rgba(255, 255, 255, 0.90), rgba(236, 253, 245, 0.82)); }
 .records-page .records-table { font-variant-numeric: tabular-nums; }
-.records-page .records-table thead { background: #f2f8f4; }
-.records-page .records-table th { color: #53675b; white-space: nowrap; }
+.records-page .records-table thead {
+    background: linear-gradient(110deg, rgba(6, 95, 70, 0.95) 0%, rgba(16, 122, 82, 0.92) 55%, rgba(5, 150, 105, 0.88) 100%);
+}
+.records-page .records-table th { color: #f0fdf4; white-space: nowrap; }
 .records-page .records-table td { vertical-align: middle; }
 .records-page .records-table tbody tr { transition: background-color .15s ease; }
-.records-page .records-table tbody tr:hover { background-color: #f2f8f4; }
+.records-page .records-table tbody tr:hover { background-color: rgba(209, 250, 229, 0.56); }
 .records-page :is(a, button, select):focus-visible {
     outline: 2px solid #2e9c5c;
     outline-offset: 3px;
@@ -644,15 +654,18 @@ body.app-canvas {
    style. Applied via .app-card rather than restyling utility classes so it
    never leaks into unrelated markup. */
 .app-card {
-    --nm-card-radius: 0.875rem;
+    --nm-card-radius: 1rem;
     position: relative;
     border-radius: var(--nm-card-radius);
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
-    border: 1px solid rgba(21, 37, 27, 0.07);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.78) 54%, rgba(209, 250, 229, 0.72) 100%);
+    backdrop-filter: blur(18px) saturate(165%);
+    -webkit-backdrop-filter: blur(18px) saturate(165%);
+    border: 1px solid rgba(16, 185, 129, 0.24);
     box-shadow:
-        -3px -3px 8px -4px rgba(255, 255, 255, 0.95),
-        0 10px 24px -14px rgba(21, 37, 27, 0.22),
-        0 2px 4px -2px rgba(21, 37, 27, 0.05);
+        0 12px 32px -16px rgba(6, 78, 59, 0.22),
+        0 2px 6px -2px rgba(6, 78, 59, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88),
+        inset 0 -1px 0 rgba(16, 185, 129, 0.10);
     transition:
         box-shadow .22s var(--nm-ease),
         border-color .18s ease;
@@ -662,28 +675,28 @@ body.app-canvas {
    would nudge the grid and read as jitter rather than depth. */
 .app-card--link { cursor: pointer; }
 .app-card--link:hover {
-    border-color: rgba(17, 107, 59, 0.30);
+    border-color: rgba(5, 150, 105, 0.42);
     box-shadow:
-        -3px -3px 8px -4px rgba(255, 255, 255, 0.95),
-        0 18px 34px -16px rgba(17, 107, 59, 0.26),
-        0 3px 6px -3px rgba(21, 37, 27, 0.06);
+        0 18px 36px -16px rgba(5, 150, 105, 0.28),
+        0 4px 10px -4px rgba(6, 78, 59, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 /* The hero carries a mint glow off the top-right corner so it reads as the
    page's anchor instead of one more panel in the grid. */
 .app-card--hero {
     background:
-        radial-gradient(120% 150% at 100% 0%, rgba(167, 243, 208, 0.30) 0%, rgba(167, 243, 208, 0.07) 44%, transparent 72%),
-        linear-gradient(135deg, #ffffff 0%, #f4f9f5 100%);
+        radial-gradient(120% 150% at 100% 0%, rgba(16, 185, 129, 0.18) 0%, rgba(167, 243, 208, 0.14) 44%, transparent 74%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.90) 0%, rgba(236, 253, 245, 0.82) 55%, rgba(209, 250, 229, 0.76) 100%);
 }
 
 /* Icon chips sit pressed into the card they belong to. */
 .app-chip {
     border-radius: 0.75rem;
-    background: linear-gradient(145deg, rgba(234, 242, 235, 0.95), rgba(214, 233, 220, 0.95));
-    color: #0c5330;
+    background: linear-gradient(145deg, rgba(234, 242, 235, 0.95), rgba(209, 250, 229, 0.90));
+    color: #065f46;
     box-shadow:
-        inset 2px 2px 5px -2px rgba(21, 37, 27, 0.16),
+        inset 2px 2px 5px -2px rgba(6, 78, 59, 0.16),
         inset -2px -2px 5px -2px rgba(255, 255, 255, 0.95);
 }
 
@@ -691,86 +704,88 @@ body.app-canvas {
    accent, so a grid of tiles does not read as one undifferentiated green. */
 .app-chip--neutral {
     background: linear-gradient(145deg, rgba(241, 245, 242, 0.95), rgba(226, 232, 229, 0.95));
-    color: #475569;
+    color: #334e41;
 }
 
 /* Inner list rows inside a card: shallow raised strips that read as a stack
    of surfaces rather than a flat list on a white sheet. */
 .app-row {
     border-radius: 0.75rem;
-    border: 1px solid rgba(21, 37, 27, 0.06);
-    background: linear-gradient(180deg, #fafcfa 0%, #f4f8f4 100%);
-    box-shadow: 0 2px 6px -4px rgba(21, 37, 27, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.80) 0%, rgba(236, 253, 245, 0.74) 100%);
+    box-shadow: 0 2px 8px -4px rgba(6, 78, 59, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     transition:
         border-color .18s ease,
         box-shadow .18s var(--nm-ease),
         background-color .18s ease;
 }
 .app-row:hover {
-    border-color: rgba(17, 107, 59, 0.26);
-    box-shadow: 0 8px 16px -10px rgba(17, 107, 59, 0.30);
+    border-color: rgba(5, 150, 105, 0.36);
+    box-shadow: 0 8px 18px -10px rgba(5, 150, 105, 0.28);
 }
 
 /* Quick-action tiles. The first one is the primary action and stays solid
    pine; the rest are raised surfaces so the set reads as a family. */
 .app-tile {
     border-radius: 0.875rem;
-    border: 1px solid rgba(21, 37, 27, 0.07);
-    background: linear-gradient(180deg, #ffffff 0%, #fafcfa 100%);
+    border: 1px solid rgba(16, 185, 129, 0.24);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.78) 100%);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
     box-shadow:
-        -2px -2px 6px -3px rgba(255, 255, 255, 0.95),
-        0 8px 18px -12px rgba(21, 37, 27, 0.24);
+        0 8px 20px -12px rgba(6, 78, 59, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88);
     transition:
         box-shadow .2s var(--nm-ease),
         border-color .18s ease,
         transform .2s var(--nm-ease);
 }
 .app-tile:hover {
-    border-color: rgba(17, 107, 59, 0.28);
+    border-color: rgba(5, 150, 105, 0.42);
     box-shadow:
-        -2px -2px 6px -3px rgba(255, 255, 255, 0.95),
-        0 14px 26px -14px rgba(17, 107, 59, 0.30);
+        0 14px 28px -14px rgba(5, 150, 105, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 .app-tile-primary {
     border-radius: 0.875rem;
-    background: linear-gradient(160deg, #14804A 0%, #0C5330 60%, #0A4526 100%);
+    background: linear-gradient(135deg, #10b981 0%, #059669 48%, #047857 100%);
+    border: 1px solid rgba(167, 243, 208, 0.40);
     box-shadow:
-        -3px -3px 9px -5px rgba(255, 255, 255, 0.35),
-        0 14px 26px -14px rgba(12, 83, 48, 0.65),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        0 12px 26px -12px rgba(5, 150, 105, 0.62),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34);
     transition:
         box-shadow .2s var(--nm-ease),
         transform .2s var(--nm-ease);
 }
 .app-tile-primary:hover {
     box-shadow:
-        -3px -3px 9px -5px rgba(255, 255, 255, 0.35),
-        0 18px 32px -16px rgba(12, 83, 48, 0.75),
-        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        0 18px 34px -14px rgba(4, 120, 87, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40);
 }
 
 /* Primary action: raised, sinks on press. */
 .app-btn-primary {
     border-radius: 0.75rem;
-    background: linear-gradient(180deg, #14804A 0%, #0C5330 100%);
+    background: linear-gradient(135deg, #10b981 0%, #059669 48%, #047857 100%);
+    border: 1px solid rgba(167, 243, 208, 0.45);
+    color: #ffffff;
     box-shadow:
-        -4px -4px 10px -6px rgba(255, 255, 255, 0.55),
-        0 10px 20px -12px rgba(12, 83, 48, 0.75),
-        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        0 10px 22px -10px rgba(5, 150, 105, 0.62),
+        inset 0 1px 0 rgba(255, 255, 255, 0.36);
     transition:
         box-shadow var(--nm-press-ms) var(--nm-ease),
         transform var(--nm-press-ms) var(--nm-ease);
 }
 .app-btn-primary:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 52%, #065f46 100%);
     box-shadow:
-        -4px -4px 10px -6px rgba(255, 255, 255, 0.55),
-        0 14px 26px -12px rgba(12, 83, 48, 0.80),
-        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        0 14px 28px -10px rgba(4, 120, 87, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 .app-btn-primary:active {
     box-shadow:
-        inset 4px 4px 10px -5px rgba(0, 40, 20, 0.50),
-        inset -4px -4px 10px -5px rgba(255, 255, 255, 0.18);
+        inset 4px 4px 10px -5px rgba(2, 44, 34, 0.55),
+        inset -4px -4px 10px -5px rgba(255, 255, 255, 0.22);
     transform: translateY(1px);
 }
 
@@ -856,4 +871,235 @@ body.app-canvas {
     .neu-raise:active,
     .neu-raise-light:active,
     .lg-sidebar nav a:active { transform: none; }
+}
+
+/* ==========================================================================
+   Global Emerald Gradient Liquid Glass Workspace (all app templates)
+   Applies cohesive emerald liquid glass across cards, tables, buttons,
+   header, and footer while guaranteeing high-contrast readable text.
+   ========================================================================== */
+
+/* --- Sticky Header & Footer ---------------------------------------------- */
+body.app-canvas header.fixed {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.90) 0%, rgba(236, 253, 245, 0.82) 100%) !important;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.20) !important;
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+        0 10px 28px -18px rgba(6, 78, 59, 0.28),
+        inset 0 -1px 0 rgba(16, 185, 129, 0.08);
+}
+body.app-canvas header.fixed .text-slate-400 { color: #4b6558 !important; }
+body.app-canvas footer {
+    background: linear-gradient(180deg, rgba(236, 253, 245, 0.72) 0%, rgba(255, 255, 255, 0.84) 100%) !important;
+    border-top: 1px solid rgba(16, 185, 129, 0.18) !important;
+    color: #334e41 !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* --- User Menu Dropdown -------------------------------------------------- */
+#user-menu {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 253, 245, 0.94) 100%) !important;
+    border: 1px solid rgba(16, 185, 129, 0.24) !important;
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+        0 18px 36px -16px rgba(6, 78, 59, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* --- Cards & Panels across all templates inside <main> ------------------- */
+main :is(section, article, form)[class*="bg-white"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+main div[class*="bg-white"][class*="rounded-xl"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+main div[class*="bg-white"][class*="rounded-2xl"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+main div[class*="bg-white"][class*="rounded-lg"][class*="border"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+main div[class*="bg-white"][class*="rounded-md"][class*="border"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+main a[class*="bg-white"][class*="rounded-"]:not(.ui-button):not(.tw-button):not(.sh-button) {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.78) 54%, rgba(209, 250, 229, 0.72) 100%);
+    border-color: rgba(16, 185, 129, 0.24);
+    backdrop-filter: blur(18px) saturate(165%);
+    -webkit-backdrop-filter: blur(18px) saturate(165%);
+    box-shadow:
+        0 12px 32px -16px rgba(6, 78, 59, 0.22),
+        0 2px 6px -2px rgba(6, 78, 59, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88),
+        inset 0 -1px 0 rgba(16, 185, 129, 0.10);
+    color: #0f2419;
+}
+main a[class*="bg-white"][class*="rounded-"]:not(.ui-button):not(.tw-button):not(.sh-button):hover {
+    border-color: rgba(5, 150, 105, 0.42);
+    box-shadow:
+        0 16px 34px -16px rgba(5, 150, 105, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+/* Keep form inputs/selects/textareas inside glass cards crisp and legible */
+main :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not(.lg-input):not([class*="bg-pine"]):not([class*="bg-campus"]) {
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #15251B;
+    border-color: rgba(16, 185, 129, 0.28);
+}
+main :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not(.lg-input):not([class*="bg-pine"]):not([class*="bg-campus"]):focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.20);
+}
+
+/* Ensure muted labels and secondary text keep strong AA contrast on light glass */
+main :not(.records-hero):not(.records-hero *):not(.lg-glass):not(.lg-glass *):not(.results-card-header):not(.results-card-header *):not([class*="bg-pine"]):not([class*="bg-pine"] *):not([class*="bg-ink"]):not([class*="bg-ink"] *).text-slate-400 {
+    color: #4b6558 !important;
+}
+main :not(.records-hero):not(.records-hero *):not(.lg-glass):not(.lg-glass *):not(.results-card-header):not(.results-card-header *):not([class*="bg-pine"]):not([class*="bg-pine"] *):not([class*="bg-ink"]):not([class*="bg-ink"] *).text-slate-500 {
+    color: #3a5446 !important;
+}
+
+/* --- Tables: Deep Emerald Liquid Glass Header + Frosted Rows ------------- */
+main table {
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+main table thead,
+main table thead tr {
+    background: linear-gradient(110deg, rgba(6, 95, 70, 0.95) 0%, rgba(16, 122, 82, 0.92) 55%, rgba(5, 150, 105, 0.88) 100%) !important;
+    border-bottom: 1px solid rgba(167, 243, 208, 0.34) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+main table thead th {
+    background: transparent !important;
+    color: #f0fdf4 !important;
+    border-color: rgba(167, 243, 208, 0.18) !important;
+}
+main table thead th.sticky {
+    background: linear-gradient(180deg, rgba(6, 95, 70, 0.98) 0%, rgba(4, 120, 87, 0.98) 100%) !important;
+    color: #ffffff !important;
+}
+main table thead th.text-amber-700,
+main table thead th .text-amber-700 { color: #fde68a !important; }
+main table thead th.text-slate-600,
+main table thead th .text-slate-600 { color: #e2e8f0 !important; }
+main table thead th.text-orange-700,
+main table thead th .text-orange-700 { color: #fed7aa !important; }
+main table thead th.text-pine-deep,
+main table thead th .text-pine-deep { color: #ffffff !important; }
+
+main table tbody tr {
+    background-color: rgba(255, 255, 255, 0.54);
+    border-color: rgba(16, 185, 129, 0.14) !important;
+    transition: background-color .15s ease;
+}
+main table tbody tr:hover {
+    background-color: rgba(209, 250, 229, 0.56) !important;
+}
+main table tbody td {
+    color: #0f2419;
+    border-color: rgba(16, 185, 129, 0.14) !important;
+}
+main table tbody td.sticky {
+    background-color: rgba(244, 252, 247, 0.97) !important;
+}
+main table tbody tr:hover td.sticky {
+    background-color: rgba(218, 249, 232, 0.98) !important;
+}
+main table tbody td.sticky[class*="right-0"] {
+    background: linear-gradient(180deg, rgba(220, 247, 233, 0.97), rgba(209, 250, 229, 0.97)) !important;
+    color: #064e3b !important;
+}
+main table tfoot tr {
+    background: rgba(209, 250, 229, 0.72) !important;
+    color: #064e3b !important;
+    border-top: 2px solid rgba(16, 185, 129, 0.30) !important;
+}
+main table tfoot td.sticky {
+    background: rgba(167, 243, 208, 0.96) !important;
+    color: #064e3b !important;
+}
+
+/* --- Emerald Gradient Liquid Glass Buttons (Tailwind utility buttons) ---- */
+main :is(button, a)[class*="bg-pine"][class*="text-white"],
+main :is(button, a)[class*="bg-campus"][class*="text-white"],
+header :is(button, a)[class*="bg-pine"][class*="text-white"],
+header :is(button, a)[class*="bg-campus"][class*="text-white"],
+main select[class*="bg-pine"][class*="text-white"] {
+    background: linear-gradient(135deg, #10b981 0%, #059669 48%, #047857 100%) !important;
+    border-color: rgba(167, 243, 208, 0.45) !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 8px 20px -8px rgba(5, 150, 105, 0.55),
+        0 2px 6px -2px rgba(6, 78, 59, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    transition: background .18s ease, box-shadow .18s ease, transform .16s ease;
+}
+main :is(button, a)[class*="bg-pine"][class*="text-white"]:hover,
+main :is(button, a)[class*="bg-campus"][class*="text-white"]:hover,
+header :is(button, a)[class*="bg-pine"][class*="text-white"]:hover,
+header :is(button, a)[class*="bg-campus"][class*="text-white"]:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 52%, #065f46 100%) !important;
+    box-shadow:
+        0 12px 26px -10px rgba(4, 120, 87, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    transform: translateY(-1px);
+}
+main :is(button, a)[class*="bg-pine"][class*="text-white"]:active,
+main :is(button, a)[class*="bg-campus"][class*="text-white"]:active {
+    transform: translateY(0);
+}
+
+/* --- Accessibility & Print Fallbacks for Workspace Liquid Glass ---------- */
+@media (prefers-reduced-transparency: reduce) {
+    body.app-canvas header.fixed,
+    body.app-canvas footer,
+    #user-menu,
+    .app-card,
+    .app-tile,
+    .records-page .records-panel,
+    .team-workspace-card,
+    .sh-stats,
+    .sh-competition,
+    .sh-panel,
+    main :is(section, article, form)[class*="bg-white"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+    main div[class*="bg-white"][class*="rounded-xl"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+    main div[class*="bg-white"][class*="rounded-2xl"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+    main div[class*="bg-white"][class*="rounded-lg"][class*="border"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+    main div[class*="bg-white"][class*="rounded-md"][class*="border"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]) {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+    }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .app-card,
+    .app-tile,
+    .records-page .records-panel,
+    .team-workspace-card,
+    .sh-stats,
+    .sh-competition,
+    .sh-panel,
+    main :is(section, article, form)[class*="bg-white"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]),
+    main div[class*="bg-white"][class*="rounded-xl"]:not(.records-hero):not(.lg-glass):not([data-color-theme-picker]) {
+        background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    main :is(button, a)[class*="bg-pine"][class*="text-white"],
+    main :is(button, a)[class*="bg-campus"][class*="text-white"],
+    .sh-button { transition: none; }
+    main :is(button, a)[class*="bg-pine"][class*="text-white"]:hover,
+    main :is(button, a)[class*="bg-campus"][class*="text-white"]:hover,
+    .sh-button:hover { transform: none; }
+}
+@media print {
+    body.app-canvas { background: #ffffff !important; }
+    main :is(section, article, form, div)[class*="bg-white"] {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+    }
+    main table thead,
+    main table thead tr {
+        background: #ecfdf5 !important;
+    }
+    main table thead th {
+        color: #064e3b !important;
+    }
 }

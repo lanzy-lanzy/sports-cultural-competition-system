@@ -1070,6 +1070,49 @@ class OverallMedalTallyTest(TestCase):
         self.assertContains(response, 'Cedar Hawks')
         self.assertNotContains(response, 'No medals to tally yet')
 
+    def test_overall_tally_renders_distinct_team_color_identity(self):
+        from sports.models import Match, MatchEntry, SportType, SportsEvent
+        from teams.models import Team
+
+        team_a = Team.objects.create(
+            name='Crimson Bulls', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin, color_theme='#dc2626',
+        )
+        team_b = Team.objects.create(
+            name='Royal Dragons', category=Team.Category.SPORTS,
+            status=Team.Status.APPROVED, created_by=self.admin, color_theme='#2563eb',
+        )
+        gold_award = Award.objects.create(
+            competition=self.sport_comp, name='Gold', type=Award.Type.GOLD_MEDAL, is_active=True,
+        )
+        AwardRecipient.objects.create(
+            award=gold_award, recipient_type=AwardRecipient.RecipientType.TEAM, team=team_a,
+        )
+        silver_award = Award.objects.create(
+            competition=self.sport_comp, name='Silver', type=Award.Type.SILVER_MEDAL, is_active=True,
+        )
+        AwardRecipient.objects.create(
+            award=silver_award, recipient_type=AwardRecipient.RecipientType.TEAM, team=team_b,
+        )
+        sport_type = SportType.objects.create(name='Color Identity Basketball', team_based=True)
+        event = SportsEvent.objects.create(
+            competition=self.sport_comp,
+            sport_type=sport_type,
+            name='Color Basketball Open',
+            team_based=True,
+            status=SportsEvent.Status.ONGOING,
+        )
+        match = Match.objects.create(event=event, name='Game 1', status=Match.Status.COMPLETED)
+        MatchEntry.objects.create(match=match, team=team_a, side=1, score=Decimal('88'), is_winner=True)
+        MatchEntry.objects.create(match=match, team=team_b, side=2, score=Decimal('75'), is_winner=False)
+
+        response = self.client.get(reverse('overall_medal_tally'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'style="background: #dc2626;"')
+        self.assertContains(response, 'style="background: #2563eb;"')
+        self.assertContains(response, 'background: #dc2626;')
+        self.assertContains(response, 'background: #2563eb;')
+
 
 class CriterionWeightScoringTest(BaseScoringTest):
     def test_weighted_criteria_use_percentage_sum(self):

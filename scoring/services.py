@@ -637,7 +637,8 @@ def build_sports_tally_matrix(competitions):
                 continue
             key, name = contestant_identity(team=entry.team, participant=entry.participant)
             dept = entry.team.department if entry.team_id else ''
-            bucket = _ensure_row(key, name, department=dept)
+            color = entry.team.color_theme if entry.team_id else ''
+            bucket = _ensure_row(key, name, department=dept, color_theme=color)
             cell = bucket['cells'].setdefault(ev.sport_type_id, _blank_cell())
             if atype == Award.Type.GOLD_MEDAL:
                 cell['gold'] += 1
@@ -665,7 +666,8 @@ def build_sports_tally_matrix(competitions):
         for me in match_entries:
             key, name = contestant_identity(team=me.team, participant=me.participant)
             dept = me.team.department if me.team_id else ''
-            bucket = _ensure_row(key, name, department=dept)
+            color = me.team.color_theme if me.team_id else ''
+            bucket = _ensure_row(key, name, department=dept, color_theme=color)
             cell = bucket['cells'].setdefault(me.match.event.sport_type_id, _blank_cell())
             if me.is_winner:
                 cell['wins'] += 1

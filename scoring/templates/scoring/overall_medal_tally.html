@@ -416,7 +416,7 @@
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-2.5">
                                 <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%"></div>
+                                    <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%;{% if row.color_theme %} background: {{ row.color_theme }};{% endif %}"></div>
                                 </div>
                                 <span class="w-11 text-right text-xs font-semibold tabular-nums text-ink">{{ row.win_pct|floatformat:0 }}%</span>
                             </div>
@@ -482,7 +482,7 @@
                 </div>
                 <div class="mt-3 flex items-center gap-2.5">
                     <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%"></div>
+                        <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%;{% if row.color_theme %} background: {{ row.color_theme }};{% endif %}"></div>
                     </div>
                     <span class="text-[11px] font-semibold tabular-nums text-slate-500">Score: {{ row.points_for|floatformat:"-2" }}</span>
                 </div>
@@ -530,7 +530,7 @@
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-2.5">
                                 <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%"></div>
+                                    <div class="h-full rounded-full bg-pine" style="width: {{ row.win_pct }}%;{% if row.color_theme %} background: {{ row.color_theme }};{% endif %}"></div>
                                 </div>
                                 <span class="w-11 text-right text-xs font-semibold tabular-nums text-ink">{{ row.win_pct|floatformat:0 }}%</span>
                             </div>
